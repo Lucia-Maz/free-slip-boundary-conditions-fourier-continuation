@@ -1126,3 +1126,45 @@ el `Lx = 1` del archivo de parámetros son 2π de largo físico y el modo fundam
 `k = 1`. `Lz`, en cambio, es la longitud literal. Verificado comparando el `⟨v²⟩` que
 informa el código contra la fórmula analítica de la condición inicial: 4,750·10⁻³ contra
 4,750·10⁻³. Con eso δ queda calibrado y no «a menos de una constante».
+
+### [D-31] El proyecto pasa a un repositorio de git, privado, y corrige a [D-19]
+
+Pedido de Lucía: puso Claude en el clúster y quiere que trabajar en la laptop o allá esté
+igual de documentado y sea indistinto. Hasta hoy ninguno de los dos árboles era un repo
+git, que es lo que dejaba constancia [D-19]; queda corregido.
+
+`github.com/Lucia-Maz/proyecto-final-piv`, **privado**. 104 archivos, 4,3 MB.
+
+**Qué NO entra, y por qué:**
+
+| | motivo |
+|---|---|
+| `numerico/SPECTER-{upstream,trabajo}/` | código de terceros, 5,4 MB. Va el **parche** contra `0ad1edb` en `numerico/specter-parche/`, que es exactamente lo que [D-26] define como el aporte propio, con la receta para reconstruir el árbol y la suma de verificación |
+| `bibliografia/*.pdf` | son de los editores. `REFERENCIAS.md` tiene los DOI resueltos contra Crossref y de dónde bajar cada uno |
+| `salidas/decaimiento.html` | 1,6 MB regenerables con `codigo/08_html_decaimiento.py` desde los JSON |
+| `.venv/`, `__pycache__`, `*.o`, `*.mod` | reconstruibles |
+| datos crudos | 140 GB en el disco externo, sólo lectura ([D-02]) |
+
+**Qué sí entra y es la parte que importa:** `ESTADO.md`, `DECISIONES.md`, todo `codigo/`,
+`teoria/`, `verificacion/`, los JSON de resultados de `salidas/tablas/` y las figuras. Con
+eso, en una máquina sin el disco externo se regeneran las figuras y los informes, y corren
+las dos puertas de aceptación y todo lo numérico.
+
+**Higiene, verificada antes de crear el repositorio:** se escaneó el árbol por contraseñas,
+tokens, claves y hosts. El único acierto es la nota de `ESTADO.md` que *advierte* que las
+contraseñas del clúster están en las notas de Obsidian de la laptop; no hay ninguna
+credencial en el árbol.
+
+### [D-32] `CLAUDE.md` fija las convenciones, y vale en las dos máquinas
+
+Archivo nuevo en la raíz, que Claude lee al abrir el proyecto en cualquier lado. Recoge lo
+que hasta ahora sólo vivía en el log y había que ir a buscar: por dónde empezar, que los
+parámetros del experimento no se hardcodean ([D-27]), que las puertas están fijadas por
+hash y no se editan para que pasen, que ninguna puerta contiene la fórmula del resultado
+que verifica, que no se afirma lo que no se chequeó y que al citar hay que dar sección y
+frase textual, y que la bibliografía distingue «localizado» de «leído en el original».
+
+Separa además lo que **sí** depende de la máquina: los límites de memoria son de la laptop
+y no aplican en Sakura, y el disco externo con los datos crudos está sólo en la laptop, de
+modo que los scripts que lo tocan no corren en el clúster —pero sus resultados ya están
+volcados en `salidas/tablas/*.json`.
