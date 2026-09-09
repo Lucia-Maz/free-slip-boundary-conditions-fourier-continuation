@@ -163,3 +163,62 @@ así que las figuras y los informes se regeneran sin él.
 
 **Convenciones del proyecto:** están en `CLAUDE.md`, y valen igual en la laptop y en el
 clúster.
+
+### La primera vez en el clúster
+
+El repositorio es **privado**, así que hay que autenticarse. Lo más limpio en una máquina
+que se va a usar seguido es una clave SSH propia del clúster.
+
+```bash
+# 1. ¿Sale tráfico hacia GitHub? Muchos clústeres bloquean el 22 de salida.
+ssh -T git@github.com          # "Permission denied (publickey)" YA ES BUENA SEÑAL:
+                               # significa que llegó. Si queda colgado o da timeout,
+                               # ver el punto 6.
+
+# 2. Generar la clave (dejar la passphrase vacía si no querés tipearla en cada push)
+ssh-keygen -t ed25519 -C "sakura" -f ~/.ssh/id_ed25519
+
+# 3. Mostrarla y copiarla
+cat ~/.ssh/id_ed25519.pub
+#    GitHub -> Settings -> SSH and GPG keys -> New SSH key -> pegar -> Add
+
+# 4. Probar
+ssh -T git@github.com          # "Hi Lucia-Maz! You've successfully authenticated..."
+
+# 5. Identidad de git en esa máquina
+git config --global user.name  "Lucia-Maz"
+git config --global user.email "<tu correo>"
+
+# 6. Si el puerto 22 está bloqueado, GitHub escucha SSH también en el 443:
+cat >> ~/.ssh/config <<'CFG'
+Host github.com
+  Hostname ssh.github.com
+  Port 443
+  User git
+CFG
+```
+
+Con eso, clonar y armar el árbol:
+
+```bash
+git clone git@github.com:Lucia-Maz/proyecto-final-piv.git
+cd proyecto-final-piv
+
+module load gnu15 openmpi5 fftw/3.3.11        # ver CLAUDE.md
+# y después la reconstrucción de SPECTER de la sección anterior
+```
+
+### Trabajar en las dos máquinas
+
+El repositorio es la única fuente de verdad; no se copian archivos por `scp`.
+
+```bash
+git pull                       # SIEMPRE antes de empezar
+# ... trabajar ...
+git add -A && git commit -m "..." && git push
+```
+
+Lo que **no** viaja por git y hay que tener en cuenta: los datos crudos (disco externo,
+sólo en la laptop), el árbol de SPECTER (se reconstruye con el parche) y los PDF de la
+bibliografía. Los resultados sí viajan, en `salidas/tablas/*.json`, así que las figuras y
+los informes se regeneran de un lado o del otro indistintamente.
