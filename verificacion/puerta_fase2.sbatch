@@ -65,8 +65,22 @@ else
     echo "[aviso] alcanza para la puerta (un proceso, arreglos chicos), NO para producción." >&2
 fi
 
+# OJO: <base>/$USER es un directorio que YA EXISTE y donde Lucía guarda simulaciones.
+# El trabajo escribe en un subdirectorio propio, con el número de trabajo en el nombre,
+# y al terminar borra SÓLO ese. La limpieza verifica la forma del nombre antes de
+# borrar: un rm -rf al lado de datos reales no puede depender de que las variables
+# tengan el valor que uno espera.
 export SPECTER_SCRATCH="$BASE/puerta-fase2-${SLURM_JOB_ID:-manual}"
 mkdir -p "$SPECTER_SCRATCH"
-trap 'rm -rf "$SPECTER_SCRATCH"' EXIT   # SPECTER_SCRATCH explícito no se autolimpia
+
+limpiar() {
+    case "${SPECTER_SCRATCH:-}" in
+        */puerta-fase2-?*)
+            [ -d "$SPECTER_SCRATCH" ] && rm -rf "$SPECTER_SCRATCH" ;;
+        *)
+            echo "[aviso] no borro '${SPECTER_SCRATCH:-}': no tiene la forma esperada" >&2 ;;
+    esac
+}
+trap limpiar EXIT   # SPECTER_SCRATCH explícito no se autolimpia
 
 python verificacion/test_aceptacion_fase2.py
