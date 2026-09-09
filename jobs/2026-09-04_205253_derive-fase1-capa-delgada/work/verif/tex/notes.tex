@@ -1,0 +1,431 @@
+% Deliverable for: 2026-09-04_205253_derive-fase1-capa-delgada
+\documentclass[11pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-nodecimaldot]{babel}
+\usepackage{amsmath,amssymb,booktabs,array,geometry,microtype}
+\usepackage[hidelinks]{hyperref}
+\geometry{margin=2.5cm}
+\newcommand{\src}[1]{\textsuperscript{\texttt{(fuente: \detokenize{#1})}}}
+\newcommand{\dd}{\mathrm{d}}
+\newcommand{\ii}{\mathrm{i}}
+\newcommand{\avg}[1]{\overline{#1}}
+\newcommand{\Rey}{\mathrm{Re}}
+
+\title{Capa viscosa delgada con fondo no deslizante y superficie libre:\\
+estructura vertical, fricción lineal y extensión Laplace DN}
+\author{Derivación y comprobación reproducible de la Fase 1}
+\date{4 de septiembre de 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Se resuelve el problema vertical de Stokes para dos paredes no deslizantes (DD) y
+para fondo no deslizante con tope libre de tensiones (DN). El espectro DN es
+\(\lambda_m=\nu[(m+1/2)\pi/h]^2\), por lo que el modo lento produce
+\(\alpha=\pi^2\nu/(4h^2)\), cuatro veces menor que en DD. Para ese modo, una
+medición PIV en la superficie da \(u(h)/\avg u=\pi/2\). También se deriva la
+rama Dirichlet--Neumann que falta en \texttt{laplace\_z} de SPECTER usando sólo
+exponenciales acotadas. Estos resultados son exactos para el problema lineal;
+su uso como clausura bidimensional requiere las desigualdades de escala y las
+salvedades de las secciones~\ref{sec:validez} y~\ref{sec:salvedades}.
+\src{resultado_central}
+\end{abstract}
+
+\section{Convenciones y alcance}
+
+El fluido es newtoniano e incompresible, tiene viscosidad cinemática constante
+\(\nu>0\), ocupa \(0<z<h\), y \(z=0\) es siempre el fondo. ``Libre'' quiere decir
+superficie plana e impermeable, \(w(h)=0\), sin tensión tangencial:
+\(\partial_z u(h)=\partial_z v(h)=0\). En el fondo,
+\(u(0)=v(0)=w(0)=0\). No se modela la deformación de la superficie.
+\src{convenciones_fisicas}
+
+Una barra denota promedio vertical,
+\begin{equation}
+  \avg q(x,y,t)=\frac1h\int_0^h q(x,y,z,t)\,\dd z .
+  \label{eq:promedio}
+\end{equation}
+Las derivadas Neumann de la sección~\ref{sec:laplace} están orientadas en la
+dirección \(+z\), que coincide con la variable derivada que construye SPECTER.
+\src{promedio_convencion}
+
+\section{Problema vertical de Stokes}
+\label{sec:stokes}
+
+Cada componente horizontal satisface el mismo problema escalar
+\begin{equation}
+  \partial_t u=\nu\,\partial_{zz}u,\qquad 0<z<h.
+  \label{eq:calor}
+\end{equation}
+Buscando \(u(z,t)=Z(z)T(t)\) se obtiene
+\begin{equation}
+  T(t)=T(0)e^{-\lambda t},\qquad Z''+q^2Z=0,\qquad
+  \lambda=\nu q^2>0.
+  \label{eq:separacion}
+\end{equation}
+No hay modo de tasa cero porque el valor de \(u\) está fijado a cero en el
+fondo. La misma derivación vale componente a componente para \(v\).
+\src{derivacion_stokes}
+
+\subsection{No deslizante--no deslizante (DD)}
+
+Con \(Z(0)=Z(h)=0\), la condición secular es \(\sin(qh)=0\). El espectro
+\emph{completo}, los modos y la expansión de un dato inicial \(u_0\in L^2(0,h)\)
+son
+\begin{align}
+ q_n&=\frac{n\pi}{h},&
+ Z_n(z)&=\sin\!\left(\frac{n\pi z}{h}\right),\label{eq:ddmodes}\\
+ \lambda_n^{DD}&=\nu\left(\frac{n\pi}{h}\right)^2,
+ & n&=1,2,\ldots,\label{eq:ddspec}\\
+ u(z,t)&=\sum_{n=1}^{\infty}a_n Z_n(z)e^{-\lambda_n^{DD}t},&
+ a_n&=\frac2h\int_0^h u_0(z)Z_n(z)\,\dd z .
+ \label{eq:ddexp}
+\end{align}
+Los senos son ortogonales y completos para las condiciones DD; por eso no se
+está reteniendo sólo el modo fundamental en~\eqref{eq:ddexp}.
+\src{espectro_dd}
+
+\subsection{No deslizante--libre de tensión (DN)}
+
+Con \(Z(0)=0\) y \(Z'(h)=0\), se tiene \(Z=A\sin(qz)\) y
+\(\cos(qh)=0\). Por lo tanto,
+\begin{align}
+ q_m&=\frac{(m+1/2)\pi}{h},&
+ Z_m(z)&=\sin\!\left(\frac{(m+1/2)\pi z}{h}\right),\label{eq:dnmodes}\\
+ \lambda_m^{DN}&=\nu\left(\frac{(m+1/2)\pi}{h}\right)^2,
+ &m&=0,1,\ldots,\label{eq:dnspec}\\
+ u(z,t)&=\sum_{m=0}^{\infty}b_m Z_m(z)e^{-\lambda_m^{DN}t},&
+ b_m&=\frac2h\int_0^h u_0(z)Z_m(z)\,\dd z .
+ \label{eq:dnexp}
+\end{align}
+También aquí la familia de senos de media onda es ortogonal y completa para DN.
+En particular, la condición libre cambia todos los números de onda, no sólo la
+tasa más lenta.
+\src{espectro_dn}
+
+Como control numérico, para \(\nu=h=1\) las primeras cuatro tasas son
+\begin{center}
+\begin{tabular}{c@{\quad}rrrr}
+\toprule
+bordes & \(\lambda_0\) o \(\lambda_1\) & segunda & tercera & cuarta\\
+\midrule
+DD & 9.86960440 & 39.47841760 & 88.82643961 & 157.91367042\\
+DN & 2.46740110 & 22.20660990 & 61.68502751 & 120.90265391\\
+\bottomrule
+\end{tabular}
+\end{center}
+Estos decimales se generan con \texttt{python out/checks.py --values} y se
+contrastaron contra autovalores de una matriz de diferencias finitas independiente.
+\src{valores_espectro}
+
+\section{Reducción bidimensional y fricción de fondo}
+\label{sec:reduccion}
+
+Partimos de la ecuación horizontal de Navier--Stokes, con fuerza por unidad de
+masa \(\boldsymbol f\),
+\begin{equation}
+ \partial_t\boldsymbol u_h
+ +(\boldsymbol u_h\!\cdot\!\nabla_h)\boldsymbol u_h
+ +w\partial_z\boldsymbol u_h
+ =-\rho^{-1}\nabla_h p
+ +\nu\nabla_h^2\boldsymbol u_h+\nu\partial_{zz}\boldsymbol u_h
+ +\boldsymbol f .
+ \label{eq:NS3d}
+\end{equation}
+Al promediar, el término vertical viscoso es exactamente
+\begin{equation}
+ \frac\nu h\int_0^h\partial_{zz}\boldsymbol u_h\,\dd z
+ =\frac\nu h\,[\partial_z\boldsymbol u_h]_{0}^{h}.
+ \label{eq:viscprom}
+\end{equation}
+Hasta este punto no se ha supuesto un perfil vertical.
+\src{promedio_ns}
+
+Ahora se hace la clausura explícita de un solo modo,
+\begin{equation}
+ \boldsymbol u_h(x,y,z,t)=F(z)\,\boldsymbol U(x,y,t),\qquad
+ \avg F=1,\qquad \boldsymbol U=\avg{\boldsymbol u_h},\qquad
+ \nabla_h\!\cdot\!\boldsymbol U=0.
+ \label{eq:ansatz}
+\end{equation}
+La impermeabilidad y la incomprensibilidad dan entonces \(w=0\). Los perfiles
+fundamentales normalizados por su promedio son
+\begin{equation}
+ F_{DD}(z)=\frac\pi2\sin\!\frac{\pi z}{h},\qquad
+ F_{DN}(z)=\frac\pi2\sin\!\frac{\pi z}{2h},\qquad
+ \avg{F_{DD}}=\avg{F_{DN}}=1.
+ \label{eq:perfiles}
+\end{equation}
+Para ambos, \(\beta=\avg{F^2}=\pi^2/8=1.233700550136\). La ecuación promediada
+queda, bajo esta clausura,
+\begin{equation}
+ \partial_t\boldsymbol U+\beta(\boldsymbol U\!\cdot\!\nabla_h)\boldsymbol U
+ =-\rho^{-1}\nabla_h\avg p+\nu\nabla_h^2\boldsymbol U
+ -\alpha\boldsymbol U+\avg{\boldsymbol f}.
+ \label{eq:NS2d}
+\end{equation}
+El factor \(\beta\) aparece porque se promedia \(F^2\), y no se debe ocultar si
+la variable 2D elegida es el promedio vertical.
+\src{reduccion_modal}
+
+Usando~\eqref{eq:viscprom} y las derivadas de~\eqref{eq:perfiles}, o de manera
+equivalente \(F''=-(\lambda_0/\nu)F\), resulta
+\begin{align}
+ \alpha_{DN}&=\frac{\pi^2\nu}{4h^2}
+ =2.467401100272\,\frac\nu{h^2},
+ & \alpha_{DD}&=\frac{\pi^2\nu}{h^2}
+ =9.869604401089\,\frac\nu{h^2},
+ \label{eq:alfas}\\
+ \frac{\alpha_{DD}}{\alpha_{DN}}&=4.
+ \label{eq:factor4}
+\end{align}
+Así aparece el término \(-\alpha\boldsymbol U\): es exactamente la acción de la
+viscosidad vertical sobre el modo lento supuesto. El valor DD no debe trasladarse
+a una capa con tope libre; sobrestima esta predicción por un factor cuatro.
+\src{alfas}
+
+Para \(h=6\times10^{-3}\,\mathrm m\), la predicción DN es
+\begin{equation}
+ \alpha_{DN}=6.8538919452\times10^4\,\nu\ \mathrm{m^{-2}}.
+ \label{eq:h6}
+\end{equation}
+Hace falta insertar la viscosidad cinemática \emph{medida} del electrolito. Sólo
+como ejemplo dimensional, si \(\nu=10^{-6}\,\mathrm{m^2\,s^{-1}}\), se obtiene
+\(\alpha=0.06853891945\,\mathrm{s^{-1}}\) y \(1/\alpha=14.59025044\,\mathrm s\);
+estos dos últimos números no son una medición del experimento.
+\src{ejemplo_h6}
+
+\section{Sesgo del PIV de superficie}
+
+En DN, \(Z_0(h)=1\) y
+\(\avg{Z_0}=h^{-1}\int_0^h\sin(\pi z/2h)\,\dd z=2/\pi\). Por tanto,
+\begin{equation}
+ \boxed{\frac{u(h)}{\avg u}=\frac\pi2=1.570796326795},
+ \qquad \avg u=\frac2\pi u(h).
+ \label{eq:piv}
+\end{equation}
+Una partícula que flota en el tope mide, en este modelo, una velocidad un
+\(57.0796326795\%\) mayor que el promedio vertical. Si se escribe la ecuación en
+términos de \(\boldsymbol U_s=\boldsymbol u_h(h)=(\pi/2)\boldsymbol U\), el término
+lineal conserva \(\alpha\), mientras el coeficiente no lineal pasa de
+\(\pi^2/8\) a \(\beta_s=\pi/4=0.785398163397\).
+\src{sesgo_piv}
+
+\section{Cuándo es válida la clausura}
+\label{sec:validez}
+
+Sean \(\ell\) la menor escala horizontal que se desea describir, \(U\) una
+velocidad típica, \(\tau_H=\ell/U\) el tiempo de vuelco, y
+\(\tau_\nu=h^2/\nu\) el tiempo de difusión a través del espesor. Definimos
+\begin{equation}
+ \epsilon=\frac h\ell,\qquad
+ \Rey_\ell=\frac{U\ell}{\nu},\qquad
+ \Rey_h=\frac{Uh}{\nu}=\epsilon\Rey_\ell .
+ \label{eq:escalas}
+\end{equation}
+Una condición suficiente para que difusión vertical y geometría delgada dominen
+la creación inercial de estructura vertical es el conjunto explícito
+\begin{equation}
+ \boxed{\epsilon\ll1},\qquad
+ \boxed{\frac{\tau_\nu}{\tau_H}
+ =\Rey_\ell\epsilon^2=\Rey_h\epsilon\ll1}.
+ \label{eq:desigualdades}
+\end{equation}
+No es necesario imponer \(\Rey_h\ll1\) por separado: el cociente relevante al
+balance entre inercia horizontal y viscosidad vertical es
+\(\Rey_h\epsilon\). Si además se pretende turbulencia horizontal de alto Reynolds,
+la ventana asintótica compatible es \(1\ll\Rey_\ell\ll\epsilon^{-2}\).
+Estas desigualdades deben evaluarse con la escala horizontal más pequeña que el
+modelo quiera conservar, no sólo con el tamaño de la caja.
+\src{escalamiento_validez}
+
+La dominancia del modo lento requiere además que los modos superiores hayan
+perdido memoria. Para DN, si \(b_0\ne0\), la condición exacta sobre cada cociente es
+\begin{equation}
+ \left|\frac{b_m}{b_0}\right|
+ e^{-(\lambda_m^{DN}-\lambda_0^{DN})t}\ll1,\qquad m\ge1.
+ \label{eq:dominio_modal}
+\end{equation}
+Para coeficientes iniciales de orden comparable, condiciones suficientes son
+\begin{align}
+ t&\gg(\lambda_1^{DN}-\lambda_0^{DN})^{-1}
+   =\frac{h^2}{2\pi^2\nu} &&\text{(DN)},\label{eq:gapdn}\\
+ t&\gg(\lambda_2^{DD}-\lambda_1^{DD})^{-1}
+   =\frac{h^2}{3\pi^2\nu} &&\text{(DD)}.\label{eq:gapdd}
+\end{align}
+Las brechas son, respectivamente,
+\(19.73920880218\,\nu/h^2=8\alpha_{DN}\) y
+\(29.60881320327\,\nu/h^2=3\alpha_{DD}\).
+Para excitación dependiente del tiempo con frecuencia característica \(\omega\),
+se requiere también
+\begin{equation}
+ \frac{\omega}{\lambda_1^{DN}-\lambda_0^{DN}}\ll1
+ \quad\text{(o el análogo DD)},
+ \label{eq:forcinglento}
+\end{equation}
+y que la fuerza no inyecte una proyección grande y persistente sobre modos
+verticales superiores. Una fuerza estacionaria de perfil arbitrario puede producir
+un perfil de Poiseuille o una combinación modal, no necesariamente el modo lento.
+\src{validez_modal}
+
+En síntesis: \(\alpha\) es calculable sin ajuste sólo después de fijar las
+condiciones de borde, \(h\), \(\nu\) y una clausura vertical válida. La dependencia
+\(\alpha\propto\nu h^{-2}\) implica, a primer orden,
+\(\delta\alpha/\alpha=\delta\nu/\nu-2\,\delta h/h\); por ello el espesor efectivo
+y su incertidumbre importan directamente.
+\src{sensibilidad_alpha}
+
+\section{Laplace con Dirichlet abajo y Neumann arriba}
+\label{sec:laplace}
+
+Para el modo horizontal
+\(e^{\ii(k_xx+k_yy)}\), sea \(k=(k_x^2+k_y^2)^{1/2}\ge0\). La ecuación de
+Laplace homogénea se reduce a
+\begin{equation}
+ \phi''-k^2\phi=0,\qquad \phi(0)=g_0,\qquad \phi'(L_z)=g_1,
+ \label{eq:lapode}
+\end{equation}
+donde \(g_0,g_1\) pueden ser complejos y la prima significa \(+z\).
+\src{laplace_reduccion}
+
+Para \(k>0\) se adopta exactamente la base acotada ya usada por
+\texttt{laplace\_z}:
+\begin{equation}
+ \phi(z)=C_1e^{k(z-L_z)}+C_2e^{-kz},\qquad
+ \phi'(z)=k\left[C_1e^{k(z-L_z)}-C_2e^{-kz}\right].
+ \label{eq:baseacotada}
+\end{equation}
+Con \(r=e^{-kL_z}\) y \(q=r^2=e^{-2kL_z}\), las dos condiciones forman
+\begin{equation}
+ rC_1+C_2=g_0,\qquad k(C_1-rC_2)=g_1,
+ \label{eq:sistemaDN}
+\end{equation}
+y su solución es
+\begin{equation}
+ \boxed{C_1=\frac{g_1/k+r g_0}{1+q}},\qquad
+ \boxed{C_2=\frac{g_0-r g_1/k}{1+q}}.
+ \label{eq:coefDN}
+\end{equation}
+Ésta es la normalización solicitada por \(e^{-2kL_z}\): en el intervalo físico,
+ambas exponenciales de~\eqref{eq:baseacotada} están entre cero y uno. No se forma
+\(e^{+kL_z}\), y el límite \(kL_z\) grande sólo hace \(r,q\to0\), sin desborde.
+La suma del denominador, en vez de la resta de la rama DD, es consecuencia de la
+condición Neumann superior.
+\src{coeficientes_dn}
+
+El modo horizontal constante se debe separar antes de dividir por \(k\):
+\begin{equation}
+ k=0:\qquad \phi(z)=g_0+g_1z,\qquad \phi'(z)=g_1.
+ \label{eq:k0}
+\end{equation}
+En la rama lineal de SPECTER esto corresponde a
+\(\texttt{coef(1,j,i)}=g_1\) (pendiente) y
+\(\texttt{coef(2,j,i)}=g_0\) (intercepto).
+Además, aunque~\eqref{eq:coefDN} es estable para \(kL_z\) grande, \(C_1\) y
+\(C_2\) se cancelan cuando \(k\to0\). La implementación evalúa los modos pequeños
+mediante la forma regular equivalente
+\begin{equation}
+ \phi(z)=g_0\{\cosh(kz)-\tanh(kL_z)\sinh(kz)\}
+ +g_1\frac{\sinh(kz)}{k\cosh(kL_z)},
+ \label{eq:formaregular}
+\end{equation}
+calculando \(\sinh(kz)/k=z\,\mathrm{sinhc}(kz)\). Así se cubren sin cancelación
+tanto \(k=0\) como valores positivos muy pequeños, mientras la base exponencial
+acotada cubre los valores grandes.
+\src{limite_k0}
+
+La correspondencia para una futura rama Fortran es
+\(\texttt{coef(1,j,i)}=C_1\),
+\(\texttt{coef(2,j,i)}=C_2\),
+\(\texttt{bc(1,j,i)}=g_0\) y
+\(\texttt{bc(2,j,i)}=g_1\). En esta fase no se modificó el archivo Fortran.
+\src{convencion_specter}
+
+\section{Implementación y verificaciones}
+
+\texttt{out/capa.py} expone exactamente
+\texttt{tasas\_decaimiento},
+\texttt{cociente\_superficie\_promedio}, \texttt{alfa},
+\texttt{solver\_1d} y \texttt{coef\_laplace\_dn}. Sólo acepta las cadenas de
+borde congeladas \texttt{noslip-noslip} y \texttt{noslip-libre}.
+\src{api_capa}
+
+El solver usa \(n_z\) intervalos uniformes, diferencias centradas de orden dos,
+el nodo fantasma \(u_{n_z+1}=u_{n_z-1}\) para DN, y aplica
+\(u(t)=\exp(-At)u(0)\) al sistema semidiscreto. Por tanto sí integra un operador
+FD; no devuelve la solución continua insertada a mano. Al duplicar resolución de
+48 a 96 intervalos, los errores de tasa fueron
+\(3.523\times10^{-3}\to8.808\times10^{-4}\) (DD) y
+\(2.202\times10^{-4}\to5.505\times10^{-5}\) (DN), con orden medido 2.000.
+\src{solver_fd}
+
+Los chequeos propios pasaron 5/5. En particular, siete casos Laplace DN ---incluidos
+\(kL_z=700\), \(k=10^{-10}\) y datos complejos--- dieron residuo de borde máximo
+\(4.441\times10^{-16}\). La puerta de aceptación fijada por hash pasó 6/6; sus
+comparaciones de espectro tuvieron errores relativos máximos
+\(8.23\times10^{-5}\) (DD) y \(6.30\times10^{-5}\) (DN), y su solver midió orden
+2.00. Todas las ejecuciones fueron secuenciales.
+\src{checks_propios,puerta_aceptacion}
+
+\section{Procedencia de los pasos}
+
+Se \textbf{derivaron en este trabajo}: las dos condiciones seculares, ambos
+espectros y coeficientes de expansión; el promedio viscoso y \(\alpha\); el factor
+PIV y \(\beta\); las desigualdades por escalamiento; y el sistema algebraico DN,
+sus coeficientes acotados y su límite \(k=0\). Los números impresos provienen de
+\texttt{out/checks.py::derived\_values} o de ejecuciones de checks registradas.
+\src{procedencia_derivada}
+
+Se \textbf{recordaron de literatura estándar}, y luego se rederivaron aquí para no
+importar un coeficiente sin prueba, el método de separación de variables y la
+completitud Sturm--Liouville para la ecuación de difusión, así como las ecuaciones
+de Navier--Stokes, el promedio vertical y la interpretación de una superficie sin
+tensión tangencial. De SPECTER se tomó sólo la convención computacional de la base
+exponencial acotada y el orden de \texttt{coef}; no se tomó de allí la rama DN,
+porque no existe en el código inspeccionado.
+\src{literatura_estandar,convencion_specter}
+
+\section{Salvedades y cosas no verificadas}
+\label{sec:salvedades}
+
+\begin{itemize}
+\item No se accedió a datos experimentales ni se midieron \(\nu\), el espesor
+  efectivo, la rugosidad o el posible deslizamiento. Por eso~\eqref{eq:h6} es una
+  predicción paramétrica, no una calibración de la celda.
+\item No se verificaron deformación superficial, ondas, evaporación, surfactantes,
+  gradientes de tensión superficial (Marangoni), viento, ni una tapa parcialmente
+  contaminada. Cualquiera de ellos cambia la condición \(\partial_z\boldsymbol u_h=0\).
+\item El ansatz de un modo no es una identidad para Navier--Stokes no lineal ni para
+  forzamiento vertical arbitrario. No se hicieron DNS 3D; las condiciones de la
+  sección~\ref{sec:validez} son condiciones asintóticas suficientes, no una frontera
+  universal medida para la transición a flujo cuasi--2D.
+\item Se usó viscosidad molecular constante y una capa de profundidad uniforme. No
+  se modelaron una capa límite turbulenta, viscosidad de remolino, estratificación,
+  dos líquidos superpuestos ni paredes laterales.
+\item La rama Laplace DN se verificó como módulo Python por residuos de borde,
+  finitud y límite pequeño. No se implementó ni compiló en Fortran, no se ejecutó
+  MPI y no se verificaron todavía distribución espectral, índices ni precisión
+  \texttt{GP} dentro de SPECTER.
+\item La convergencia FD y la puerta numérica no constituyen una prueba formal para
+  todo dato o parámetro. Sí prueban los casos enumerados y complementan las
+  sustituciones algebraicas de esta nota.
+\end{itemize}
+\src{salvedades}
+
+\begin{thebibliography}{9}
+\bibitem{carslaw}
+H. S. Carslaw y J. C. Jaeger,
+\emph{Conduction of Heat in Solids}, 2.a ed., Oxford University Press, 1959.
+
+\bibitem{kundu}
+P. K. Kundu, I. M. Cohen y D. R. Dowling,
+\emph{Fluid Mechanics}, 6.a ed., Academic Press, 2016.
+
+\bibitem{specter}
+SPECTER upstream, \texttt{src/boundary/boundary\_mod.fpp}, subrutina
+\texttt{laplace\_z}, inspeccionada en modo sólo lectura.
+\end{thebibliography}
+
+\end{document}

@@ -1,0 +1,149 @@
+{
+  "intent": "OBJETIVO\n========\nDerivar la estructura vertical de una capa delgada de fluido con fondo no-deslizante y\ntope libre de tensiones, y de ah\u00ed el coeficiente de fricci\u00f3n de fondo alfa que aparece\ncomo -alfa*u en los modelos bidimensionales de turbulencia cuasi-2D.\n\nMotivaci\u00f3n, para que se entienda qu\u00e9 se est\u00e1 decidiendo: en la celda experimental que\nmotiva esto, una capa de electrolito de ~6 mm con superficie libre, alfa se viene usando\ncomo par\u00e1metro ajustado. La pregunta es si se puede calcular. Las simulaciones\ndisponibles son o triplemente peri\u00f3dicas (sin bordes) o con no-deslizamiento en las dos\nparedes (un canal, no una capa con superficie libre).\n\nQU\u00c9 HAY QUE PRODUCIR\n====================\n1. out/notes.tex \u2014 la derivaci\u00f3n. Debe contener, como m\u00ednimo:\n   a. El problema de Stokes vertical d_t u = nu d2_z u en 0<z<h, resuelto para los dos\n      pares de bordes (no-deslizante/no-deslizante y no-deslizante/libre), con el\n      espectro COMPLETO de tasas de decaimiento, no s\u00f3lo el modo m\u00e1s lento.\n   b. La reducci\u00f3n bidimensional: promediando en la vertical y suponiendo el perfil del\n      modo m\u00e1s lento, de d\u00f3nde sale el t\u00e9rmino -alfa*u, con qu\u00e9 valor de alfa, y bajo\n      qu\u00e9 condiciones vale. Las condiciones importan tanto como el resultado: separaci\u00f3n\n      entre el tiempo de difusi\u00f3n vertical y el de vuelco horizontal, relaci\u00f3n de\n      aspecto, n\u00famero de Reynolds. Enunciarlas como desigualdades expl\u00edcitas.\n   c. El cociente entre la velocidad en la superficie y la promediada en la vertical,\n      para el modo m\u00e1s lento del caso libre. Es el sesgo del PIV de superficie, porque\n      las part\u00edculas trazadoras flotan.\n   d. Los coeficientes de la soluci\u00f3n de la ecuaci\u00f3n de Laplace homog\u00e9nea en una caja\n      peri\u00f3dica en x,y y acotada en z, con Dirichlet en z=0 y Neumann en z=Lz. Esta es\n      la rama que le falta a la subrutina laplace_z de SPECTER, que ya implementa\n      Dirichlet/Dirichlet, Neumann/Neumann, Robin/Robin y Dirichlet/Robin. La soluci\u00f3n\n      tiene que ser num\u00e9ricamente estable para k*Lz grande: escribirla con la misma\n      estrategia de normalizaci\u00f3n por exp(-2*k*Lz) que usa el c\u00f3digo existente, en vez\n      de con exponenciales crecientes que desbordan.\n2. out/capa.py \u2014 el m\u00f3dulo con la implementaci\u00f3n. Su interfaz est\u00e1 FIJADA por la puerta\n   de aceptaci\u00f3n; no la cambien.\n3. out/checks.py \u2014 los chequeos propios del equipo, adem\u00e1s de la puerta.\n\nENTORNO\n=======\n- Int\u00e9rprete: /home/lucia/miniforge3/envs/piv-dt/bin/python (Python 3.11, numpy 2.4.6,\n  scipy 1.17.1). NO instalar nada, NO crear entornos.\n- La puerta de aceptaci\u00f3n se corre as\u00ed, y tiene que pasar 6/6:\n    /home/lucia/miniforge3/envs/piv-dt/bin/python verificacion/test_aceptacion_fase1.py\n  Est\u00e1 fijada por hash: se puede leer, no se puede editar. L\u00e9anla: define la interfaz.\n\nCONVENCIONES CONGELADAS\n=======================\n- z=0 es el fondo (no-deslizante siempre); z=h es el tope.\n- Las dos \u00fanicas cadenas v\u00e1lidas para el argumento `bordes` son exactamente\n  \"noslip-noslip\" y \"noslip-libre\".\n- Tope libre de tensiones significa du/dz = dv/dz = 0 y w = 0. Superficie PLANA: la\n  deformaci\u00f3n de la superficie queda expl\u00edcitamente fuera de alcance.\n\nL\u00cdMITE DE DATOS Y DE M\u00c1QUINA\n============================\n- Esta laptop tiene 5,7 GB de RAM y entra en thrashing si se la satura. Ning\u00fan script\n  puede pasar de ~1 GB residente. No corran nada en paralelo.\n- numerico/SPECTER-upstream/ es referencia de S\u00d3LO LECTURA. Pueden y deben leer\n  src/boundary/boundary_mod.fpp (la subrutina laplace_z, l\u00ednea 451) para copiar sus\n  convenciones. No lo modifiquen, no lo compilen.\n- NO tocar /mnt (disco externo con los datos crudos), ni ~/Desktop/PhD.\n\nLO QUE NO HAY QUE HACER\n=======================\n- No compilar SPECTER ni correr nada con MPI. Eso es la fase siguiente.\n- No implementar la condici\u00f3n de contorno en Fortran todav\u00eda.\n- No hacer simulaciones tridimensionales.\n- No escribir fuera del sub\u00e1rbol del trabajo.\n\nPROVENANCE Y HONESTIDAD\n=======================\n- Toda afirmaci\u00f3n cuantitativa de notes.tex lleva su \\src{clave} resolviendo en\n  out/provenance.json, y cada n\u00famero sale de c\u00f3digo de este trabajo.\n- Decir qu\u00e9 pasos se derivaron y cu\u00e1les se recordaron de la literatura.\n- Decir expl\u00edcitamente qu\u00e9 NO se verific\u00f3. Esto se eval\u00faa: una secci\u00f3n de salvedades\n  vac\u00eda es una se\u00f1al de alarma, no de calidad.",
+  "round": 1,
+  "status": "frozen",
+  "plan": "La entrega est\u00e1 vac\u00eda/incompleta y a\u00fan no es evaluable.\n\n1. **Worker:** completar `notes.tex`, `capa.py`, `checks.py` y `provenance.json` con toda la derivaci\u00f3n e implementaci\u00f3n contratada; despu\u00e9s ejecutar secuencialmente los controles propios, provenance y la puerta 6/6, registrando resultados exactos.\n\nReporte: [r01-lead.md](/home/lucia/GW_AI/proyecto-final-piv/jobs/2026-09-04_205253_derive-fase1-capa-delgada/reports/r01-lead.md)",
+  "rounds_log": [
+    {
+      "round": 1,
+      "workers": 1,
+      "verifier": "I re-derived everything by different routes rather than re-reading the worker's arguments. Report written to `reports/r01-verifier.md`.\n\n**What held up.** Both spectra reproduce under Chebyshev collocation (err 2.7e-14 / 2.4e-12) *and* under `brentq` root-finding of the secular conditions (err 0.0) \u2014 two routes that share nothing with the worker's closed form or the gate's finite differences. `\u03b1_DN = \u03c0\u00b2\u03bd/(4h\u00b2)` survived a third, stronger test: I integrated the diffusion equation with my own Crank\u2013Nicolson stepper from a **generic** initial condition (not an eigenmode) and measured the asymptotic decay rate of the vertical mean \u27e8u\u27e9 \u2014 2.467400671 against 2.467401100, 1.7e-07 relative. That verifies the `-\u03b1U` term itself, not just an eigenvalue. `\u03c0/2`, `\u03b2=\u03c0\u00b2/8`, `\u03b2_s=\u03c0/4`, the spectral gaps and the `\u03c4_\u03bd/\u03c4_H = Re_\u2113\u03b5\u00b2 = Re_h\u03b5` identity all reproduce independently. The Laplace DN coefficients I re-derived from scratch and matched pointwise against a tridiagonal BVP solve; a 2404-case sweep across the `kLz=0.5` branch threshold gives max boundary residual 3.9e-15, and no overflow to `kLz=1e8`. Every SPECTER convention claim checks out against the Fortran. `solver_1d` genuinely integrates \u2014 it matches my own Crank\u2013Nicolson to 3e-10, and its rate error is exactly the FD term `\u03bb\u03ba\u00b2dz\u00b2/12`. Gate **6/6** and checks **5/5** run by me, provenance 26/26 with zero orphans, LaTeX 6 pages clean. Peak RSS 68 MB, all runs sequential.\n\n**What I broke.** One sentence in `notes.tex` \u00a7Laplace \u2014 \"*As\u00ed se cubren sin cancelaci\u00f3n tanto k=0 como valores positivos muy peque\u00f1os*\" \u2014 is false as written. At `k=5e-11, Lz=1e10` (so `kLz=0.5`, exponential branch), `g0=1, g1=7.3`, the residual is **7.6e-06**, four orders above the gate's own tolerance. The `k*Lz < 0.5` guard is the wrong criterion: the dangerous group is `Lz|g1|/|g0|`. This touches nothing the contract asked for (stability at *large* `kLz` is solid, and SPECTER's quantized `k` never reaches that regime) \u2014 it's the wording promising more than the code delivers.\n\n**The gap that matters most** isn't an error. The note states its validity inequalities but never evaluates them for the 6 mm cell that motivates the whole job. `Re_h \u03b5 \u226a 1` means `U \u226a \u03bd\u2113/h\u00b2`, i.e. `U \u226a 0.56 mm/s` for `\u2113 = 2 cm` \u2014 and there is no experimental `U` or `\u2113` anywhere in the job, so I could not decide it. Given the intent's own framing (\"\u00bfse puede calcular \u03b1?\"), that arithmetic needs a human number. Also flagged for the Fortran phase: `laplace_z` loops `DO k=1,nz`, which runs past `Lz` into the FC-Gram continuation region, while `capa.py` hard-rejects `z > Lz`.\n\n```claims\n[{\"status\": \"verified\", \"text\": \"Espectro DD completo: lambda_n = nu*(n*pi/h)^2, n=1,2,..., con autofunciones sin(n*pi*z/h). Reproducido por colocacion de Chebyshev (N=64, err rel 2.66e-14) y por raices de la secular sin(qh)=0 con brentq (err rel 0.0); escalado en nu y h exacto a 3.4e-16.\"},\n {\"status\": \"verified\", \"text\": \"Espectro DN completo: lambda_m = nu*((m+1/2)*pi/h)^2, m=0,1,..., con autofunciones sin((m+1/2)*pi*z/h). Reproducido por Chebyshev (err rel 2.45e-12) y por raices de cos(qh)=0 con brentq (err rel 0.0).\"},\n {\"status\": \"verified\", \"text\": \"alfa_DN = pi^2*nu/(4h^2) y alfa_DD = pi^2*nu/h^2, con cociente exactamente 4. Verificado por tres rutas independientes: autovalor mas lento, -(nu/h)*[dF/dz]_0^h, y la tasa de decaimiento asintotica del promedio vertical <u> bajo una integracion Crank-Nicolson propia desde un dato inicial generico que NO es autovector (DN 2.467400671 vs 2.467401100, err rel 1.7e-07; DD 9.870051915 vs 9.869604401, err rel 4.5e-05). Esto verifica el termino -alfa*U de la reduccion 2D, no solo el autovalor.\"},\n {\"status\": \"verified\", \"text\": \"Sesgo del PIV de superficie: para el modo DN mas lento, u(h)/<u> = pi/2 = 1.5707963267948966 (exceso 57.0796326795%). Verificado por cuadratura adaptativa scipy.integrate.quad, |diferencia| = 2.2e-16 contra capa.cociente_superficie_promedio().\"},\n {\"status\": \"verified\", \"text\": \"Coeficiente no lineal de la clausura: beta = <F^2> = pi^2/8 = 1.2337005501361697 para AMBOS perfiles normalizados F_DD=(pi/2)sin(pi z/h) y F_DN=(pi/2)sin(pi z/2h), ambos con <F>=1; y beta_s = beta*(2/pi) = pi/4 = 0.7853981633974483 al escribir la ecuacion en la variable de superficie U_s=(pi/2)U. Verificado por cuadratura adaptativa y por el cambio de variable algebraico.\"},\n {\"status\": \"verified\", \"text\": \"Coeficientes de expansion modal a_n = b_m = (2/h)*integral(u_0*Z): la matriz de Gram de ambas familias de senos es (h/2)*I a 1.11e-16, y la reconstruccion con 200 modos de un dato generico converge. Nota: esta afirmacion de notes.tex NO esta cubierta por out/checks.py ni por la puerta; la verifique yo.\"},\n {\"status\": \"verified\", \"text\": \"Brechas espectrales: lambda_1-lambda_0 = 2*pi^2*nu/h^2 = 8*alfa_DN (DN) y lambda_2-lambda_1 = 3*pi^2*nu/h^2 = 3*alfa_DD (DD), con inversos h^2/(2 pi^2 nu) y h^2/(3 pi^2 nu). Identidades exactas.\"},\n {\"status\": \"verified\", \"text\": \"Identidad de escalas de validez: tau_nu/tau_H = Re_l*epsilon^2 = Re_h*epsilon, con epsilon=h/l. Las tres expresiones coinciden a precision de maquina; la ventana 1 << Re_l << epsilon^-2 se sigue algebraicamente.\"},\n {\"status\": \"verified\", \"text\": \"Coeficientes de Laplace DN: C1=(g1/k + r*g0)/(1+r^2), C2=(g0 - r*g1/k)/(1+r^2) con r=exp(-k*Lz), para phi=C1*exp(k(z-Lz))+C2*exp(-kz), phi(0)=g0, phi'(Lz)=g1. Rederivados por mi desde el sistema 2x2 y confirmados punto a punto contra una resolucion tridiagonal independiente del BVP. Barrido propio de 2404 casos (k,Lz) cruzando el umbral kLz=0.5: residuo de borde maximo 3.886e-15. Sin desborde hasta kLz=1e8 (C1, C2 finitos, residuo 0). Rama k=0 (phi=g0+g1*z) exacta.\"},\n {\"status\": \"verified\", \"text\": \"La forma regular usada para kLz pequeno, phi = g0*[cosh(kz) - tanh(kLz)*sinh(kz)] + g1*sinh(kz)/(k*cosh(kLz)), satisface AMBAS condiciones de borde exactamente (verificacion algebraica: phi(0)=g0 y phi'(Lz)=g1 identicamente), tiende a g0+g1*z cuando k->0, y su implementacion v"
+    }
+  ],
+  "claims": [
+    {
+      "round": 1,
+      "status": "verified",
+      "text": "Espectro DD completo: lambda_n = nu*(n*pi/h)^2, n=1,2,..., con autofunciones sin(n*pi*z/h). Reproducido por colocacion de Chebyshev (N=64, err rel 2.66e-14) y por raices de la secular sin(qh)=0 con brentq (err rel 0.0); escalado en nu y h exacto a 3.4e-16."
+    },
+    {
+      "round": 1,
+      "status": "verified",
+      "text": "Espectro DN completo: lambda_m = nu*((m+1/2)*pi/h)^2, m=0,1,..., con autofunciones sin((m+1/2)*pi*z/h). Reproducido por Chebyshev (err rel 2.45e-12) y por raices de cos(qh)=0 con brentq (err rel 0.0)."
+    },
+    {
+      "round": 1,
+      "status": "verified",
+      "text": "alfa_DN = pi^2*nu/(4h^2) y alfa_DD = pi^2*nu/h^2, con cociente exactamente 4. Verificado por tres rutas independientes: autovalor mas lento, -(nu/h)*[dF/dz]_0^h, y la tasa de decaimiento asintotica del promedio vertical <u> bajo una integracion Crank-Nicolson propia desde un dato inicial generico que NO es autovector (DN 2.467400671 vs 2.467401100, err rel 1.7e-07; DD 9.870051915 vs 9.869604401, e"
+    },
+    {
+      "round": 1,
+      "status": "verified",
+      "text": "Sesgo del PIV de superficie: para el modo DN mas lento, u(h)/<u> = pi/2 = 1.5707963267948966 (exceso 57.0796326795%). Verificado por cuadratura adaptativa scipy.integrate.quad, |diferencia| = 2.2e-16 contra capa.cociente_superficie_promedio()."
+    },
+    {
+      "round": 1,
+      "status": "verified",
+      "text": "Coeficiente no lineal de la clausura: beta = <F^2> = pi^2/8 = 1.2337005501361697 para AMBOS perfiles normalizados F_DD=(pi/2)sin(pi z/h) y F_DN=(pi/2)sin(pi z/2h), ambos con <F>=1; y beta_s = beta*(2/pi) = pi/4 = 0.7853981633974483 al escribir la ecuacion en la variable de superficie U_s=(pi/2)U. Verificado por cuadratura adaptativa y por el cambio de variable algebraico."
+    },
+    {
+      "round": 1,
+      "status": "verified",
+      "text": "Coeficientes de expansion modal a_n = b_m = (2/h)*integral(u_0*Z): la matriz de Gram de ambas familias de senos es (h/2)*I a 1.11e-16, y la reconstruccion con 200 modos de un dato generico converge. Nota: esta afirmacion de notes.tex NO esta cubierta por out/checks.py ni por la puerta; la verifique yo."
+    },
+    {
+      "round": 1,
+      "status": "verified",
+      "text": "Brechas espectrales: lambda_1-lambda_0 = 2*pi^2*nu/h^2 = 8*alfa_DN (DN) y lambda_2-lambda_1 = 3*pi^2*nu/h^2 = 3*alfa_DD (DD), con inversos h^2/(2 pi^2 nu) y h^2/(3 pi^2 nu). Identidades exactas."
+    },
+    {
+      "round": 1,
+      "status": "verified",
+      "text": "Identidad de escalas de validez: tau_nu/tau_H = Re_l*epsilon^2 = Re_h*epsilon, con epsilon=h/l. Las tres expresiones coinciden a precision de maquina; la ventana 1 << Re_l << epsilon^-2 se sigue algebraicamente."
+    },
+    {
+      "round": 1,
+      "status": "verified",
+      "text": "Coeficientes de Laplace DN: C1=(g1/k + r*g0)/(1+r^2), C2=(g0 - r*g1/k)/(1+r^2) con r=exp(-k*Lz), para phi=C1*exp(k(z-Lz))+C2*exp(-kz), phi(0)=g0, phi'(Lz)=g1. Rederivados por mi desde el sistema 2x2 y confirmados punto a punto contra una resolucion tridiagonal independiente del BVP. Barrido propio de 2404 casos (k,Lz) cruzando el umbral kLz=0.5: residuo de borde maximo 3.886e-15. Sin desborde hast"
+    },
+    {
+      "round": 1,
+      "status": "verified",
+      "text": "La forma regular usada para kLz pequeno, phi = g0*[cosh(kz) - tanh(kLz)*sinh(kz)] + g1*sinh(kz)/(k*cosh(kLz)), satisface AMBAS condiciones de borde exactamente (verificacion algebraica: phi(0)=g0 y phi'(Lz)=g1 identicamente), tiende a g0+g1*z cuando k->0, y su implementacion via np.sinc(1j*kz/pi).real = sinh(kz)/(kz) es correcta, sin warnings, tambien con datos complejos, y continua a traves del u"
+    },
+    {
+      "round": 1,
+      "status": "verified",
+      "text": "Convenciones de SPECTER laplace_z (boundary_mod.fpp): a = coef(1)*exp(k(z-Lz)) + coef(2)*exp(-kz) y b = k*[coef(1)*exp(k(z-Lz)) - coef(2)*exp(-kz)], es decir b es la derivada hacia +z; en la fila k=0, a = coef(1)*z + coef(2) y b = coef(1), o sea coef(1)=pendiente y coef(2)=ordenada al origen; bc(1)=dato en z=0 y bc(2)=dato en z=Lz (deducido de la rama Dirichlet-Dirichlet); khom = sqrt(kx^2+ky^2) ("
+    },
+    {
+      "round": 1,
+      "status": "verified",
+      "text": "solver_1d es un integrador real, no la solucion analitica insertada: coincide con un Crank-Nicolson propio sobre la misma malla a 2.8e-10 (DD) y 4.1e-11 (DN), y su error de tasa es exactamente el error espacial FD lambda*kappa^2*dz^2/12 (predicho analiticamente 2.2020e-04 a nz=48 DN, observado 2.202e-04), con orden medido 2.000 en ambos bordes."
+    },
+    {
+      "round": 1,
+      "status": "verified",
+      "text": "La puerta de aceptacion fijada por hash pasa 6/6 con exit 0, corrida por mi desde la raiz del proyecto cargando jobs/.../out/capa.py: C1 err 8.23e-05, C2 err 6.30e-05, C3 cociente 4.000000 vs referencia 3.999985, C4 1.570796 vs 1.570798, C5 orden 2.00, C6 5 casos bajo 1e-10. SHA-256 del archivo = 2db98ae5a286c64ff42e6bcbdf9e9d69ccbcae60cd631c16d28a93e9855c5527, el contratado. RSS maximo 68 MB."
+    },
+    {
+      "round": 1,
+      "status": "verified",
+      "text": "out/checks.py pasa 5/5 con exit 0 (RSS 67 MB) y sus numeros coinciden exactamente con los reportados por el worker: espectros vs FD 9.135e-04->2.284e-04 (DD) y 6.995e-04->1.749e-04 (DN) con p=2.000; solver 3.523e-03->8.808e-04 (DD) y 2.202e-04->5.505e-05 (DN) con p=2.000; 7 casos Laplace DN con residuo maximo 4.441e-16; 9 rutas invalidas rechazadas."
+    },
+    {
+      "round": 1,
+      "status": "verified",
+      "text": "Provenance completo y consistente: 25 ocurrencias de \\src en notes.tex, 27 claves citadas, 26 unicas; provenance.json tiene 26 entradas; 0 claves citadas sin entrada y 0 entradas huerfanas. Los 19 literales numericos de >=6 decimales de notes.tex resuelven todos en out/checks.py --values y/o en su forma cerrada."
+    },
+    {
+      "round": 1,
+      "status": "verified",
+      "text": "notes.tex compila con pdflatex en dos pasadas sin errores: 6 paginas, 0 referencias indefinidas, 2 avisos Overfull tipograficos. Ningun archivo fue modificado fuera del subarbol del trabajo desde el inicio del job; SPECTER-upstream esta intacto."
+    },
+    {
+      "round": 1,
+      "status": "refuted",
+      "text": "La afirmacion de notes.tex (seccion Laplace, eq:formaregular) de que 'se cubren sin cancelacion tanto k=0 como valores positivos muy pequenos' es falsa tal como esta escrita: el guardian k*Lz<0.5 no es el criterio correcto. Contraejemplo hallado por barrido dirigido: k=5e-11, Lz=1e10 (kLz=0.5, luego rama exponencial), g0=1.0, g1=7.3 da |phi(0)-g0| = 7.629e-06, cuatro ordenes por encima de la toler"
+    },
+    {
+      "round": 1,
+      "status": "unclear",
+      "text": "Las desigualdades de validez de notes.tex nunca se evaluan para la celda de ~6 mm que motiva el trabajo. Re_h*epsilon << 1 equivale a U << nu*l/h^2; con h=6 mm y nu=1e-6 m^2/s eso da U << 0.028*l (SI), es decir U << 0.56 mm/s para l=2 cm. En el job no existe ningun U ni l experimental, asi que no puedo decidir si la clausura aplica al experimento. La pregunta central del intent (si alfa es calcula"
+    },
+    {
+      "round": 1,
+      "status": "unclear",
+      "text": "Zona de continuacion FC-Gram, relevante para la fase Fortran: laplace_z recorre DO k=1,nz con z(k)=rmp*(k-1) y rmp=Lz/(nz-Cz-1) (specter.fpp:744-749), de modo que el dominio fisico es k=1..nz-Cz y los Cz puntos restantes tienen z>Lz. capa.py::_validar_z rechaza z>Lz y la afirmacion de estabilidad de notes.tex esta acotada a [0,Lz]; en la zona de continuacion C1*exp(k(z-Lz)) crece como exp(kLz*Cz/("
+    },
+    {
+      "round": 1,
+      "status": "unclear",
+      "text": "Punteros de provenance mas anchos que el check citado: las entradas espectro_dd y espectro_dn apuntan a out/checks.py::test_spectra_against_fd, que solo prueba las cuatro tasas mas lentas y no ejercita las autofunciones ni los coeficientes de expansion a_n, b_m que el mismo statement cubre. Yo verifique esos coeficientes por separado (matriz de Gram y reconstruccion), asi que la fisica esta bien; "
+    },
+    {
+      "round": 1,
+      "status": "unclear",
+      "text": "Margen estrecho en el chequeo C1 de la puerta: error 8.23e-05 contra tolerancia 1e-04, factor 1.2. Es estructural de la puerta y no del modulo: la referencia FD con nz=400 tiene error relativo (4*pi)^2*dz^2/12 = 8.224e-05 en el cuarto modo DD, que reproduje analiticamente. Es determinista y siempre pasara, pero no queda margen si alguien sube n."
+    }
+  ],
+  "backlog": [],
+  "checks": {
+    "command": "python /home/lucia/GW_AI/agent-team/bin/check_provenance.py out/notes.tex out/provenance.json && if [ -f out/checks.py ]; then python out/checks.py; fi",
+    "passed": false,
+    "detail": "provenance: 31 tag(s), 31 entry(ies), 0 error(s), 0 warning(s)\nTraceback (most recent call last):\n  File \"/home/lucia/GW_AI/proyecto-final-piv/jobs/2026-09-04_205253_derive-fase1-capa-delgada/out/checks.py\", line 14, in <module>\n    import numpy as np\nModuleNotFoundError: No module named 'numpy'"
+  },
+  "acceptance": {
+    "command": "cd /home/lucia/GW_AI/proyecto-final-piv && /home/lucia/miniforge3/envs/piv-dt/bin/python verificacion/test_aceptacion_fase1.py",
+    "passed": true,
+    "detail": "PUERTA DE ACEPTACI\u00d3N \u2014 FASE 1\nm\u00f3dulo: /home/lucia/GW_AI/proyecto-final-piv/jobs/2026-09-04_205253_derive-fase1-capa-delgada/out/capa.py\n\n  [PASA]  C1  tasas, no-slip / no-slip\n            error relativo m\u00e1ximo 8.23e-05 (tol 1e-04)\n  [PASA]  C2  tasas, no-slip / libre\n            error relativo m\u00e1ximo 6.30e-05 (tol 1e-04)\n  [PASA]  C3  cociente entre las dos fricciones\n            cociente 4.000000, referencia num\u00e9rica 3.999985\n  [PASA]  C4  superficie sobre promedio vertical\n            cociente 1.570796, referencia num\u00e9rica 1.570798\n  [PASA]  C5  el solver 1D converge a orden 2\n            orden medido 2.00 (errores 2.20e-04 -> 5.50e-05)\n  [PASA]  C6  Laplace Dirichlet-Neumann, por residuo\n            5 casos, residuos por debajo de 1e-10\n\nRESULTADO: 6/6"
+  },
+  "progress": [
+    {
+      "round": 1,
+      "claims": 21,
+      "new_verified": 16,
+      "tasks": [
+        "**worker:** completar `notes.tex`, `capa.py`, `checks.py` y `provenance.json` con toda la derivaci\u00f3n e implementaci\u00f3n contratada; despu\u00e9s ejecutar secuencialmente los controles propios, provenance y l"
+      ],
+      "tokens": 7200755,
+      "checks_passed": false,
+      "fingerprint": null
+    }
+  ],
+  "inbox_cursor": 0,
+  "opening_brief": "Plan: un \u00fanico worker integrar\u00e1 derivaci\u00f3n, implementaci\u00f3n y trazabilidad; despu\u00e9s, el verifier independiente auditar\u00e1 todo y el writer reconciliar\u00e1 la versi\u00f3n final.\n\n1. **Worker:** completar `notes.tex`, `capa.py`, `checks.py` y `provenance.json`; derivar ambos espectros y la reducci\u00f3n 2D, implementar Laplace DN estable y el solver FD, documentar condiciones y salvedades, y ejecutar todos los controles secuencialmente hasta aspirar a 6/6.\n\nReporte: [r00-pi-staffing.md](/home/lucia/GW_AI/proyecto-final-piv/jobs/2026-09-04_205253_derive-fase1-capa-delgada/reports/r00-pi-staffing.md)",
+  "phase": "round 1 \u00b7 checks",
+  "heartbeat_ts": "2026-09-04T21:36:00",
+  "writer_seen_verified": 16
+}

@@ -1,0 +1,43 @@
+# med_S0008: Forzado 2.1–2.2 A (CI 3)
+# cámara: 1024x1024, 10 bits, 60.0 fps, shutter 1/60, 3072 TIF
+# escala: 3800.0 px/m  ->  0.2632 mm/px
+# PIV: multipaso 64->32->16 px, solape 75%, subpixel gaussian, s2n peak2peak >= 1.05
+n=   1  dt= 0.017s  desp=  0.201±0.112 px  U=  3.167 mm/s  valid=97.2%  s2n=3.25  [204 s]
+n=   2  dt= 0.033s  desp=  0.221±0.087 px  U=  1.741 mm/s  valid=97.2%  s2n=3.23  [418 s]
+n=   3  dt= 0.050s  desp=  0.286±0.130 px  U=  1.504 mm/s  valid=97.2%  s2n=3.21  [627 s]
+n=   4  dt= 0.067s  desp=  0.400±0.196 px  U=  1.580 mm/s  valid=97.1%  s2n=3.17  [824 s]
+n=   6  dt= 0.100s  desp=  0.552±0.300 px  U=  1.453 mm/s  valid=97.1%  s2n=3.12  [1031 s]
+n=   8  dt= 0.133s  desp=  0.685±0.404 px  U=  1.352 mm/s  valid=97.0%  s2n=3.08  [1272 s]
+n=  12  dt= 0.200s  desp=  0.979±0.671 px  U=  1.288 mm/s  valid=96.9%  s2n=3.01  [1489 s]
+n=  16  dt= 0.267s  desp=  1.360±0.887 px  U=  1.342 mm/s  valid=96.7%  s2n=2.94  [1703 s]
+n=  24  dt= 0.400s  desp=  2.024±1.411 px  U=  1.332 mm/s  valid=95.8%  s2n=2.82  [1901 s]
+n=  32  dt= 0.533s  desp=  2.760±1.977 px  U=  1.362 mm/s  valid=93.4%  s2n=2.69  [2094 s]
+n=  48  dt= 0.800s  desp=  4.303±3.116 px  U=  1.415 mm/s  valid=82.1%  s2n=2.45  [2277 s]
+n=  64  dt= 1.067s  desp=  6.003±4.469 px  U=  1.481 mm/s  valid=71.3%  s2n=2.28  [2446 s]
+n=  96  dt= 1.600s  desp=  8.794±6.350 px  U=  1.446 mm/s  valid=60.3%  s2n=2.10  [2615 s]
+n= 128  dt= 2.133s  desp= 10.702±7.199 px  U=  1.320 mm/s  valid=55.2%  s2n=1.99  [2775 s]
+
+-> /home/lucia/proyecto-final-piv/salidas/tablas/barrido_dt_med_S0008.json
+	Command being timed: "/home/lucia/miniforge3/envs/piv-dt/bin/python -u codigo/02_barrido_dt.py --carpeta med_S0008 --pares 10"
+	User time (seconds): 2402.35
+	System time (seconds): 294.24
+	Percent of CPU this job got: 97%
+	Elapsed (wall clock) time (h:mm:ss or m:ss): 46:18.12
+	Average shared text size (kbytes): 0
+	Average unshared data size (kbytes): 0
+	Average stack size (kbytes): 0
+	Average total size (kbytes): 0
+	Maximum resident set size (kbytes): 1255084
+	Average resident set size (kbytes): 0
+	Major (requiring I/O) page faults: 45
+	Minor (reclaiming a frame) page faults: 20217350
+	Voluntary context switches: 120324
+	Involuntary context switches: 69180
+	Swaps: 0
+	File system inputs: 400
+	File system outputs: 128
+	Socket messages sent: 0
+	Socket messages received: 0
+	Signals delivered: 0
+	Page size (bytes): 4096
+	Exit status: 0

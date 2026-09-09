@@ -1,0 +1,21 @@
+perfil de encendido de med_S0010 (cuadro, desplazamiento rms en px):
+  0:0.09  40:0.12  80:0.18  120:0.13  160:0.07  200:0.12  240:0.15  280:0.13  320:0.17  360:0.24  400:0.21  440:0.21  480:0.22  520:0.24  560:0.23
+  encendido estimado en el cuadro 360
+
+fondo_05-09-24
+   deriva media     = (+0.004, +0.001) px
+   sigma_u          = 0.0216 ± 0.0009 px
+   sigma_v          = 0.0213 ± 0.0006 px
+   sigma modulo     = 0.0303 px
+   validos 98.8%   s2n 4.00   12 pares
+
+reposo_med_S0010
+   deriva media     = (-0.004, +0.013) px
+   sigma_u          = 0.0478 ± 0.0324 px
+   sigma_v          = 0.0501 ± 0.0331 px
+   sigma modulo     = 0.0693 px
+   validos 96.7%   s2n 2.89   10 pares
+
+Referencia: Foucaut 2004 tabla 1, ventana 16x16: sigma_u = 0.087, sigma_v = 0.050 px
+
+-> /home/lucia/proyecto-final-piv/salidas/tablas/desplazamiento_nulo.json

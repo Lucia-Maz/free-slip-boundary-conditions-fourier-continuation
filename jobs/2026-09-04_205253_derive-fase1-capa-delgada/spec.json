@@ -1,0 +1,56 @@
+{
+  "id": "2026-09-04_205253_derive-fase1-capa-delgada",
+  "type": "derive",
+  "intent": "OBJETIVO\n========\nDerivar la estructura vertical de una capa delgada de fluido con fondo no-deslizante y\ntope libre de tensiones, y de ah\u00ed el coeficiente de fricci\u00f3n de fondo alfa que aparece\ncomo -alfa*u en los modelos bidimensionales de turbulencia cuasi-2D.\n\nMotivaci\u00f3n, para que se entienda qu\u00e9 se est\u00e1 decidiendo: en la celda experimental que\nmotiva esto, una capa de electrolito de ~6 mm con superficie libre, alfa se viene usando\ncomo par\u00e1metro ajustado. La pregunta es si se puede calcular. Las simulaciones\ndisponibles son o triplemente peri\u00f3dicas (sin bordes) o con no-deslizamiento en las dos\nparedes (un canal, no una capa con superficie libre).\n\nQU\u00c9 HAY QUE PRODUCIR\n====================\n1. out/notes.tex \u2014 la derivaci\u00f3n. Debe contener, como m\u00ednimo:\n   a. El problema de Stokes vertical d_t u = nu d2_z u en 0<z<h, resuelto para los dos\n      pares de bordes (no-deslizante/no-deslizante y no-deslizante/libre), con el\n      espectro COMPLETO de tasas de decaimiento, no s\u00f3lo el modo m\u00e1s lento.\n   b. La reducci\u00f3n bidimensional: promediando en la vertical y suponiendo el perfil del\n      modo m\u00e1s lento, de d\u00f3nde sale el t\u00e9rmino -alfa*u, con qu\u00e9 valor de alfa, y bajo\n      qu\u00e9 condiciones vale. Las condiciones importan tanto como el resultado: separaci\u00f3n\n      entre el tiempo de difusi\u00f3n vertical y el de vuelco horizontal, relaci\u00f3n de\n      aspecto, n\u00famero de Reynolds. Enunciarlas como desigualdades expl\u00edcitas.\n   c. El cociente entre la velocidad en la superficie y la promediada en la vertical,\n      para el modo m\u00e1s lento del caso libre. Es el sesgo del PIV de superficie, porque\n      las part\u00edculas trazadoras flotan.\n   d. Los coeficientes de la soluci\u00f3n de la ecuaci\u00f3n de Laplace homog\u00e9nea en una caja\n      peri\u00f3dica en x,y y acotada en z, con Dirichlet en z=0 y Neumann en z=Lz. Esta es\n      la rama que le falta a la subrutina laplace_z de SPECTER, que ya implementa\n      Dirichlet/Dirichlet, Neumann/Neumann, Robin/Robin y Dirichlet/Robin. La soluci\u00f3n\n      tiene que ser num\u00e9ricamente estable para k*Lz grande: escribirla con la misma\n      estrategia de normalizaci\u00f3n por exp(-2*k*Lz) que usa el c\u00f3digo existente, en vez\n      de con exponenciales crecientes que desbordan.\n2. out/capa.py \u2014 el m\u00f3dulo con la implementaci\u00f3n. Su interfaz est\u00e1 FIJADA por la puerta\n   de aceptaci\u00f3n; no la cambien.\n3. out/checks.py \u2014 los chequeos propios del equipo, adem\u00e1s de la puerta.\n\nENTORNO\n=======\n- Int\u00e9rprete: /home/lucia/miniforge3/envs/piv-dt/bin/python (Python 3.11, numpy 2.4.6,\n  scipy 1.17.1). NO instalar nada, NO crear entornos.\n- La puerta de aceptaci\u00f3n se corre as\u00ed, y tiene que pasar 6/6:\n    /home/lucia/miniforge3/envs/piv-dt/bin/python verificacion/test_aceptacion_fase1.py\n  Est\u00e1 fijada por hash: se puede leer, no se puede editar. L\u00e9anla: define la interfaz.\n\nCONVENCIONES CONGELADAS\n=======================\n- z=0 es el fondo (no-deslizante siempre); z=h es el tope.\n- Las dos \u00fanicas cadenas v\u00e1lidas para el argumento `bordes` son exactamente\n  \"noslip-noslip\" y \"noslip-libre\".\n- Tope libre de tensiones significa du/dz = dv/dz = 0 y w = 0. Superficie PLANA: la\n  deformaci\u00f3n de la superficie queda expl\u00edcitamente fuera de alcance.\n\nL\u00cdMITE DE DATOS Y DE M\u00c1QUINA\n============================\n- Esta laptop tiene 5,7 GB de RAM y entra en thrashing si se la satura. Ning\u00fan script\n  puede pasar de ~1 GB residente. No corran nada en paralelo.\n- numerico/SPECTER-upstream/ es referencia de S\u00d3LO LECTURA. Pueden y deben leer\n  src/boundary/boundary_mod.fpp (la subrutina laplace_z, l\u00ednea 451) para copiar sus\n  convenciones. No lo modifiquen, no lo compilen.\n- NO tocar /mnt (disco externo con los datos crudos), ni ~/Desktop/PhD.\n\nLO QUE NO HAY QUE HACER\n=======================\n- No compilar SPECTER ni correr nada con MPI. Eso es la fase siguiente.\n- No implementar la condici\u00f3n de contorno en Fortran todav\u00eda.\n- No hacer simulaciones tridimensionales.\n- No escribir fuera del sub\u00e1rbol del trabajo.\n\nPROVENANCE Y HONESTIDAD\n=======================\n- Toda afirmaci\u00f3n cuantitativa de notes.tex lleva su \\src{clave} resolviendo en\n  out/provenance.json, y cada n\u00famero sale de c\u00f3digo de este trabajo.\n- Decir qu\u00e9 pasos se derivaron y cu\u00e1les se recordaron de la literatura.\n- Decir expl\u00edcitamente qu\u00e9 NO se verific\u00f3. Esto se eval\u00faa: una secci\u00f3n de salvedades\n  vac\u00eda es una se\u00f1al de alarma, no de calidad.",
+  "status": "frozen",
+  "backend": "codex",
+  "model": "gpt-5.6-sol",
+  "effort": "xhigh",
+  "rounds": 1,
+  "worker_count": 1,
+  "budget_tokens": 8000000,
+  "timeout": null,
+  "idle_timeout": null,
+  "team": {
+    "lead": "pi",
+    "workers": [
+      "worker"
+    ],
+    "verifier": "verifier",
+    "extra": [
+      "writer"
+    ]
+  },
+  "roles": {
+    "worker": {
+      "effort": "high"
+    },
+    "verifier": {
+      "backend": "claude",
+      "effort": "xhigh"
+    },
+    "writer": {
+      "when": "last"
+    }
+  },
+  "kind": "understanding",
+  "deliverable": {
+    "type": "tex",
+    "path": "out/notes.tex"
+  },
+  "checks": {
+    "command": "python {TOOL}/bin/check_provenance.py out/notes.tex out/provenance.json && if [ -f out/checks.py ]; then python out/checks.py; fi"
+  },
+  "created": "2026-09-04T20:52:53",
+  "round": 1,
+  "cost_usd": 3.296667,
+  "tokens": 7412821,
+  "tripwires": true,
+  "checkpoint_rounds": 2,
+  "acceptance": {
+    "command": "cd {PROJECT} && /home/lucia/miniforge3/envs/piv-dt/bin/python verificacion/test_aceptacion_fase1.py",
+    "files": {
+      "verificacion/test_aceptacion_fase1.py": "2db98ae5a286c64ff42e6bcbdf9e9d69ccbcae60cd631c16d28a93e9855c5527"
+    }
+  }
+}

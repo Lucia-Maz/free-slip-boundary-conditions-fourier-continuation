@@ -1,0 +1,14 @@
+# role: pi
+# label: pi-staffing
+# round: 0
+# tokens: 212066
+# ok: True
+# backend: codex
+# model: gpt-5.6-sol
+# effort: xhigh
+
+Plan: un único worker integrará derivación, implementación y trazabilidad; después, el verifier independiente auditará todo y el writer reconciliará la versión final.
+
+1. **Worker:** completar `notes.tex`, `capa.py`, `checks.py` y `provenance.json`; derivar ambos espectros y la reducción 2D, implementar Laplace DN estable y el solver FD, documentar condiciones y salvedades, y ejecutar todos los controles secuencialmente hasta aspirar a 6/6.
+
+Reporte: [r00-pi-staffing.md](/home/lucia/GW_AI/proyecto-final-piv/jobs/2026-09-04_205253_derive-fase1-capa-delgada/reports/r00-pi-staffing.md)

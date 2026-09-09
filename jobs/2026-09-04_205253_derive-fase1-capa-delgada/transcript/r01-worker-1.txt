@@ -1,0 +1,24 @@
+# role: worker
+# label: worker-1
+# round: 1
+# tokens: 3746757
+# ok: True
+# backend: codex
+# model: gpt-5.6-sol
+# effort: high
+
+Entrega completada:
+
+- [notes.tex](/home/lucia/GW_AI/proyecto-final-piv/jobs/2026-09-04_205253_derive-fase1-capa-delgada/out/notes.tex)
+- [capa.py](/home/lucia/GW_AI/proyecto-final-piv/jobs/2026-09-04_205253_derive-fase1-capa-delgada/out/capa.py)
+- [checks.py](/home/lucia/GW_AI/proyecto-final-piv/jobs/2026-09-04_205253_derive-fase1-capa-delgada/out/checks.py)
+- [provenance.json](/home/lucia/GW_AI/proyecto-final-piv/jobs/2026-09-04_205253_derive-fase1-capa-delgada/out/provenance.json)
+- [reporte de ronda](/home/lucia/GW_AI/proyecto-final-piv/jobs/2026-09-04_205253_derive-fase1-capa-delgada/reports/r01-worker-1.md)
+
+Resultados finales:
+
+- Chequeos propios: **5/5**
+- Provenance: **26/26**, sin errores ni advertencias
+- Puerta oficial: **6/6**
+- LaTeX: compila correctamente, PDF de 6 páginas
+- Hash de la puerta: coincide con el contratado.

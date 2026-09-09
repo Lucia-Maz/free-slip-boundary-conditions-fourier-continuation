@@ -1,0 +1,123 @@
+[
+ [
+  "10.1088/0957-0233/15/6/003",
+  "OK",
+  "PIV optimization for the study of turbulent flow using spectral analysis",
+  "Foucaut, J M; Carlier, J; Stanislas, M",
+  2004,
+  "Measurement Science and Technology",
+  "15",
+  "1046-1058",
+  "Foucaut, Carlier & Stanislas 2004 - PIV optimization / spectral analysis"
+ ],
+ [
+  "10.1088/0957-0233/1/11/013",
+  "OK",
+  "Optimization of particle image velocimeters. I. Double pulsed systems",
+  "Keane, R D; Adrian, R J",
+  1990,
+  "Measurement Science and Technology",
+  "1",
+  "1202-1215",
+  "Keane & Adrian 1990 - Optimization of PIV I (regla del cuarto)"
+ ],
+ [
+  "10.1007/BF00190388",
+  "OK",
+  "Digital particle image velocimetry",
+  "Willert, C. E.; Gharib, M.",
+  1991,
+  "Experiments in Fluids",
+  "10",
+  "181-193",
+  "Willert & Gharib 1991 - Digital PIV"
+ ],
+ [
+  "10.1088/0957-0233/13/1/201",
+  "OK",
+  "Iterative image deformation methods in PIV",
+  "Scarano, F",
+  2001,
+  "Measurement Science and Technology",
+  "13",
+  "R1-R19",
+  "Scarano 2002 - Iterative image deformation methods in PIV"
+ ],
+ [
+  "10.1007/s00348-009-0782-7",
+  "OK",
+  "Spatially adaptive PIV interrogation based on data ensemble",
+  "Theunissen, Raf; Scarano, Fulvio; Riethmuller, Michel L.",
+  2009,
+  "Experiments in Fluids",
+  "48",
+  "875-887",
+  "Theunissen et al 2010 - Spatially adaptive PIV interrogation"
+ ],
+ [
+  "10.1016/j.csda.2009.09.020",
+  "OK",
+  "Robust smoothing of gridded data in one and higher dimensions with missing values",
+  "Garcia, Damien",
+  2010,
+  "Computational Statistics &amp; Data Analysis",
+  "54",
+  "1167-1178",
+  "Garcia 2010 - Robust smoothing of gridded data (smoothn)"
+ ],
+ [
+  "10.1088/0957-0233/26/7/074004",
+  "OK",
+  "Collaborative framework for PIV uncertainty quantification: comparative assessment of methods",
+  "Sciacchitano, Andrea; Neal, Douglas R; Smith, Barton L; Warner, Scott O; Vlachos, Pavlos P; Wieneke, Bernhard",
+  2015,
+  "Measurement Science and Technology",
+  "26",
+  "074004",
+  "Sciacchitano et al 2015 - Collaborative framework PIV UQ"
+ ],
+ [
+  "10.1088/1361-6501/ab1db8",
+  "OK",
+  "Uncertainty quantification in particle image velocimetry",
+  "Sciacchitano, A",
+  2019,
+  "Measurement Science and Technology",
+  "30",
+  "092001",
+  "Sciacchitano 2019 - Uncertainty quantification in PIV (review)"
+ ],
+ [
+  "10.1088/0957-0233/24/4/045302",
+  "OK",
+  "PIV uncertainty quantification by image matching",
+  "Sciacchitano, Andrea; Wieneke, Bernhard; Scarano, Fulvio",
+  2013,
+  "Measurement Science and Technology",
+  "24",
+  "045302",
+  "Sciacchitano et al 2013 - PIV UQ by image matching"
+ ],
+ [
+  "10.1016/j.softx.2020.100537",
+  "OK",
+  "piv-image-generator: An image generating software package for planar PIV and Optical Flow benchmarking",
+  "Mendes, Luís; Bernardino, Alexandre; Ferreira, Rui M.L.",
+  2020,
+  "SoftwareX",
+  "12",
+  "100537",
+  "Mendes et al 2020 - piv-image-generator"
+ ],
+ [
+  "10.1007/s00348-025-04059-0",
+  "OK",
+  "The spectral response of time-resolved PIV in a turbulent boundary layer",
+  "Manovski, Peter; Abu Rowin, Wagih; Ng, Henry; Gulotta, Paul; Giacobello, Matteo; de Silva, Charitha",
+  2025,
+  "Experiments in Fluids",
+  "66",
+  "—",
+  "Spectral response of time-resolved PIV in a TBL (2025)"
+ ]
+]

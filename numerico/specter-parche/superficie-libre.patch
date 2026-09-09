@@ -1,0 +1,444 @@
+diff --git a/bin/parameter.inp b/bin/parameter.inp
+index dbf0adc..c716bb9 100644
+--- a/bin/parameter.inp
++++ b/bin/parameter.inp
+@@ -40,8 +40,8 @@ vparam0 = 1.0        ! idem for the initial velocity field
+ 
+ ! Parameters for the velocity boundary conditions
+ &velbound
+-vbczsta = "noslip"   ! velocity BC kind at z=0
+-vbczend = "noslip"   ! velocity BC kind at z=Lz
++vbczsta = "noslip"   ! velocity BC kind at z=0   (noslip | freeslip)
++vbczend = "noslip"   ! velocity BC kind at z=Lz  (noslip | freeslip)
+ vxzsta  = 0.0        ! uniform vx at z=0
+ vyzsta  = 0.0        ! uniform vy at z=0
+ vxzend  = 0.0        ! uniform vx at z=Lz
+diff --git a/src/SOLVERS_AND_BOUNDARY_CONDITIONS.md b/src/SOLVERS_AND_BOUNDARY_CONDITIONS.md
+index 47937cd..74bcf33 100644
+--- a/src/SOLVERS_AND_BOUNDARY_CONDITIONS.md
++++ b/src/SOLVERS_AND_BOUNDARY_CONDITIONS.md
+@@ -13,6 +13,9 @@ Boundary conditions supported
+ =============================
+ - Velocity field: 
+     * `noslip`      No slip boundary conditions.
++    * `freeslip`    Free-slip (zero tangential stress) boundary conditions,
++      i.e. a flat free surface. The normal velocity still vanishes at the
++      wall, so the surface is not allowed to deform.
+ 
+ - Magnetic field:
+     * `conducting`  Perfectly conducting boundary conditions (requires
+diff --git a/src/boundary/boundary_mod.fpp b/src/boundary/boundary_mod.fpp
+index d75c808..7552935 100644
+--- a/src/boundary/boundary_mod.fpp
++++ b/src/boundary/boundary_mod.fpp
+@@ -471,6 +471,9 @@ MODULE boundary
+ !             * =0 for homogeneous Dirichlet BC
+ !             * =1 for homogeneous Neumann BC
+ !             * =2 for homogeneous Robin BC
++!
++!  Supported combinations: Dirichlet/Dirichlet, Neumann/Neumann, Robin/Robin,
++! Dirichlet/Robin and Dirichlet/Neumann.
+ !
+ 
+       USE kes
+@@ -623,6 +626,53 @@ MODULE boundary
+          END DO
+       ENDIF  !End Dirichlet bottom - Robin top
+ 
++      ! Dirichlet bottom - Neumann top
++      ! With phi(z) = coef1*exp(k(z-Lz)) + coef2*exp(-kz) and r = exp(-k*Lz),
++      !     phi(0)   = coef1*r + coef2     = bc(1)
++      !     phi'(Lz) = k*(coef1 - coef2*r) = bc(2)
++      ! so that coef1 = (bc2/k + r*bc1)/(1+r^2), coef2 = (bc1 - r*bc2/k)/(1+r^2).
++      ! Written with exp(-2*k*Lz) so no growing exponential ever appears, as in the
++      ! branches above. Note the denominator is 1+r^2, not 1-r^2: this pair of
++      ! boundary conditions has no resonance, and the branch is better conditioned
++      ! than the pure Dirichlet or pure Neumann ones. The parameter that does control
++      ! its conditioning is Lz*|bc(2)|/|bc(1)|, not k*Lz.
++      ELSEIF ( bczsta .eq. 0 .AND. bczend .eq. 1 ) THEN
++      IF (ista.eq.1) THEN
++         coef(1,1,1) = bc(2,1,1)
++         coef(2,1,1) = bc(1,1,1)
++!$omp parallel do private (k,tmp)
++         DO j = 2,ny
++            tmp   = 1.0_GP/(1 + exp(-2*khom(j,1)*Lz))
++            coef(1,j,1) = (bc(2,j,1)/khom(j,1) + &
++                           bc(1,j,1)*exp(-khom(j,1)*Lz))*tmp
++            coef(2,j,1) = (bc(1,j,1) - &
++                           bc(2,j,1)*exp(-khom(j,1)*Lz)/khom(j,1))*tmp
++         END DO
++!$omp parallel do if (iend-ista.ge.nth) private (j,k,tmp)
++         DO i = 2,iend
++!$omp parallel do if (iend-ista.lt.nth) private (k,tmp)
++            DO j = 1,ny
++               tmp   = 1.0_GP/(1 + exp(-2*khom(j,i)*Lz))
++               coef(1,j,i) = (bc(2,j,i)/khom(j,i) + &
++                              bc(1,j,i)*exp(-khom(j,i)*Lz))*tmp
++               coef(2,j,i) = (bc(1,j,i) - &
++                              bc(2,j,i)*exp(-khom(j,i)*Lz)/khom(j,i))*tmp
++            END DO
++         END DO
++      ELSE
++!$omp parallel do if (iend-ista.ge.nth) private (j,k,tmp)
++         DO i = ista,iend
++!$omp parallel do if (iend-ista.lt.nth) private (k,tmp)
++            DO j = 1,ny
++               tmp   = 1.0_GP/(1 + exp(-2*khom(j,i)*Lz))
++               coef(1,j,i) = (bc(2,j,i)/khom(j,i) + &
++                              bc(1,j,i)*exp(-khom(j,i)*Lz))*tmp
++               coef(2,j,i) = (bc(1,j,i) - &
++                              bc(2,j,i)*exp(-khom(j,i)*Lz)/khom(j,i))*tmp
++           END DO
++         END DO
++      ENDIF  !End Dirichlet bottom - Neumann top
++
+       ELSE  ! Unsupported combination of BC
+          IF ( myrank .eq. 0) PRINT*, "[ERROR] Unsupported BC combination in call "&
+               "to laplace_z. Aborting..."
+diff --git a/src/boundary/vboundary.f90 b/src/boundary/vboundary.f90
+index da16622..5f2f763 100644
+--- a/src/boundary/vboundary.f90
++++ b/src/boundary/vboundary.f90
+@@ -3,17 +3,24 @@
+ !
+ !  -1 : Periodic boundary conditions.
+ !   0 : Non-slip boundary conditions.
++!   1 : Free-slip (zero tangential stress) boundary conditions, i.e. a
++!       flat free surface. Impermeability (v_n = 0) is retained, so the
++!       surface is not allowed to deform.
+ !
+ !  References:
+-!  - No-Slip: https://doi.org/10.1016/j.cpc.2020.107482 
++!  - No-Slip: https://doi.org/10.1016/j.cpc.2020.107482
++!  - Free-slip: derived from the same time-splitting scheme; see
++!    verificacion/intent_fase2.txt in the project tree that carries this
++!    modification, and the acceptance gate test_aceptacion_fase2.py.
+ !
+ ! 2020 Mauro Fontana. DF-UBA.
++! 2026 Free-slip boundary condition added (L. Mazaira).
+ !======================================================================
+ 
+ !***********************************************************************
+       FUNCTION v_parsebc(str) RESULT(bc)
+ !-----------------------------------------------------------------------
+-!  Function to map a given string value denoting a BC type into an 
++!  Function to map a given string value denoting a BC type into an
+ !  integer for internal module usage.
+ !-----------------------------------------------------------------------
+       USE mpivars
+@@ -25,12 +32,14 @@
+ 
+       IF ( str .eq. 'noslip' ) THEN
+          bc = 0
++      ELSEIF ( str .eq. 'freeslip' ) THEN
++         bc = 1
+       ELSEIF ( str .eq. 'periodic' ) THEN
+          bc = -1
+       ELSE
+-         IF ( myrank .eq. 0 ) PRINT*, "[ERROR] Unknown boundary ",& 
++         IF ( myrank .eq. 0 ) PRINT*, "[ERROR] Unknown boundary ",&
+              "condition type", str, " Aborting..."
+-         CALL MPI_FINALIZE(MPI_COMM_WORLD, ierr) 
++         CALL MPI_FINALIZE(MPI_COMM_WORLD, ierr)
+          STOP
+       ENDIF
+       RETURN
+@@ -47,9 +56,9 @@
+ !             for each boundary. [INOUT]
+ !---------------------------------------------------------------------------
+       USE fcgram
+- 
++
+       IMPLICIT NONE
+- 
++
+       TYPE(BCPLAN), INTENT(INOUT)   :: this
+       TYPE(FCPLAN), INTENT(INOUT)   :: planfc
+       CHARACTER(len=15), INTENT(IN) :: bckind(6)
+@@ -61,6 +70,16 @@
+       this%bczsta = v_parsebc(preprocess(bckind(5)))
+       this%bczend = v_parsebc(preprocess(bckind(6)))
+ 
++      ! Free-slip imposes a Neumann condition on the tangential velocity,
++      ! which is applied by reconstructing the boundary value from the
++      ! normal derivative. Up to now only the magnetic field required these
++      ! tables, so the plan does not carry them by default.
++      IF ( this%bczsta .eq. 1 .OR. this%bczend .eq. 1 ) THEN
++         IF (.NOT. is_neumann_loaded(planfc%z,1) ) THEN
++            CALL load_neumann_tables(planfc%z,planfc%tdir,1)
++         ENDIF
++      ENDIF
++
+       END SUBROUTINE v_setup
+ 
+ !***********************************************************************
+@@ -70,6 +89,14 @@
+ !   Subroutine to apply boundary conditions to the velocity field and
+ !  project the field into a solenoidal space, for the latter a Poisson
+ !  equation with appropriate boundary conditions is solved.
++!
++!   Note on the free-slip case: the normal component still satisfies
++!  v_n = 0 at the wall (flat surface), so the boundary condition passed
++!  to sol_project, and hence the Neumann problem solved for the pressure,
++!  is exactly the same one used for no-slip. What changes is only the
++!  condition imposed on the tangential components of the pressureless
++!  velocity v*.
++!
+ !  ARGUMENTS:
+ !    planbc : BCPLAN to use during the imposition. [IN]
+ !    planfc : FCPLAN to use during the imposition. [IN]
+@@ -102,24 +129,34 @@
+       IF ( planbc%bcysta .ne. -1 .OR. planbc%bcyend .ne. -1) THEN
+          IF ( myrank .eq. 0 ) PRINT*, "[ERROR] Non-periodic boundary ", &
+              "conditions in Y direction not supported yet. Aborting..."
+-         CALL MPI_FINALIZE(MPI_COMM_WORLD, ierr) 
++         CALL MPI_FINALIZE(MPI_COMM_WORLD, ierr)
+          STOP
+       ENDIF
+       ! Check BC in Z direction
+-      IF ( planbc%bczsta .ne. 0 .OR. planbc%bczend .ne. 0 ) THEN
++      IF ( (planbc%bczsta .ne. 0 .AND. planbc%bczsta .ne. 1) .OR. &
++           (planbc%bczend .ne. 0 .AND. planbc%bczend .ne. 1) ) THEN
+          IF ( myrank .eq. 0 ) PRINT*, "[ERROR] Unsupported boundary ", &
+              "conditions in Z direction. Aborting..."
+-         CALL MPI_FINALIZE(MPI_COMM_WORLD, ierr) 
++         CALL MPI_FINALIZE(MPI_COMM_WORLD, ierr)
+          STOP
+       ENDIF
+ 
+-      CALL goto_domain_w_boundaries(planbc,planfc,vx,vy)
++      ! vz is needed in the (kx,ky,z) domain as well when a face is free-slip:
++      ! that condition couples the tangential derivative of the normal velocity
++      ! into the boundary value of the tangential components. When there is no
++      ! free-slip face the pure no-slip path is left exactly as upstream had it,
++      ! with no extra transform.
++      IF ( planbc%bczsta .eq. 1 .OR. planbc%bczend .eq. 1 ) THEN
++         CALL goto_domain_w_boundaries(planbc,planfc,vx,vy,vz)
++      ELSE
++         CALL goto_domain_w_boundaries(planbc,planfc,vx,vy)
++      ENDIF
+ 
+       IF ( (planbc%bczsta .eq. 0 .OR. planbc%bczend .eq. 0) .AND. &
+             .NOT. PRESENT(rki) ) THEN
+          IF ( myrank .eq. 0 ) PRINT*, "[ERROR] Non-slip BC require `rki` ", &
+              "keyword argument in call to imposebc_and_project. Aborting..."
+-         CALL MPI_FINALIZE(MPI_COMM_WORLD, ierr) 
++         CALL MPI_FINALIZE(MPI_COMM_WORLD, ierr)
+          STOP
+       ENDIF
+ 
+@@ -130,6 +167,8 @@
+           ELSE
+              CALL noslip_z(planfc,rki,vx,vy,vz,pr,v_zsta,0)
+           ENDIF
++      ELSEIF (planbc%bczsta .eq. 1) THEN
++          CALL freeslip_z(planfc,vx,vy,vz,0)
+       ENDIF
+ 
+       ! Z=Lz
+@@ -139,17 +178,23 @@
+           ELSE
+              CALL noslip_z(planfc,rki,vx,vy,vz,pr,v_zend,1)
+           ENDIF
++      ELSEIF (planbc%bczend .eq. 1) THEN
++          CALL freeslip_z(planfc,vx,vy,vz,1)
+       ENDIF
+ 
+       ! Back to 3D Fourier
+-      CALL goto_3d_fourier(planbc,planfc,vx,vy)
++      IF ( planbc%bczsta .eq. 1 .OR. planbc%bczend .eq. 1 ) THEN
++         CALL goto_3d_fourier(planbc,planfc,vx,vy,vz)
++      ELSE
++         CALL goto_3d_fourier(planbc,planfc,vx,vy)
++      ENDIF
+ 
+       ! Now project
+       CALL sol_project(vx,vy,vz,pr,1,0,0)
+ 
+       RETURN
+       END SUBROUTINE v_imposebc_and_project
+-      
++
+ !***********************************************************************
+       SUBROUTINE noslip_z(planfc,o,vx,vy,vz,pr,vbound,pos)
+ !-----------------------------------------------------------------------
+@@ -210,21 +255,114 @@
+ 
+       END SUBROUTINE noslip_z
+ 
++!***********************************************************************
++      SUBROUTINE freeslip_z(planfc,vx,vy,vz,pos)
++!-----------------------------------------------------------------------
++!  Subroutine to apply free-slip (zero tangential stress) boundary
++!  conditions at the top or bottom boundary, i.e. a flat free surface.
++!
++!  DERIVATION. In the time-splitting scheme of Fontana et al., Comp.
++!  Phys. Comm. 256, 107482 (2020), each Runge-Kutta substage advances a
++!  pressureless velocity v* and then projects
++!
++!      v = v* - (dt/o) grad(p),
++!
++!  with the pressure obtained from a Neumann problem whose boundary datum
++!  is d(p)/dz = (o/dt) z.v* at the wall, which is what forces v_n = 0 after
++!  the projection (Eqs. 15, 16 and 30 of that reference).
++!
++!  Requiring zero tangential stress on the PROJECTED field, d(v_par)/dz = 0
++!  at the wall (the flat-surface condition, for which d(v_n)/dx and
++!  d(v_n)/dy vanish identically along the wall), and using the projection
++!  above together with the pressure boundary datum, gives a condition on
++!  v* that carries no dt at all:
++!
++!      d(v*_x)/dz = d(v*_z)/dx ,   d(v*_y)/dz = d(v*_z)/dy ,
++!
++!  i.e. in the (kx,ky,z) domain,
++!
++!      d(v*_x)/dz = i kx v*_z ,    d(v*_y)/dz = i ky v*_z .
++!
++!  This is the statement that the two tangential components of the
++!  vorticity vanish at the wall. Since the projection subtracts a gradient
++!  and the curl of a gradient is zero, curl(v*) = curl(v) exactly, so the
++!  condition is transferred to the projected field with no splitting error
++!  -- unlike the no-slip case, whose slip velocity is O(dt^ord).
++!
++!  The condition is a Neumann one, so it is imposed by reconstructing the
++!  boundary value from the normal derivative with the FC-Gram tables.
++!  Sign convention of neumann_reconstruct is the OUTWARD normal
++!  derivative, i.e. -d/dz at z=0 and +d/dz at z=Lz (see the comment
++!  "d/dz = -d/dn" in src/tests/fc_neumann.f90).
++!
++!  ARGUMENTS:
++!    planfc : FCPLAN to use during the imposition. [IN]
++!    vi     : Array containing the ith component of the velocity field in
++!             the (kx,ky,z) domain. [INOUT]
++!    pos    : 0 for bottom boundary, 1 for top boundary. [IN]
++!-----------------------------------------------------------------------
++      USE fprecision
++      USE mpivars
++      USE commtypes
++      USE fcgram
++      USE kes
++      USE var
++!$    USE threads
++
++      IMPLICIT NONE
++
++      TYPE(FCPLAN), INTENT(IN)  :: planfc
++      COMPLEX(KIND=GP),INTENT(INOUT),DIMENSION(planfc%z%n,planfc%y%n,ista:iend) :: vx,vy
++      COMPLEX(KIND=GP),INTENT(IN),DIMENSION(planfc%z%n,planfc%y%n,ista:iend)    :: vz
++      INTEGER, INTENT(IN)  :: pos
++
++      REAL(KIND=GP) :: sgn
++      INTEGER       :: ind
++      INTEGER       :: i,j
++
++      IF (pos .eq. 0) THEN
++         ind = 1
++         sgn = -1.0_GP
++      ELSEIF ( pos .eq. 1 ) THEN
++         ind = planfc%z%n - planfc%z%c
++         sgn = 1.0_GP
++      ENDIF
++
++ !$omp parallel do if (iend-ista.ge.nth) private (j)
++      DO i = ista,iend
++ !$omp parallel do if (iend-ista.lt.nth)
++         DO j = 1,planfc%y%n
++            vx(ind,j,i) = sgn*im*kx(i)*vz(ind,j,i)
++            vy(ind,j,i) = sgn*im*ky(j)*vz(ind,j,i)
++         ENDDO
++      ENDDO
++
++      CALL neumann_reconstruct(planfc,vx,5+pos,1)
++      CALL neumann_reconstruct(planfc,vy,5+pos,1)
++
++      END SUBROUTINE freeslip_z
++
+ !*****************************************************************
+       SUBROUTINE vdiagnostic(planbc,planfc,a,b,c,t,dt)
+ !-----------------------------------------------------------------
+ !  Computes the mean squared divergence of the velocity field
+ ! inside the domain.
+ !  Also printed are the accuracy of the boundary conditions. Note
+-! that if mixed boundary conditions are employed, only certain 
++! that if mixed boundary conditions are employed, only certain
+ ! columns of each file will contain the relevant boundary information.
+ !
+ ! Output files contain:
+ ! 'noslip_diagnostic.txt': time, <|div(v)|^2>, <|v_t|^2>|z=0,
+ !                     <|v_t|^2>|z=Lz, <|v_n|^2>|z=0, <|v_n|^2>|z=Lz
+ !
++! 'freeslip_diagnostic.txt': time, <|div(v)|^2>, <|d(v_t)/dz|^2>|z=0,
++!                     <|d(v_t)/dz|^2>|z=Lz, <|v_n|^2>|z=0, <|v_n|^2>|z=Lz
++!
+ !    where in both cases n and t denote the normal and tangential
+-!    part of the vector field, respectively
++!    part of the vector field, respectively. The residual that a
++!    free surface must drive to zero is the tangential STRESS, not the
++!    tangential velocity, so the two files measure different things and
++!    both are written whenever there is a wall in z.
+ !
+ ! Parameters
+ !     a  : velocity field in the x-direction
+@@ -247,22 +385,45 @@
+       REAL(KIND=GP), INTENT(IN)        :: dt
+       INTEGER, INTENT(IN)              :: t
+ 
+-      DOUBLE PRECISION                 :: tmp,tmq,tmr,tms,tm1
++      COMPLEX(KIND=GP), ALLOCATABLE, DIMENSION(:,:,:) :: D1
++
++      DOUBLE PRECISION                 :: tmp,tmq,tmr,tms,tm1,tm2,tm3
+ 
+       CALL divergence(a,b,c,tm1)
+ 
+-      IF ( (planbc%bcxsta .eq. 0) .OR. (planbc%bcxend .eq. 0) .OR. &
+-           (planbc%bcysta .eq. 0) .OR. (planbc%bcyend .eq. 0) .OR. &
+-           (planbc%bczsta .eq. 0) .OR. (planbc%bczend .eq. 0) ) THEN
++      IF ( (planbc%bcxsta .ge. 0) .OR. (planbc%bcxend .ge. 0) .OR. &
++           (planbc%bcysta .ge. 0) .OR. (planbc%bcyend .ge. 0) .OR. &
++           (planbc%bczsta .ge. 0) .OR. (planbc%bczend .ge. 0) ) THEN
+ 
+-         CALL bouncheck_z(planfc,tmp,tmq,a,b)
+          CALL bouncheck_z(planfc,tmr,tms,c)
++
++         CALL bouncheck_z(planfc,tmp,tmq,a,b)
+          IF ( myrank .eq. 0) THEN
+             OPEN(1,file='noslip_diagnostic.txt',position='append')
+ 10             FORMAT( 1P 7E13.6 )
+                WRITE(1,10) (t-1)*dt,tm1,tmp,tmq,tmr,tms
+             CLOSE(1)
+          ENDIF
++
++         ! Tangential stress residual. d/dz is taken in the continued
++         ! Fourier representation, the same way every other z-derivative
++         ! is computed in the code.
++         ! One temporary at a time: at production resolutions each of these
++         ! arrays is hundreds of MB.
++         ALLOCATE( D1(nz,ny,ista:iend) )
++         CALL derivk(a,D1,3)
++         CALL bouncheck_z(planfc,tmp,tmq,D1)
++         CALL derivk(b,D1,3)
++         CALL bouncheck_z(planfc,tm2,tm3,D1)
++         DEALLOCATE( D1 )
++         tmp = tmp + tm2
++         tmq = tmq + tm3
++         IF ( myrank .eq. 0) THEN
++            OPEN(1,file='freeslip_diagnostic.txt',position='append')
++20             FORMAT( 1P 7E13.6 )
++               WRITE(1,20) (t-1)*dt,tm1,tmp,tmq,tmr,tms
++            CLOSE(1)
++         ENDIF
+       ENDIF
+ 
+       RETURN
+diff --git a/src/specter.fpp b/src/specter.fpp
+index b66655a..d5667b0 100644
+--- a/src/specter.fpp
++++ b/src/specter.fpp
+@@ -1176,6 +1176,7 @@
+ #endif
+       INCLUDE 'tests/energy.f90'
+       INCLUDE 'tests/poisson.f90'
++      INCLUDE 'tests/laplace_dirneu.f90'
+ #endif /*End of if TESTS_*/
+ 
+ ! Computes the benchmark

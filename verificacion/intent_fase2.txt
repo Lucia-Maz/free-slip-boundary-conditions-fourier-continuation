@@ -1,0 +1,114 @@
+OBJETIVO
+========
+Implementar en SPECTER la condición de contorno de superficie libre plana (tensión
+tangencial nula) en z=Lz, manteniendo no-deslizamiento en z=0, de modo que el código
+pueda CALCULAR el coeficiente de fricción de fondo alfa en vez de ajustarlo.
+
+Este archivo se escribe ANTES de la implementación, junto con la puerta de aceptación
+verificacion/test_aceptacion_fase2.py, que en este momento está en rojo. Es el mismo
+método de la Fase 1: la puerta primero, la implementación después.
+
+CONVENCIONES CONGELADAS (heredadas de la Fase 1, intent_fase1.txt)
+==================================================================
+- z=0 es el fondo, no-deslizante. z=Lz es el tope.
+- Tope libre de tensiones significa du/dz = dv/dz = 0 y w = 0. Superficie PLANA:
+  la deformación de la superficie queda explícitamente fuera de alcance.
+- La cadena nueva para parameter.inp es exactamente "freeslip".
+
+QUÉ HAY QUE PRODUCIR
+====================
+El árbol de trabajo es numerico/SPECTER-trabajo/, un clon de numerico/SPECTER-upstream/
+en el commit 0ad1edb. Upstream NO se toca: el diff de SPECTER-trabajo contra 0ad1edb
+tiene que ser exactamente el aporte propio.
+
+Los puntos a tocar, con lo que cada uno tiene que quedar haciendo:
+
+1. src/boundary/vboundary.f90, v_parsebc
+   Aceptar la cadena "freeslip" y mapearla a un entero propio. Seguir abortando ante
+   cualquier cadena desconocida.
+
+2. src/boundary/vboundary.f90, v_setup
+   Cargar las tablas de Neumann del plan FC-Gram en z cuando alguna de las dos caras
+   en z sea "freeslip". Hoy sólo bboundary.f90 las carga, para el campo magnético;
+   el plan de la velocidad no las tiene y neumann_reconstruct abortaría.
+
+3. src/boundary/vboundary.f90, v_imposebc_and_project
+   Relajar el guardián que hoy aborta si alguna condición en z no es no-deslizamiento,
+   y despachar a la subrutina nueva. Además hay que llevar vz al dominio (kx,ky,z)
+   junto con vx y vy: la condición de tensión nula necesita v*_z en la cara, y hoy
+   goto_domain_w_boundaries se llama sólo con vx y vy.
+
+4. src/boundary/vboundary.f90, subrutina nueva freeslip_z
+   Es el análogo de noslip_z para tensión nula, y hay que DERIVARLO, no copiarlo.
+   La derivación está en el punto siguiente.
+
+5. src/boundary/boundary_mod.fpp, laplace_z
+   Agregar la rama Dirichlet abajo - Neumann arriba, con los coeficientes derivados y
+   verificados en la Fase 1 [V-07]. Ver la salvedad de abajo: esta rama NO la ejercita
+   el camino de superficie libre.
+
+6. src/boundary/vboundary.f90, vdiagnostic
+   El diagnóstico actual mide |v_t|^2 en las caras, que es el residuo correcto para
+   no-deslizamiento y es idénticamente inútil para tensión nula. Hace falta el residuo
+   |d(v_t)/dz|^2 en la cara libre.
+
+LA DERIVACIÓN QUE HAY QUE HACER, Y CONTRA QUÉ SE CHEQUEA
+========================================================
+El esquema de partición de SPECTER está en Fontana, Bruno, Mininni & Dmitruk,
+Comp. Phys. Comm. 256, 107482 (2020), preprint arXiv:2002.01392v2, guardado en
+bibliografia/ y leído en el original. Secciones 4.1, 4.2 y 4.4.
+
+En cada subpaso de Runge-Kutta el código resuelve la ecuación de momento sin presión,
+impone una condición sobre el campo auxiliar v* en la cara, y después proyecta
+    v = v* - (dt/o) grad(p),
+con la presión resuelta con condición de Neumann d(p)/dz = (o/dt) * v*_z en la cara,
+que es lo que fuerza v_z = 0 después de proyectar (ecuaciones 15, 16 y 30 del paper).
+
+Para no-deslizamiento la condición sobre v* es de Dirichlet y se impone por inyección:
+v*_paralela = (dt/o) grad_paralelo(p), que tras proyectar deja v_paralela = 0.
+
+Para tensión nula la condición es de Neumann, y se deriva pidiendo d(v_paralela)/dz = 0
+en z=Lz sobre el campo YA proyectado. El resultado a verificar es que la condición
+sobre el campo auxiliar no contiene dt:
+    d(v*_x)/dz = d(v*_z)/dx  y  d(v*_y)/dz = d(v*_z)/dy   en z=Lz,
+o sea, en el dominio (kx,ky,z),
+    d(v*_x)/dz = i*kx*v*_z   y   d(v*_y)/dz = i*ky*v*_z.
+Equivale a anular las dos componentes tangenciales de la vorticidad en la cara. Como
+la proyección resta un gradiente y el rotor de un gradiente es nulo, la vorticidad de
+v* y la de v coinciden exactamente: la condición se conserva sin error de partición.
+Esa es una predicción fuerte y falsable, y es lo que chequea V3 de la puerta.
+
+La imposición se hace con neumann_reconstruct del módulo fcgram, que reconstruye el
+valor en la cara a partir de la derivada normal. Convención de signo, verificada en
+src/tests/fc_neumann.f90 (el comentario "d/dz = -d/dn"): es la derivada normal SALIENTE,
+o sea -d/dz en z=0 y +d/dz en z=Lz.
+
+UNA CORRECCIÓN A [V-06] QUE HAY QUE CONFIRMAR O REFUTAR
+=======================================================
+[V-06] afirma que la rama Dirichlet abajo - Neumann arriba de laplace_z "es exactamente
+el par de la capa con superficie libre". La lectura del código dice que no:
+v_imposebc_and_project llama siempre sol_project(...,bctarget=1,bczsta=0,bczend=0), y
+sol_project pasa a laplace_z la clase bcz+bctarget, de modo que con la condición
+Dirichlet sobre v_z en las dos caras la presión queda con Neumann en las dos caras.
+Como la superficie libre PLANA mantiene w=0 en el tope, la condición de la presión no
+cambia respecto del canal: sigue siendo Neumann-Neumann.
+
+La rama Dirichlet-Neumann se implementa igual, porque los coeficientes ya están
+derivados y verificados en la Fase 1 y porque es el hueco real que tiene laplace_z,
+pero la puerta la ejercita como test unitario (V2) y NO puede reclamar que el camino de
+superficie libre la use. Si esta corrección resulta equivocada, hay que decirlo.
+
+ENTORNO
+=======
+- Puerta: /home/lucia/miniforge3/envs/piv-dt/bin/python verificacion/test_aceptacion_fase2.py
+- Cadena de compilación: env de conda "specter" (gfortran, openmpi, fftw), creada
+  porque esta máquina no tenía gfortran ni MPI. Se puede apuntar a otra con la
+  variable de entorno SPECTER_TOOLCHAIN.
+- Resolución de los tests: 8 x 8 x 128 con Cz=25, o sea 103 puntos físicos en z.
+  Son ~130 kB por arreglo: cabe de sobra en los 5,7 GB de la laptop.
+
+LO QUE NO HAY QUE HACER
+=======================
+- No tocar numerico/SPECTER-upstream/.
+- No tocar /mnt (datos crudos) ni ~/Desktop/PhD.
+- No hacer simulaciones tridimensionales de producción acá: eso es el clúster.

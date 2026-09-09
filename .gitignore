@@ -1,0 +1,25 @@
+# Entornos y compilados
+.venv/
+__pycache__/
+*.pyc
+*.o
+*.mod
+
+# Árboles de SPECTER: código de terceros, 5,4 MB. Va el parche en
+# numerico/specter-parche/, que es el aporte propio y se reconstruye desde upstream.
+numerico/SPECTER-upstream/
+numerico/SPECTER-trabajo/
+
+# PDF de la bibliografía: son de los editores, no míos. bibliografia/REFERENCIAS.md
+# tiene los DOI verificados y de dónde bajar cada uno.
+bibliografia/*.pdf
+
+# Artefactos regenerables
+salidas/decaimiento.html
+informe/*.aux
+informe/*.log
+informe/*.out
+informe/*.toc
+
+# Datos crudos: 140 GB en el disco externo, sólo lectura ([D-02])
+datos-derivados/*.npz

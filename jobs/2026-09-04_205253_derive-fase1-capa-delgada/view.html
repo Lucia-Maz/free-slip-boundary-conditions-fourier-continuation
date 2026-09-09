@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="refresh" content="5">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2026-09-04_205253_derive-fase1-capa-delgada</title>
+<style>
+  :root { color-scheme: light dark; --fg:#1a1a1a; --muted:#6b7280; --bg:#ffffff;
+          --card:#f6f7f9; --border:#e3e6ea; --accent:#2563eb; }
+  @media (prefers-color-scheme: dark) {
+    :root { --fg:#e5e7eb; --muted:#9aa4b2; --bg:#0f1216; --card:#171b21; --border:#262c34; --accent:#60a5fa; } }
+  * { box-sizing: border-box; }
+  body { font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+         margin:0; color:var(--fg); background:var(--bg); }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 24px 20px 64px; }
+  h1 { font-size: 18px; margin:.2em 0; word-break: break-all; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing:.05em; color:var(--muted);
+       margin: 28px 0 8px; }
+  .meta { color:var(--muted); font-size:13px; }
+  .pill { display:inline-block; padding:2px 9px; border-radius:999px; font-size:12px;
+          font-weight:600; border:1px solid var(--border); }
+  .run{color:#2563eb;border-color:#2563eb55} .ok{color:#16a34a;border-color:#16a34a55}
+  .warn{color:#d97706;border-color:#d9770655} .bad{color:#dc2626;border-color:#dc262655}
+  .muted{color:var(--muted)}
+  .grid { display:flex; flex-wrap:wrap; gap:10px; margin-top:12px; }
+  .stat { background:var(--card); border:1px solid var(--border); border-radius:10px;
+          padding:10px 14px; min-width:120px; }
+  .stat .k { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em; }
+  .stat .v { font-size:16px; font-weight:600; margin-top:2px; }
+  pre { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:12px 14px;
+        white-space:pre-wrap; overflow-x:auto; font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
+  pre.intent { max-height: 220px; overflow:auto; }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  td { padding:6px 8px; border-bottom:1px solid var(--border); vertical-align:top; }
+  td.r { color:var(--muted); width:2.5em; }
+  th { text-align:left; padding:4px 8px; font-size:11px; text-transform:uppercase;
+       letter-spacing:.04em; color:var(--muted); font-weight:600; border-bottom:1px solid var(--border); }
+  table.roles td { font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace; }
+  table.roles td.dim { color:var(--muted); }
+  .badge { font-size:11px; font-weight:600; padding:1px 7px; border-radius:6px; border:1px solid; }
+  .badge.verified{color:#16a34a;border-color:#16a34a55} .badge.refuted{color:#dc2626;border-color:#dc262655}
+  .badge.unclear{color:#d97706;border-color:#d9770655}
+  a { color:var(--accent); }
+  textarea { width:100%; min-height:70px; border:1px solid var(--border); border-radius:10px;
+             padding:10px; background:var(--bg); color:var(--fg); font:inherit; }
+  button { margin-top:8px; padding:8px 16px; border:0; border-radius:8px; background:var(--accent);
+           color:#fff; font-weight:600; cursor:pointer; }
+  #msg { margin-left:10px; font-size:13px; color:var(--muted); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="meta">agent-team job</div>
+  <h1>2026-09-04_205253_derive-fase1-capa-delgada</h1>
+  <div><span class="pill run">running</span>
+       <span class="meta">&nbsp;derive · understanding · round 1/1 · updated 21:36:02  ·  round 1 · checks</span></div>
+
+  <div class="grid">
+    <div class="stat"><div class="k">backend</div><div class="v">codex</div></div>
+    <div class="stat"><div class="k">model</div><div class="v">gpt-5.6-sol</div></div>
+    <div class="stat"><div class="k">effort</div><div class="v">xhigh</div></div>
+    <div class="stat"><div class="k">cost</div><div class="v">$3.297</div></div>
+    <div class="stat"><div class="k">tokens</div><div class="v">7,412,821<span class="meta"> / 8,000,000</span></div></div>
+  </div>
+
+  <h2>Staffing</h2>
+<table class="roles"><thead><tr><th>role</th><th>backend</th><th>model</th><th>effort</th><th>runs</th></tr></thead><tbody>
+<tr><td>pi</td><td>codex</td><td class="dim">gpt-5.6-sol</td><td>xhigh</td><td class="dim">every round</td></tr>
+<tr><td>worker</td><td>codex</td><td class="dim">gpt-5.6-sol</td><td>high</td><td class="dim">every round</td></tr>
+<tr><td>verifier</td><td>claude</td><td class="dim">claude-opus-5[1m]</td><td>xhigh</td><td class="dim">every round</td></tr>
+<tr><td>writer</td><td>codex</td><td class="dim">gpt-5.6-sol</td><td>xhigh</td><td>last</td></tr>
+</tbody></table>
+
+  <h2>Intent</h2>
+  <pre class="intent">OBJETIVO
+========
+Derivar la estructura vertical de una capa delgada de fluido con fondo no-deslizante y
+tope libre de tensiones, y de ahí el coeficiente de fricción de fondo alfa que aparece
+como -alfa*u en los modelos bidimensionales de turbulencia cuasi-2D.
+
+Motivación, para que se entienda qué se está decidiendo: en la celda experimental que
+motiva esto, una capa de electrolito de ~6 mm con superficie libre, alfa se viene usando
+como parámetro ajustado. La pregunta es si se puede calcular. Las simulaciones
+disponibles son o triplemente periódicas (sin bordes) o con no-deslizamiento en las dos
+paredes (un canal, no una capa con superficie libre).
+
+QUÉ HAY QUE PRODUCIR
+====================
+1. out/notes.tex — la derivación. Debe contener, como mínimo:
+   a. El problema de Stokes vertical d_t u = nu d2_z u en 0&lt;z&lt;h, resuelto para los dos
+      pares de bordes (no-deslizante/no-deslizante y no-deslizante/libre), con el
+      espectro COMPLETO de tasas de decaimiento, no sólo el modo más lento.
+   b. La reducción bidimensional: promediando en la vertical y suponiendo el perfil del
+      modo más lento, de dónde sale el término -alfa*u, con qué valor de alfa, y bajo
+      qué condiciones vale. Las condiciones importan tanto como el resultado: separación
+      entre el tiempo de difusión vertical y el de vuelco horizontal, relación de
+      aspecto, número de Reynolds. Enunciarlas como desigualdades explícitas.
+   c. El cociente entre la velocidad en la superficie y la promediada en la vertical,
+      para el modo más lento del caso libre. Es el sesgo del PIV de superficie, porque
+      las partículas trazadoras flotan.
+   d. Los coeficientes de la solución de la ecuación de Laplace homogénea en una caja
+      periódica en x,y y acotada en z, con Dirichlet en z=0 y Neumann en z=Lz. Esta es
+      la rama que le falta a la subrutina laplace_z de SPECTER, que ya implementa
+      Dirichlet/Dirichlet, Neumann/Neumann, Robin/Robin y Dirichlet/Robin. La solución
+      tiene que ser numéricamente estable para k*Lz grande: escribirla con la misma
+      estrategia de normalización por exp(-2*k*Lz) que usa el código existente, en vez
+      de con exponenciales crecientes que desbordan.
+2. out/capa.py — el módulo con la implementación. Su interfaz está FIJADA por la puerta
+   de aceptación; no la cambien.
+3. out/checks.py — los chequeos propios del equipo, además de la puerta.
+
+ENTORNO
+=======
+- Intérprete: /home/lucia/miniforge3/envs/piv-dt/bin/python (Python 3.11, numpy 2.4.6,
+  scipy 1.17.1). NO instalar nada, NO crear entornos.
+- La puerta de aceptación se corre así, y tiene que pasar 6/6:
+    /home/lucia/miniforge3/envs/piv-dt/bin/python verificacion/test_aceptacion_fase1.py
+  Está fijada por hash: se puede leer, no se puede editar. Léanla: define la interfaz.
+
+CONVENCIONES CONGELADAS
+=======================
+- z=0 es el fondo (no-deslizante siempre); z=h es el tope.
+- Las dos únicas cadenas válidas para el argumento `bordes` son exactamente
+  &quot;noslip-noslip&quot; y &quot;noslip-libre&quot;.
+- Tope libre de tensiones significa du/dz = dv/dz = 0 y w = 0. Superficie PLANA: la
+  deformación de la superficie queda explícitamente fuera de alcance.
+
+LÍMITE DE DATOS Y DE MÁQUINA
+============================
+- Esta laptop tiene 5,7 GB de RAM y entra en thrashing si se la satura. Ningún script
+  puede pasar de ~1 GB residente. No corran nada en paralelo.
+- numerico/SPECTER-upstream/ es referencia de SÓLO LECTURA. Pueden y deben leer
+  src/boundary/boundary_mod.fpp (la subrutina laplace_z, línea 451) para copiar sus
+  convenciones. No lo modifiquen, no lo compilen.
+- NO tocar /mnt (disco externo con los datos crudos), ni ~/Desktop/PhD.
+
+LO QUE NO HAY QUE HACER
+=======================
+- No compilar SPECTER ni correr nada con MPI. Eso es la fase siguiente.
+- No implementar la condición de contorno en Fortran todavía.
+- No hacer simulaciones tridimensionales.
+- No escribir fuera del subárbol del trabajo.
+
+PROVENANCE Y HONESTIDAD
+=======================
+- Toda afirmación cuantitativa de notes.tex lleva su \src{clave} resolviendo en
+  out/provenance.json, y cada número sale de código de este trabajo.
+- Decir qué pasos se derivaron y cuáles se recordaron de la literatura.
+- Decir explícitamente qué NO se verificó. Esto se evalúa: una sección de salvedades
+  vacía es una señal de alarma, no de calidad.</pre>
+
+  <h2>Deliverable</h2>
+  <p><a href="out/notes.tex">out/notes.tex</a></p>
+
+  <h2>Executable checks</h2>
+  <p class="bad">FAILED — provenance: 31 tag(s), 31 entry(ies), 0 error(s), 0 warning(s)
+Traceback (most recent call last):
+  File &quot;/home/lucia/GW_AI/proyecto-final-piv/jobs/2026-09-04_205253_derive-fase1-capa-delgada/out/chec</p>
+  <p class="ok"><b>acceptance gate:</b> PASSED — PUERTA DE ACEPTACIÓN — FASE 1
+módulo: /home/lucia/GW_AI/proyecto-final-piv/jobs/2026-09-04_205253_derive-fase1-capa-delgada/out/capa.py
+
+  [PASA]  C1  tasas, no-slip / no-slip
+            error relati</p>
+
+  <h2>Latest plan</h2>
+  <pre>La entrega está vacía/incompleta y aún no es evaluable.
+
+1. **Worker:** completar `notes.tex`, `capa.py`, `checks.py` y `provenance.json` con toda la derivación e implementación contratada; después ejecutar secuencialmente los controles propios, provenance y la puerta 6/6, registrando resultados exactos.
+
+Reporte: [r01-lead.md](/home/lucia/GW_AI/proyecto-final-piv/jobs/2026-09-04_205253_derive-fase1-capa-delgada/reports/r01-lead.md)</pre>
+
+  <h2>Verified state</h2>
+  <table><tbody><tr><td class="r">1</td><td><span class="badge unclear">unclear</span></td><td>Margen estrecho en el chequeo C1 de la puerta: error 8.23e-05 contra tolerancia 1e-04, factor 1.2. Es estructural de la puerta y no del modulo: la referencia FD con nz=400 tiene error relativo (4*pi)^2*dz^2/12 = 8.224e-05 en el cuarto modo DD, que reproduje analiticamente. Es determinista y siempre pasara, pero no queda margen si alguien sube n.</td></tr>
+<tr><td class="r">1</td><td><span class="badge unclear">unclear</span></td><td>Punteros de provenance mas anchos que el check citado: las entradas espectro_dd y espectro_dn apuntan a out/checks.py::test_spectra_against_fd, que solo prueba las cuatro tasas mas lentas y no ejercita las autofunciones ni los coeficientes de expansion a_n, b_m que el mismo statement cubre. Yo verifique esos coeficientes por separado (matriz de Gram y reconstruccion), asi que la fisica esta bien; </td></tr>
+<tr><td class="r">1</td><td><span class="badge unclear">unclear</span></td><td>Zona de continuacion FC-Gram, relevante para la fase Fortran: laplace_z recorre DO k=1,nz con z(k)=rmp*(k-1) y rmp=Lz/(nz-Cz-1) (specter.fpp:744-749), de modo que el dominio fisico es k=1..nz-Cz y los Cz puntos restantes tienen z&gt;Lz. capa.py::_validar_z rechaza z&gt;Lz y la afirmacion de estabilidad de notes.tex esta acotada a [0,Lz]; en la zona de continuacion C1*exp(k(z-Lz)) crece como exp(kLz*Cz/(</td></tr>
+<tr><td class="r">1</td><td><span class="badge unclear">unclear</span></td><td>Las desigualdades de validez de notes.tex nunca se evaluan para la celda de ~6 mm que motiva el trabajo. Re_h*epsilon &lt;&lt; 1 equivale a U &lt;&lt; nu*l/h^2; con h=6 mm y nu=1e-6 m^2/s eso da U &lt;&lt; 0.028*l (SI), es decir U &lt;&lt; 0.56 mm/s para l=2 cm. En el job no existe ningun U ni l experimental, asi que no puedo decidir si la clausura aplica al experimento. La pregunta central del intent (si alfa es calcula</td></tr>
+<tr><td class="r">1</td><td><span class="badge refuted">refuted</span></td><td>La afirmacion de notes.tex (seccion Laplace, eq:formaregular) de que &#x27;se cubren sin cancelacion tanto k=0 como valores positivos muy pequenos&#x27; es falsa tal como esta escrita: el guardian k*Lz&lt;0.5 no es el criterio correcto. Contraejemplo hallado por barrido dirigido: k=5e-11, Lz=1e10 (kLz=0.5, luego rama exponencial), g0=1.0, g1=7.3 da |phi(0)-g0| = 7.629e-06, cuatro ordenes por encima de la toler</td></tr>
+<tr><td class="r">1</td><td><span class="badge verified">verified</span></td><td>notes.tex compila con pdflatex en dos pasadas sin errores: 6 paginas, 0 referencias indefinidas, 2 avisos Overfull tipograficos. Ningun archivo fue modificado fuera del subarbol del trabajo desde el inicio del job; SPECTER-upstream esta intacto.</td></tr>
+<tr><td class="r">1</td><td><span class="badge verified">verified</span></td><td>Provenance completo y consistente: 25 ocurrencias de \src en notes.tex, 27 claves citadas, 26 unicas; provenance.json tiene 26 entradas; 0 claves citadas sin entrada y 0 entradas huerfanas. Los 19 literales numericos de &gt;=6 decimales de notes.tex resuelven todos en out/checks.py --values y/o en su forma cerrada.</td></tr>
+<tr><td class="r">1</td><td><span class="badge verified">verified</span></td><td>out/checks.py pasa 5/5 con exit 0 (RSS 67 MB) y sus numeros coinciden exactamente con los reportados por el worker: espectros vs FD 9.135e-04-&gt;2.284e-04 (DD) y 6.995e-04-&gt;1.749e-04 (DN) con p=2.000; solver 3.523e-03-&gt;8.808e-04 (DD) y 2.202e-04-&gt;5.505e-05 (DN) con p=2.000; 7 casos Laplace DN con residuo maximo 4.441e-16; 9 rutas invalidas rechazadas.</td></tr>
+<tr><td class="r">1</td><td><span class="badge verified">verified</span></td><td>La puerta de aceptacion fijada por hash pasa 6/6 con exit 0, corrida por mi desde la raiz del proyecto cargando jobs/.../out/capa.py: C1 err 8.23e-05, C2 err 6.30e-05, C3 cociente 4.000000 vs referencia 3.999985, C4 1.570796 vs 1.570798, C5 orden 2.00, C6 5 casos bajo 1e-10. SHA-256 del archivo = 2db98ae5a286c64ff42e6bcbdf9e9d69ccbcae60cd631c16d28a93e9855c5527, el contratado. RSS maximo 68 MB.</td></tr>
+<tr><td class="r">1</td><td><span class="badge verified">verified</span></td><td>solver_1d es un integrador real, no la solucion analitica insertada: coincide con un Crank-Nicolson propio sobre la misma malla a 2.8e-10 (DD) y 4.1e-11 (DN), y su error de tasa es exactamente el error espacial FD lambda*kappa^2*dz^2/12 (predicho analiticamente 2.2020e-04 a nz=48 DN, observado 2.202e-04), con orden medido 2.000 en ambos bordes.</td></tr>
+<tr><td class="r">1</td><td><span class="badge verified">verified</span></td><td>Convenciones de SPECTER laplace_z (boundary_mod.fpp): a = coef(1)*exp(k(z-Lz)) + coef(2)*exp(-kz) y b = k*[coef(1)*exp(k(z-Lz)) - coef(2)*exp(-kz)], es decir b es la derivada hacia +z; en la fila k=0, a = coef(1)*z + coef(2) y b = coef(1), o sea coef(1)=pendiente y coef(2)=ordenada al origen; bc(1)=dato en z=0 y bc(2)=dato en z=Lz (deducido de la rama Dirichlet-Dirichlet); khom = sqrt(kx^2+ky^2) (</td></tr>
+<tr><td class="r">1</td><td><span class="badge verified">verified</span></td><td>La forma regular usada para kLz pequeno, phi = g0*[cosh(kz) - tanh(kLz)*sinh(kz)] + g1*sinh(kz)/(k*cosh(kLz)), satisface AMBAS condiciones de borde exactamente (verificacion algebraica: phi(0)=g0 y phi&#x27;(Lz)=g1 identicamente), tiende a g0+g1*z cuando k-&gt;0, y su implementacion via np.sinc(1j*kz/pi).real = sinh(kz)/(kz) es correcta, sin warnings, tambien con datos complejos, y continua a traves del u</td></tr>
+<tr><td class="r">1</td><td><span class="badge verified">verified</span></td><td>Coeficientes de Laplace DN: C1=(g1/k + r*g0)/(1+r^2), C2=(g0 - r*g1/k)/(1+r^2) con r=exp(-k*Lz), para phi=C1*exp(k(z-Lz))+C2*exp(-kz), phi(0)=g0, phi&#x27;(Lz)=g1. Rederivados por mi desde el sistema 2x2 y confirmados punto a punto contra una resolucion tridiagonal independiente del BVP. Barrido propio de 2404 casos (k,Lz) cruzando el umbral kLz=0.5: residuo de borde maximo 3.886e-15. Sin desborde hast</td></tr>
+<tr><td class="r">1</td><td><span class="badge verified">verified</span></td><td>Identidad de escalas de validez: tau_nu/tau_H = Re_l*epsilon^2 = Re_h*epsilon, con epsilon=h/l. Las tres expresiones coinciden a precision de maquina; la ventana 1 &lt;&lt; Re_l &lt;&lt; epsilon^-2 se sigue algebraicamente.</td></tr>
+<tr><td class="r">1</td><td><span class="badge verified">verified</span></td><td>Brechas espectrales: lambda_1-lambda_0 = 2*pi^2*nu/h^2 = 8*alfa_DN (DN) y lambda_2-lambda_1 = 3*pi^2*nu/h^2 = 3*alfa_DD (DD), con inversos h^2/(2 pi^2 nu) y h^2/(3 pi^2 nu). Identidades exactas.</td></tr>
+<tr><td class="r">1</td><td><span class="badge verified">verified</span></td><td>Coeficientes de expansion modal a_n = b_m = (2/h)*integral(u_0*Z): la matriz de Gram de ambas familias de senos es (h/2)*I a 1.11e-16, y la reconstruccion con 200 modos de un dato generico converge. Nota: esta afirmacion de notes.tex NO esta cubierta por out/checks.py ni por la puerta; la verifique yo.</td></tr>
+<tr><td class="r">1</td><td><span class="badge verified">verified</span></td><td>Coeficiente no lineal de la clausura: beta = &lt;F^2&gt; = pi^2/8 = 1.2337005501361697 para AMBOS perfiles normalizados F_DD=(pi/2)sin(pi z/h) y F_DN=(pi/2)sin(pi z/2h), ambos con &lt;F&gt;=1; y beta_s = beta*(2/pi) = pi/4 = 0.7853981633974483 al escribir la ecuacion en la variable de superficie U_s=(pi/2)U. Verificado por cuadratura adaptativa y por el cambio de variable algebraico.</td></tr>
+<tr><td class="r">1</td><td><span class="badge verified">verified</span></td><td>Sesgo del PIV de superficie: para el modo DN mas lento, u(h)/&lt;u&gt; = pi/2 = 1.5707963267948966 (exceso 57.0796326795%). Verificado por cuadratura adaptativa scipy.integrate.quad, |diferencia| = 2.2e-16 contra capa.cociente_superficie_promedio().</td></tr>
+<tr><td class="r">1</td><td><span class="badge verified">verified</span></td><td>alfa_DN = pi^2*nu/(4h^2) y alfa_DD = pi^2*nu/h^2, con cociente exactamente 4. Verificado por tres rutas independientes: autovalor mas lento, -(nu/h)*[dF/dz]_0^h, y la tasa de decaimiento asintotica del promedio vertical &lt;u&gt; bajo una integracion Crank-Nicolson propia desde un dato inicial generico que NO es autovector (DN 2.467400671 vs 2.467401100, err rel 1.7e-07; DD 9.870051915 vs 9.869604401, e</td></tr>
+<tr><td class="r">1</td><td><span class="badge verified">verified</span></td><td>Espectro DN completo: lambda_m = nu*((m+1/2)*pi/h)^2, m=0,1,..., con autofunciones sin((m+1/2)*pi*z/h). Reproducido por Chebyshev (err rel 2.45e-12) y por raices de cos(qh)=0 con brentq (err rel 0.0).</td></tr>
+<tr><td class="r">1</td><td><span class="badge verified">verified</span></td><td>Espectro DD completo: lambda_n = nu*(n*pi/h)^2, n=1,2,..., con autofunciones sin(n*pi*z/h). Reproducido por colocacion de Chebyshev (N=64, err rel 2.66e-14) y por raices de la secular sin(qh)=0 con brentq (err rel 0.0); escalado en nu y h exacto a 3.4e-16.</td></tr></tbody></table>
+
+  <h2>Last verifier pass</h2>
+  <pre>I re-derived everything by different routes rather than re-reading the worker&#x27;s arguments. Report written to `reports/r01-verifier.md`.
+
+**What held up.** Both spectra reproduce under Chebyshev collocation (err 2.7e-14 / 2.4e-12) *and* under `brentq` root-finding of the secular conditions (err 0.0) — two routes that share nothing with the worker&#x27;s closed form or the gate&#x27;s finite differences. `α_DN = π²ν/(4h²)` survived a third, stronger test: I integrated the diffusion equation with my own Crank–Nicolson stepper from a **generic** initial condition (not an eigenmode) and measured the asymptotic decay rate of the vertical mean ⟨u⟩ — 2.467400671 against 2.467401100, 1.7e-07 relative. That verifies the `-αU` term itself, not just an eigenvalue. `π/2`, `β=π²/8`, `β_s=π/4`, the spectral gaps and the `τ_ν/τ_H = Re_ℓε² = Re_hε` identity all reproduce independently. The Laplace DN coefficients I re-derived from scratch and matched pointwise against a tridiagonal BVP solve; a 2404-case sweep across the `kLz=0.5` branch threshold gives max boundary residual 3.9e-15, and no overflow to `kLz=1e8`. Every SPECTER convention claim checks out against the Fortran. `solver_1d` genuinely integrates — it matches my own Crank–Nicolson to 3e-10, and its rate error is exactly the FD term `λκ²dz²/12`. Gate **6/6** and checks **5/5** run by me, provenance 26/26 with zero orphans, LaTeX 6 pages clean. Peak RSS 68 MB, all runs sequential.
+
+**What I broke.** One sentence in `notes.tex` §Laplace — &quot;*Así se cubren sin cancelación tanto k=0 como valores positivos muy pequeños*&quot; — is false as written. At `k=5e-11, Lz=1e10` (so `kLz=0.5`, exponential branch), `g0=1, g1=7.3`, the residual is **7.6e-06**, four orders above the gate&#x27;s own tolerance. The `k*Lz &lt; 0.5` guard is the wrong criterion: the dangerous group is `Lz|g1|/|g0|`. This touches nothing the contract asked for (stability at *large* `kLz` is solid, and SPECTER&#x27;s quantized `k` never reaches that regime) — it&#x27;s the wording promising more than the code delivers.
+
+**The gap that matters most** isn&#x27;t an error. The note states its validity inequalities but never evaluates them for the 6 mm cell that motivates the whole job. `Re_h ε ≪ 1` means `U ≪ νℓ/h²`, i.e. `U ≪ 0.56 mm/s` for `ℓ = 2 cm` — and there is no experimental `U` or `ℓ` anywhere in the job, so I could not decide it. Given the intent&#x27;s own framing (&quot;¿se puede calcular α?&quot;), that arithmetic needs a human number. Also flagged for the Fortran phase: `laplace_z` loops `DO k=1,nz`, which runs past `Lz` into the FC-Gram continuation region, while `capa.py` hard-rejects `z &gt; Lz`.
+
+```claims
+[{&quot;status&quot;: &quot;verified&quot;, &quot;text&quot;: &quot;Espectro DD completo: lambda_n = nu*(n*pi/h)^2, n=1,2,..., con autofunciones sin(n*pi*z/h). Reproducido por colocacion de Chebyshev (N=64, err rel 2.66e-14) y por raices de la secular sin(qh)=0 con brentq (err rel 0.0); escalado en nu y h exacto a 3.4e-16.&quot;},
+ {&quot;status&quot;: &quot;verified&quot;, &quot;text&quot;: &quot;Espectro DN completo: lambda_m = nu*((m+1/2)*pi/h)^2, m=0,1,..., con autofunciones sin((m+1/2)*pi*z/h). Reproducido por Chebyshev (err rel 2.45e-12) y por raices de cos(qh)=0 con brentq (err rel 0.0).&quot;},
+ {&quot;status&quot;: &quot;verified&quot;, &quot;text&quot;: &quot;alfa_DN = pi^2*nu/(4h^2) y alfa_DD = pi^2*nu/h^2, con cociente exactamente 4. Verificado por tres rutas independientes: autovalor mas lento, -(nu/h)*[dF/dz]_0^h, y la tasa de decaimiento asintotica del promedio vertical &lt;u&gt; bajo una integracion Crank-Nicolson propia desde un dato inicial generico que NO es autovector (DN 2.467400671 vs 2.467401100, err rel 1.7e-07; DD 9.870051915 vs 9.869604401, err rel 4.5e-05). Esto verifica el termino -alfa*U de la reduccion 2D, no solo el autovalor.&quot;},
+ {&quot;status&quot;: &quot;verified&quot;, &quot;text&quot;: &quot;Sesgo del PIV de superficie: para el modo DN mas lento, u(h)/&lt;u&gt; = pi/2 = 1.5707963267948966 (exceso 57.0796326795%). Verificado por cuadratura adaptativa scipy.integrate.quad, |diferencia| = 2.2e-16 contra capa.cociente_superficie_promedio().&quot;},
+ {&quot;status&quot;: &quot;verified&quot;, &quot;text&quot;: &quot;Coeficiente no lineal de la clausura: beta = &lt;F^2&gt; = pi^2/8 = 1.2337005501361697 para AMBOS perfiles normalizados F_DD=(pi/2)sin(pi z/h) y F_DN=(pi/2)sin(pi z/2h), ambos con &lt;F&gt;=1; y beta_s = beta*(2/pi) = pi/4 = 0.7853981633974483 al escribir la ecuacion en la variable de superficie U_s=(pi/2)U. Verificado por cuadratura adaptativa y por el cambio de variable algebraico.&quot;},
+ {&quot;status&quot;: &quot;verified&quot;, &quot;text&quot;: &quot;Coeficientes de expansion modal a_n = b_m = (2/h)*integral(u_0*Z): la matriz de Gram de ambas familias de senos es (h/2)*I a 1.11e-16, y la reconstruccion con 200 modos de un dato generico converge. Nota: esta afirmacion de notes.tex NO esta cubierta por out/checks.py ni por la puerta; la verifique yo.&quot;},
+ {&quot;status&quot;: &quot;verified&quot;, &quot;text&quot;: &quot;Brechas espectrales: lambda_1-lambda_0 = 2*pi^2*nu/h^2 = 8*alfa_DN (DN) y lambda_2-lambda_1 = 3*pi^2*nu/h^2 = 3*alfa_DD (DD), con inversos h^2/(2 pi^2 nu) y h^2/(3 pi^2 nu). Identidades exactas.&quot;},
+ {&quot;status&quot;: &quot;verified&quot;, &quot;text&quot;: &quot;Identidad de escalas de validez: tau_nu/tau_H = Re_l*epsilon^2 = Re_h*epsilon, con epsilon=h/l. Las tres expresiones coinciden a precision de maquina; la ventana 1 &lt;&lt; Re_l &lt;&lt; epsilon^-2 se sigue algebraicamente.&quot;},
+ {&quot;status&quot;: &quot;verified&quot;, &quot;text&quot;: &quot;Coeficientes de Laplace DN: C1=(g1/k + r*g0)/(1+r^2), C2=(g0 - r*g1/k)/(1+r^2) con r=exp(-k*Lz), para phi=C1*exp(k(z-Lz))+C2*exp(-kz), phi(0)=g0, phi&#x27;(Lz)=g1. Rederivados por mi desde el sistema 2x2 y confirmados punto a punto contra una resolucion tridiagonal independiente del BVP. Barrido propio de 2404 casos (k,Lz) cruzando el umbral kLz=0.5: residuo de borde maximo 3.886e-15. Sin desborde hasta kLz=1e8 (C1, C2 finitos, residuo 0). Rama k=0 (phi=g0+g1*z) exacta.&quot;},
+ {&quot;status&quot;: &quot;verified&quot;, &quot;text&quot;: &quot;La forma regular usada para kLz pequeno, phi = g0*[cosh(kz) - tanh(kLz)*sinh(kz)] + g1*sinh(kz)/(k*cosh(kLz)), satisface AMBAS condiciones de borde exactamente (verificacion algebraica: phi(0)=g0 y phi&#x27;(Lz)=g1 identicamente), tiende a g0+g1*z cuando k-&gt;0, y su implementacion v</pre>
+
+  <h2>Add a direction</h2>
+  <p class="meta">Picked up on the next round/resume. Needs <code>job serve</code> running;
+     otherwise run <code>job say 2026-09-04_205253_derive-fase1-capa-delgada "..."</code>.</p>
+  <textarea id="box" placeholder="e.g. focus on the resonant channel; ignore the boundary term"></textarea>
+  <div><button onclick="send()">Inject</button><span id="msg"></span></div>
+</div>
+<script>
+  function send() {
+    var t = document.getElementById('box').value.trim();
+    if (!t) return;
+    var msg = document.getElementById('msg');
+    fetch('http://127.0.0.1:8757/inject?job=' + encodeURIComponent('2026-09-04_205253_derive-fase1-capa-delgada'), {
+      method: 'POST', headers: {'Content-Type': 'text/plain'}, body: t
+    }).then(function(r){ return r.ok ? r.text() : Promise.reject(r.status); })
+      .then(function(){ msg.textContent = 'queued ✓'; document.getElementById('box').value=''; })
+      .catch(function(e){ msg.textContent = 'no server — use: job say 2026-09-04_205253_derive-fase1-capa-delgada "..."'; });
+  }
+</script>
+</body>
+</html>

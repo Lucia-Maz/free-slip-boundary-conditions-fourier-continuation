@@ -1,0 +1,76 @@
+OBJETIVO
+========
+Derivar la estructura vertical de una capa delgada de fluido con fondo no-deslizante y
+tope libre de tensiones, y de ahí el coeficiente de fricción de fondo alfa que aparece
+como -alfa*u en los modelos bidimensionales de turbulencia cuasi-2D.
+
+Motivación, para que se entienda qué se está decidiendo: en la celda experimental que
+motiva esto, una capa de electrolito de ~6 mm con superficie libre, alfa se viene usando
+como parámetro ajustado. La pregunta es si se puede calcular. Las simulaciones
+disponibles son o triplemente periódicas (sin bordes) o con no-deslizamiento en las dos
+paredes (un canal, no una capa con superficie libre).
+
+QUÉ HAY QUE PRODUCIR
+====================
+1. out/notes.tex — la derivación. Debe contener, como mínimo:
+   a. El problema de Stokes vertical d_t u = nu d2_z u en 0<z<h, resuelto para los dos
+      pares de bordes (no-deslizante/no-deslizante y no-deslizante/libre), con el
+      espectro COMPLETO de tasas de decaimiento, no sólo el modo más lento.
+   b. La reducción bidimensional: promediando en la vertical y suponiendo el perfil del
+      modo más lento, de dónde sale el término -alfa*u, con qué valor de alfa, y bajo
+      qué condiciones vale. Las condiciones importan tanto como el resultado: separación
+      entre el tiempo de difusión vertical y el de vuelco horizontal, relación de
+      aspecto, número de Reynolds. Enunciarlas como desigualdades explícitas.
+   c. El cociente entre la velocidad en la superficie y la promediada en la vertical,
+      para el modo más lento del caso libre. Es el sesgo del PIV de superficie, porque
+      las partículas trazadoras flotan.
+   d. Los coeficientes de la solución de la ecuación de Laplace homogénea en una caja
+      periódica en x,y y acotada en z, con Dirichlet en z=0 y Neumann en z=Lz. Esta es
+      la rama que le falta a la subrutina laplace_z de SPECTER, que ya implementa
+      Dirichlet/Dirichlet, Neumann/Neumann, Robin/Robin y Dirichlet/Robin. La solución
+      tiene que ser numéricamente estable para k*Lz grande: escribirla con la misma
+      estrategia de normalización por exp(-2*k*Lz) que usa el código existente, en vez
+      de con exponenciales crecientes que desbordan.
+2. out/capa.py — el módulo con la implementación. Su interfaz está FIJADA por la puerta
+   de aceptación; no la cambien.
+3. out/checks.py — los chequeos propios del equipo, además de la puerta.
+
+ENTORNO
+=======
+- Intérprete: /home/lucia/miniforge3/envs/piv-dt/bin/python (Python 3.11, numpy 2.4.6,
+  scipy 1.17.1). NO instalar nada, NO crear entornos.
+- La puerta de aceptación se corre así, y tiene que pasar 6/6:
+    /home/lucia/miniforge3/envs/piv-dt/bin/python verificacion/test_aceptacion_fase1.py
+  Está fijada por hash: se puede leer, no se puede editar. Léanla: define la interfaz.
+
+CONVENCIONES CONGELADAS
+=======================
+- z=0 es el fondo (no-deslizante siempre); z=h es el tope.
+- Las dos únicas cadenas válidas para el argumento `bordes` son exactamente
+  "noslip-noslip" y "noslip-libre".
+- Tope libre de tensiones significa du/dz = dv/dz = 0 y w = 0. Superficie PLANA: la
+  deformación de la superficie queda explícitamente fuera de alcance.
+
+LÍMITE DE DATOS Y DE MÁQUINA
+============================
+- Esta laptop tiene 5,7 GB de RAM y entra en thrashing si se la satura. Ningún script
+  puede pasar de ~1 GB residente. No corran nada en paralelo.
+- numerico/SPECTER-upstream/ es referencia de SÓLO LECTURA. Pueden y deben leer
+  src/boundary/boundary_mod.fpp (la subrutina laplace_z, línea 451) para copiar sus
+  convenciones. No lo modifiquen, no lo compilen.
+- NO tocar /mnt (disco externo con los datos crudos), ni ~/Desktop/PhD.
+
+LO QUE NO HAY QUE HACER
+=======================
+- No compilar SPECTER ni correr nada con MPI. Eso es la fase siguiente.
+- No implementar la condición de contorno en Fortran todavía.
+- No hacer simulaciones tridimensionales.
+- No escribir fuera del subárbol del trabajo.
+
+PROVENANCE Y HONESTIDAD
+=======================
+- Toda afirmación cuantitativa de notes.tex lleva su \src{clave} resolviendo en
+  out/provenance.json, y cada número sale de código de este trabajo.
+- Decir qué pasos se derivaron y cuáles se recordaron de la literatura.
+- Decir explícitamente qué NO se verificó. Esto se evalúa: una sección de salvedades
+  vacía es una señal de alarma, no de calidad.

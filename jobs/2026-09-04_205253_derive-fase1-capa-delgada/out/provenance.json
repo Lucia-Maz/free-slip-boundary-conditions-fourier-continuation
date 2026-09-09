@@ -1,0 +1,188 @@
+{
+  "resultado_central": {
+    "statement": "Los espectros DD/DN, alfa libre, factor cuatro y sesgo pi/2 se derivan y computan en los artefactos.",
+    "type": "check",
+    "reproduce": "out/checks.py::derived_values",
+    "detail": "Ejecutar con el intérprete contratado: python out/checks.py --values."
+  },
+  "convenciones_fisicas": {
+    "statement": "Dominio, fondo no deslizante y superficie plana libre de tensión según el contrato congelado.",
+    "type": "source",
+    "reproduce": "spec.json, secciones CONVENCIONES CONGELADAS y OBJETIVO",
+    "detail": "La condición tangencial libre es du/dz=dv/dz=0 y la cinemática plana es w=0."
+  },
+  "promedio_convencion": {
+    "statement": "Definición del promedio vertical y convención de derivada +z.",
+    "type": "derivation",
+    "reproduce": "out/notes.tex, ecuación (1) y sección Laplace",
+    "detail": "La fórmula integral es una definición; la orientación se cotejó con la expresión de b en SPECTER."
+  },
+  "derivacion_stokes": {
+    "statement": "Separar variables en la difusión vertical da Z''+q^2 Z=0 y lambda=nu q^2.",
+    "type": "derivation",
+    "reproduce": "out/notes.tex, sección Problema vertical de Stokes",
+    "detail": "Sustituir Z(z)T(t) en dt u=nu dzz u y dividir por nu ZT."
+  },
+  "espectro_dd": {
+    "statement": "La condición secular DD produce todos los pares lambda_n=nu(n*pi/h)^2 y Z_n=sin(n*pi*z/h), n>=1.",
+    "type": "derivation",
+    "reproduce": "out/notes.tex, ecuaciones ddmodes y ddspec",
+    "detail": "La derivación completa se obtiene imponiendo Z(0)=Z(h)=0; las primeras cuatro tasas también se contrastan por Chebyshev y búsqueda de raíces en work/verif/indep.py."
+  },
+  "espectro_dn": {
+    "statement": "La condición secular DN produce todos los pares lambda_m=nu((m+1/2)*pi/h)^2 y Z_m=sin((m+1/2)*pi*z/h), m>=0.",
+    "type": "derivation",
+    "reproduce": "out/notes.tex, ecuaciones dnmodes y dnspec",
+    "detail": "La derivación completa se obtiene imponiendo Z(0)=0 y Z'(h)=0; las primeras cuatro tasas también se contrastan por Chebyshev y búsqueda de raíces en work/verif/indep.py."
+  },
+  "expansion_modal": {
+    "statement": "Los coeficientes de ambas expansiones son dos sobre h por la proyección sobre el seno correspondiente.",
+    "type": "script",
+    "reproduce": "work/verif/indep4.py",
+    "detail": "El script independiente comprueba las matrices de Gram de DD y DN y reconstruye un dato genérico con 200 modos."
+  },
+  "valores_espectro": {
+    "statement": "Primeras cuatro tasas adimensionales impresas para DD y DN.",
+    "type": "check",
+    "reproduce": "out/checks.py::derived_values",
+    "detail": "python out/checks.py --values genera ambas listas sin literales de referencia en la nota."
+  },
+  "promedio_ns": {
+    "statement": "El promedio de nu dzz u es el salto de la derivada vertical multiplicado por nu/h.",
+    "type": "derivation",
+    "reproduce": "out/notes.tex, ecuaciones NS3d y viscprom",
+    "detail": "Aplicación directa del teorema fundamental del cálculo."
+  },
+  "reduccion_modal": {
+    "statement": "La clausura u_h=F U con promedio de F igual a uno produce beta=<F^2>=pi^2/8 y la ecuación 2D mostrada.",
+    "type": "check",
+    "reproduce": "out/checks.py::test_mode_integrals_and_reduction",
+    "detail": "El check integra F y F^2 en 200001 puntos y coteja el gradiente inferior."
+  },
+  "alfas": {
+    "statement": "alpha_DN=pi^2 nu/(4h^2), alpha_DD=pi^2 nu/h^2 y su cociente es cuatro.",
+    "type": "check",
+    "reproduce": "out/checks.py::derived_values",
+    "detail": "También se verifican los espectros contra autovalores FD sin codificar estas tasas en la referencia."
+  },
+  "ejemplo_h6": {
+    "statement": "Evaluación paramétrica a h=6 mm y ejemplo puramente dimensional para nu=1e-6 m2/s.",
+    "type": "check",
+    "reproduce": "out/checks.py::derived_values",
+    "detail": "Claves h6_alfa_sobre_nu_menos_m2, h6_ejemplo_nu_1e_6_alfa_smenos1 y h6_ejemplo_nu_1e_6_tau_s."
+  },
+  "sesgo_piv": {
+    "statement": "Para el modo DN lento, superficie/promedio=pi/2; beta superficial=pi/4.",
+    "type": "check",
+    "reproduce": "out/checks.py::test_mode_integrals_and_reduction",
+    "detail": "Los decimales pi/2, pi^2/8 y pi/4 se emiten en derived_values."
+  },
+  "escalamiento_validez": {
+    "statement": "epsilon<<1 y tau_nu/tau_H=Re_l epsilon^2=Re_h epsilon<<1 son condiciones suficientes de capa delgada dominada verticalmente por viscosidad.",
+    "type": "derivation",
+    "reproduce": "out/notes.tex, ecuaciones escalas y desigualdades",
+    "detail": "Se obtiene escalando inercia como U^2/l y difusión vertical como nu U/h^2."
+  },
+  "aplicabilidad_experimental": {
+    "statement": "No se dispone de U ni de la menor escala horizontal experimental, por lo que no puede decidirse si la desigualdad de clausura vale en la celda concreta.",
+    "type": "source",
+    "reproduce": "spec.json y reports/r01-verifier.md, apartado No resuelto, punto 1",
+    "detail": "El contrato sólo fija un espesor aproximado; la evaluación necesita U y ell de la experiencia."
+  },
+  "validez_modal": {
+    "statement": "Condiciones explícitas de pérdida de modos superiores y forzamiento lento, con brechas espectrales DD y DN.",
+    "type": "check",
+    "reproduce": "out/checks.py::derived_values",
+    "detail": "Las brechas se calculan restando las dos primeras tasas; la desigualdad modal se deriva de las expansiones completas."
+  },
+  "sensibilidad_alpha": {
+    "statement": "La variación relativa lineal de alpha proporcional a nu h^-2 es d alpha/alpha=d nu/nu-2 dh/h.",
+    "type": "derivation",
+    "reproduce": "out/notes.tex, final de la sección de validez",
+    "detail": "Diferencial logarítmico de la fórmula de alpha."
+  },
+  "laplace_reduccion": {
+    "statement": "Cada modo horizontal de Laplace satisface phi''-k^2 phi=0 con los datos DN definidos.",
+    "type": "derivation",
+    "reproduce": "out/notes.tex, ecuación lapode",
+    "detail": "Transformada de Fourier en las dos direcciones periódicas."
+  },
+  "coeficientes_dn": {
+    "statement": "Coeficientes C1 y C2 de Laplace DN en la base acotada, normalizados por 1+exp(-2kLz).",
+    "type": "check",
+    "reproduce": "out/checks.py::test_laplace_dn",
+    "detail": "Se sustituyen en ambos bordes y se prueban siete casos, incluido kLz=700."
+  },
+  "limite_k0": {
+    "statement": "El modo k=0 es lineal y la forma hiperbólica regular satisface ambos bordes y se usa para kLz<0.5.",
+    "type": "script",
+    "reproduce": "work/verif/indep3.py",
+    "detail": "El script inspecciona k=0, la continuidad a ambos lados de kLz=0.5 y derivadas; la identidad de bordes se muestra algebraicamente en notes.tex."
+  },
+  "limitacion_k_pequeno": {
+    "statement": "El guardián kLz<0.5 no garantiza estabilidad uniforme para escalas arbitrarias de g0 y g1; existe el contraejemplo cuantitativo documentado.",
+    "type": "script",
+    "reproduce": "work/verif/indep3.py",
+    "detail": "El barrido dirigido reproduce k=5e-11, Lz=1e10, g0=1, g1=7.3 y un residuo de orden 7.629e-6 en phi(0)."
+  },
+  "convencion_specter": {
+    "statement": "SPECTER construye a=C1 exp(k(z-Lz))+C2 exp(-kz) y b=da/dz, con coef(1)=C1 y coef(2)=C2.",
+    "type": "source",
+    "reproduce": "../../numerico/SPECTER-upstream/src/boundary/boundary_mod.fpp, subrutina laplace_z desde la línea 451",
+    "detail": "Archivo inspeccionado sólo para lectura; no se compiló ni modificó."
+  },
+  "api_capa": {
+    "statement": "La implementación expone las cinco funciones y sólo las dos cadenas de borde contratadas.",
+    "type": "script",
+    "reproduce": "out/capa.py",
+    "detail": "La puerta de aceptación importa directamente este archivo."
+  },
+  "solver_fd": {
+    "statement": "El solver semidiscreto FD converge a orden dos y los errores impresos corresponden a nz=48 y 96.",
+    "type": "check",
+    "reproduce": "out/checks.py::test_solver_second_order",
+    "detail": "Se verifica DD y DN midiendo -log(max|u|)/t contra alfa continuo."
+  },
+  "checks_propios": {
+    "statement": "Los cinco grupos de checks propios pasan, incluidos residuos DN y rutas de error.",
+    "type": "check",
+    "reproduce": "out/checks.py",
+    "detail": "Ejecutar /home/lucia/miniforge3/envs/piv-dt/bin/python out/checks.py."
+  },
+  "puerta_aceptacion": {
+    "statement": "La puerta oficial fijada por hash pasa sus seis chequeos con los errores y orden impresos.",
+    "type": "check",
+    "reproduce": "../../verificacion/test_aceptacion_fase1.py",
+    "detail": "Ejecutar desde la raíz del proyecto con el intérprete piv-dt; SHA-256 2db98ae5a286c64ff42e6bcbdf9e9d69ccbcae60cd631c16d28a93e9855c5527."
+  },
+  "procedencia_derivada": {
+    "statement": "Lista explícita de pasos rederivados en este trabajo y origen ejecutable de sus números.",
+    "type": "derivation",
+    "reproduce": "out/notes.tex, sección Procedencia de los pasos",
+    "detail": "La derivación se presenta ecuación por ecuación y los decimales se centralizan en checks.py."
+  },
+  "literatura_estandar": {
+    "statement": "Separación de variables/Sturm-Liouville y las ecuaciones y condiciones de borde de mecánica de fluidos son métodos recordados de literatura estándar.",
+    "type": "source",
+    "reproduce": "Carslaw y Jaeger, Conduction of Heat in Solids, 2a ed. (1959); Kundu, Cohen y Dowling, Fluid Mechanics, 6a ed. (2016)",
+    "detail": "Los coeficientes específicos de este problema se rederivaron, no se copiaron de esas fuentes."
+  },
+  "salvedades": {
+    "statement": "Lista no vacía de fenómenos, datos, integración Fortran, rangos no verificados y puntos abiertos.",
+    "type": "derivation",
+    "reproduce": "out/notes.tex, sección Salvedades y puntos abiertos",
+    "detail": "Delimita expresamente el alcance de la afirmación de que alfa es calculable."
+  },
+  "fc_gram_pendiente": {
+    "statement": "La evaluación Python sólo cubre 0<=z<=Lz; el comportamiento de la futura rama DN en los puntos de continuación FC-Gram z>Lz no fue verificado.",
+    "type": "source",
+    "reproduce": "../../numerico/SPECTER-upstream/src/specter.fpp, líneas 744--750; reports/r01-verifier.md, apartado No resuelto, punto 2",
+    "detail": "SPECTER construye nz puntos pero marca nz-Cz como el final del dominio físico; la fase actual no integra la rama en Fortran."
+  },
+  "margen_puerta": {
+    "statement": "El control C1 pasó con error 8.23e-5 frente a tolerancia 1e-4; la extrapolación de ese margen a índices modales mayores no fue comprobada.",
+    "type": "check",
+    "reproduce": "../../verificacion/test_aceptacion_fase1.py",
+    "detail": "La puerta imprime el error y contiene la tolerancia; reports/r01-verifier.md, apartado No resuelto, punto 4, reproduce el valor mediante el término relativo (4*pi)^2*dz^2/12 y deja abierta la extrapolación."
+  }
+}

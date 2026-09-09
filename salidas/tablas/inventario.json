@@ -1,0 +1,823 @@
+{
+ "raiz": "/mnt/usb-Seagate_Expansion_HDD_00000000NACCVMS5-0:0-part1/Lucía Mazaira/02-06-25",
+ "escala_px_por_m": 3800.0,
+ "mm_por_px": 0.2631578947368421,
+ "inventario": [
+  {
+   "carpeta": "med_S0001",
+   "tipo": "grid",
+   "descripcion": "Grid — calibración espacial",
+   "corriente_A": null,
+   "n_tif": 682,
+   "cih_n_cuadros": 682,
+   "fps": 60.0,
+   "shutter": "1/60",
+   "bits": 10,
+   "tamano": "1024x1024",
+   "prefijo_tif": "Grid_20250602_152614_C1S0001000001.tif",
+   "primeros_cuadros": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
+   ],
+   "n_vec": 0
+  },
+  {
+   "carpeta": "med_S0002",
+   "tipo": "forzado",
+   "descripcion": "Forzado 32 V, 1.9–2.0 A (CI 1)",
+   "corriente_A": 1.95,
+   "n_tif": 3072,
+   "cih_n_cuadros": 3072,
+   "fps": 60.0,
+   "shutter": "1/60",
+   "bits": 10,
+   "tamano": "1024x1024",
+   "prefijo_tif": "Forzado_1.9A_20250602_153921_C1S00010000",
+   "primeros_cuadros": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
+   ],
+   "n_vec": 0
+  },
+  {
+   "carpeta": "med_S0003",
+   "tipo": "decaimiento",
+   "descripcion": "Decaimiento 1 desde CI 1",
+   "corriente_A": null,
+   "n_tif": 3072,
+   "cih_n_cuadros": 3072,
+   "fps": 60.0,
+   "shutter": "1/60",
+   "bits": 10,
+   "tamano": "1024x1024",
+   "prefijo_tif": "Decaimiento_1_20250602_155346_C1S0001000",
+   "primeros_cuadros": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
+   ],
+   "n_vec": 0
+  },
+  {
+   "carpeta": "med_S0004",
+   "tipo": "forzado",
+   "descripcion": "Forzado 16 V, 0.9–1.0 A (CI 2)",
+   "corriente_A": 0.95,
+   "n_tif": 3072,
+   "cih_n_cuadros": 3072,
+   "fps": 60.0,
+   "shutter": "1/60",
+   "bits": 10,
+   "tamano": "1024x1024",
+   "prefijo_tif": "Forzado_0.9A_20250602_160447_C1S00010000",
+   "primeros_cuadros": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
+   ],
+   "n_vec": 0
+  },
+  {
+   "carpeta": "med_S0005",
+   "tipo": "decaimiento",
+   "descripcion": "Decaimiento 2 desde CI 2",
+   "corriente_A": null,
+   "n_tif": 3072,
+   "cih_n_cuadros": 3072,
+   "fps": 60.0,
+   "shutter": "1/60",
+   "bits": 10,
+   "tamano": "1024x1024",
+   "prefijo_tif": "Decaimiento_2_20250602_161148_C1S0001000",
+   "primeros_cuadros": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
+   ],
+   "n_vec": 0
+  },
+  {
+   "carpeta": "med_S0006",
+   "tipo": "decaimiento",
+   "descripcion": "Decaimiento 3 desde CI tipo 1",
+   "corriente_A": null,
+   "n_tif": 3072,
+   "cih_n_cuadros": 3072,
+   "fps": 60.0,
+   "shutter": "1/60",
+   "bits": 10,
+   "tamano": "1024x1024",
+   "prefijo_tif": "Decaimiento_3_20250602_162124_C1S0001000",
+   "primeros_cuadros": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
+   ],
+   "n_vec": 0
+  },
+  {
+   "carpeta": "med_S0007",
+   "tipo": "quenching",
+   "descripcion": "Quenching 1 (cambalache)",
+   "corriente_A": null,
+   "n_tif": 3072,
+   "cih_n_cuadros": 3072,
+   "fps": 60.0,
+   "shutter": "1/60",
+   "bits": 10,
+   "tamano": "1024x1024",
+   "prefijo_tif": "Quenching_20250602_162923_C1S0001000001.",
+   "primeros_cuadros": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
+   ],
+   "n_vec": 0
+  },
+  {
+   "carpeta": "med_S0008",
+   "tipo": "forzado",
+   "descripcion": "Forzado 2.1–2.2 A (CI 3)",
+   "corriente_A": 2.15,
+   "n_tif": 3072,
+   "cih_n_cuadros": 3072,
+   "fps": 60.0,
+   "shutter": "1/60",
+   "bits": 10,
+   "tamano": "1024x1024",
+   "prefijo_tif": "Forzado_2.1A_20250602_163413_C1S00010000",
+   "primeros_cuadros": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
+   ],
+   "n_vec": 0
+  },
+  {
+   "carpeta": "med_S0009",
+   "tipo": "decaimiento",
+   "descripcion": "Decaimiento 4 desde CI 3",
+   "corriente_A": null,
+   "n_tif": 3072,
+   "cih_n_cuadros": 3072,
+   "fps": 60.0,
+   "shutter": "1/60",
+   "bits": 10,
+   "tamano": "1024x1024",
+   "prefijo_tif": "Decaimiento_4_20250602_164003_C1S0001000",
+   "primeros_cuadros": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
+   ],
+   "n_vec": 3071
+  },
+  {
+   "carpeta": "med_S0010",
+   "tipo": "quenching",
+   "descripcion": "Quenching 2 (desde el reposo)",
+   "corriente_A": null,
+   "n_tif": 2573,
+   "cih_n_cuadros": 2573,
+   "fps": 60.0,
+   "shutter": "1/60",
+   "bits": 10,
+   "tamano": "1024x1024",
+   "prefijo_tif": "Quenching_2_20250602_164644_C1S000100000",
+   "primeros_cuadros": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
+   ],
+   "n_vec": 0
+  },
+  {
+   "carpeta": "med_S0011",
+   "tipo": "quenching",
+   "descripcion": "Quenching 3 (regrabación de med 7)",
+   "corriente_A": null,
+   "n_tif": 3072,
+   "cih_n_cuadros": 3072,
+   "fps": 60.0,
+   "shutter": "1/60",
+   "bits": 10,
+   "tamano": "1024x1024",
+   "prefijo_tif": "Quenching_3_20250602_170030_C1S000100000",
+   "primeros_cuadros": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12
+   ],
+   "n_vec": 6163
+  },
+  {
+   "carpeta": "Deca1_destino",
+   "n_vec": 308,
+   "n_tif": 616,
+   "grilla": "255x255",
+   "ventana_solape_compatibles": [
+    "8 px @ 50%"
+   ],
+   "frac_valida": 0.3533,
+   "prefijo_vec": "decaimiento1_dT10_piv_FFT",
+   "prefijo_tif": "Decaimiento_1",
+   "primeros_cuadros": [
+    1,
+    2,
+    11,
+    12,
+    21,
+    22,
+    31,
+    32,
+    41,
+    42,
+    51,
+    52
+   ]
+  },
+  {
+   "carpeta": "Deca2_destino",
+   "n_vec": 308,
+   "n_tif": 616,
+   "grilla": "255x255",
+   "ventana_solape_compatibles": [
+    "8 px @ 50%"
+   ],
+   "frac_valida": 0.3619,
+   "prefijo_vec": "decaimiento2_dT10_piv_FFT",
+   "prefijo_tif": "Decaimiento_2",
+   "primeros_cuadros": [
+    1,
+    2,
+    11,
+    12,
+    21,
+    22,
+    31,
+    32,
+    41,
+    42,
+    51,
+    52
+   ]
+  },
+  {
+   "carpeta": "Deca3_destino",
+   "n_vec": 308,
+   "n_tif": 616,
+   "grilla": "255x255",
+   "ventana_solape_compatibles": [
+    "8 px @ 50%"
+   ],
+   "frac_valida": 0.3588,
+   "prefijo_vec": "decaimiento3_dT10_piv_FFT",
+   "prefijo_tif": "Decaimiento_3",
+   "primeros_cuadros": [
+    1,
+    2,
+    11,
+    12,
+    21,
+    22,
+    31,
+    32,
+    41,
+    42,
+    51,
+    52
+   ]
+  },
+  {
+   "carpeta": "Deca4_destino",
+   "n_vec": 308,
+   "n_tif": 616,
+   "grilla": "255x255",
+   "ventana_solape_compatibles": [
+    "8 px @ 50%"
+   ],
+   "frac_valida": 0.348,
+   "prefijo_vec": "decaimiento4_dT10_piv_FFT",
+   "prefijo_tif": "Decaimiento_4",
+   "primeros_cuadros": [
+    1,
+    2,
+    11,
+    12,
+    21,
+    22,
+    31,
+    32,
+    41,
+    42,
+    51,
+    52
+   ]
+  },
+  {
+   "carpeta": "Deca4_destino_dt5",
+   "n_vec": 613,
+   "n_tif": 614,
+   "grilla": "253x253",
+   "ventana_solape_compatibles": [
+    "16 px @ 75%"
+   ],
+   "frac_valida": 0.7214,
+   "prefijo_vec": "quenching3_dt5_piv_FFT",
+   "prefijo_tif": "Decaimiento_4",
+   "primeros_cuadros": [
+    5,
+    10,
+    15,
+    20,
+    25,
+    30,
+    35,
+    40,
+    45,
+    50,
+    55,
+    60
+   ],
+   "sesion": "Sesion_200226_win16",
+   "sesion_dt": 0.08333333333333333,
+   "sesion_secuencia": "(1+2),(2+3)",
+   "sesion_ventana_final": 16
+  },
+  {
+   "carpeta": "Forza3_destino_dt5",
+   "n_vec": 534,
+   "n_tif": 614,
+   "grilla": "253x253",
+   "ventana_solape_compatibles": [
+    "16 px @ 75%"
+   ],
+   "frac_valida": 0.7363,
+   "prefijo_vec": "forzado3_dt5_0203_piv_FFT",
+   "prefijo_tif": "Forzado_2.1A",
+   "primeros_cuadros": [
+    5,
+    10,
+    15,
+    20,
+    25,
+    30,
+    35,
+    40,
+    45,
+    50,
+    55,
+    60
+   ]
+  },
+  {
+   "carpeta": "Quen1_destino",
+   "n_vec": 308,
+   "n_tif": 616,
+   "grilla": "255x255",
+   "ventana_solape_compatibles": [
+    "8 px @ 50%"
+   ],
+   "frac_valida": 0.3533,
+   "prefijo_vec": "quenching1_dT10_piv_FFT",
+   "prefijo_tif": "Quenching",
+   "primeros_cuadros": [
+    1,
+    2,
+    11,
+    12,
+    21,
+    22,
+    31,
+    32,
+    41,
+    42,
+    51,
+    52
+   ]
+  },
+  {
+   "carpeta": "Quen2_destino",
+   "n_vec": 258,
+   "n_tif": 516,
+   "grilla": "255x255",
+   "ventana_solape_compatibles": [
+    "8 px @ 50%"
+   ],
+   "frac_valida": 0.3457,
+   "prefijo_vec": "quenching2_dT10_piv_FFT",
+   "prefijo_tif": "Quenching_2",
+   "primeros_cuadros": [
+    1,
+    2,
+    11,
+    12,
+    21,
+    22,
+    31,
+    32,
+    41,
+    42,
+    51,
+    52
+   ]
+  },
+  {
+   "carpeta": "Quen3_destino",
+   "n_vec": 985,
+   "n_tif": 616,
+   "grilla": "253x253",
+   "ventana_solape_compatibles": [
+    "16 px @ 75%"
+   ],
+   "frac_valida": 0.9989,
+   "prefijo_vec": "quenching3_dT10_1802_piv_FFT",
+   "prefijo_tif": "Quenching_3",
+   "primeros_cuadros": [
+    1,
+    2,
+    11,
+    12,
+    21,
+    22,
+    31,
+    32,
+    41,
+    42,
+    51,
+    52
+   ]
+  },
+  {
+   "carpeta": "Quen3_destino_dt5",
+   "n_vec": 1839,
+   "n_tif": 614,
+   "grilla": "253x253",
+   "ventana_solape_compatibles": [
+    "16 px @ 75%"
+   ],
+   "frac_valida": 0.7266,
+   "prefijo_vec": "quenching3_dt5_2602_piv_FFT",
+   "prefijo_tif": "Quenching_3",
+   "primeros_cuadros": [
+    5,
+    10,
+    15,
+    20,
+    25,
+    30,
+    35,
+    40,
+    45,
+    50,
+    55,
+    60
+   ],
+   "sesion": "Sesion_190226_win16",
+   "sesion_dt": 0.08333333333333333,
+   "sesion_secuencia": "(1+2),(2+3)",
+   "sesion_ventana_final": 16
+  }
+ ],
+ "chequeos": [
+  {
+   "id": "V-04",
+   "objeto": "med_S0001",
+   "pregunta": "¿n de TIF coincide con la cabecera .cih?",
+   "esperado": 682,
+   "obtenido": 682,
+   "pasa": true,
+   "nota": ""
+  },
+  {
+   "id": "V-04",
+   "objeto": "med_S0002",
+   "pregunta": "¿n de TIF coincide con la cabecera .cih?",
+   "esperado": 3072,
+   "obtenido": 3072,
+   "pasa": true,
+   "nota": ""
+  },
+  {
+   "id": "V-04",
+   "objeto": "med_S0003",
+   "pregunta": "¿n de TIF coincide con la cabecera .cih?",
+   "esperado": 3072,
+   "obtenido": 3072,
+   "pasa": true,
+   "nota": ""
+  },
+  {
+   "id": "V-04",
+   "objeto": "med_S0004",
+   "pregunta": "¿n de TIF coincide con la cabecera .cih?",
+   "esperado": 3072,
+   "obtenido": 3072,
+   "pasa": true,
+   "nota": ""
+  },
+  {
+   "id": "V-04",
+   "objeto": "med_S0005",
+   "pregunta": "¿n de TIF coincide con la cabecera .cih?",
+   "esperado": 3072,
+   "obtenido": 3072,
+   "pasa": true,
+   "nota": ""
+  },
+  {
+   "id": "V-04",
+   "objeto": "med_S0006",
+   "pregunta": "¿n de TIF coincide con la cabecera .cih?",
+   "esperado": 3072,
+   "obtenido": 3072,
+   "pasa": true,
+   "nota": ""
+  },
+  {
+   "id": "V-04",
+   "objeto": "med_S0007",
+   "pregunta": "¿n de TIF coincide con la cabecera .cih?",
+   "esperado": 3072,
+   "obtenido": 3072,
+   "pasa": true,
+   "nota": ""
+  },
+  {
+   "id": "V-04",
+   "objeto": "med_S0008",
+   "pregunta": "¿n de TIF coincide con la cabecera .cih?",
+   "esperado": 3072,
+   "obtenido": 3072,
+   "pasa": true,
+   "nota": ""
+  },
+  {
+   "id": "V-04",
+   "objeto": "med_S0009",
+   "pregunta": "¿n de TIF coincide con la cabecera .cih?",
+   "esperado": 3072,
+   "obtenido": 3072,
+   "pasa": true,
+   "nota": ""
+  },
+  {
+   "id": "V-04",
+   "objeto": "med_S0010",
+   "pregunta": "¿n de TIF coincide con la cabecera .cih?",
+   "esperado": 2573,
+   "obtenido": 2573,
+   "pasa": true,
+   "nota": ""
+  },
+  {
+   "id": "V-04",
+   "objeto": "med_S0011",
+   "pregunta": "¿n de TIF coincide con la cabecera .cih?",
+   "esperado": 3072,
+   "obtenido": 3072,
+   "pasa": true,
+   "nota": ""
+  },
+  {
+   "id": "V-01",
+   "objeto": "campaña completa",
+   "pregunta": "¿los timestamps siguen el orden del cuaderno?",
+   "esperado": "creciente",
+   "obtenido": "creciente",
+   "pasa": true,
+   "nota": "mapea carpeta -> medición"
+  },
+  {
+   "id": "V-05",
+   "objeto": "Deca1_destino",
+   "pregunta": "¿el prefijo de los .vec coincide con el de los TIF?",
+   "esperado": "Decaimiento_1",
+   "obtenido": "decaimiento1_dT10_piv_FFT",
+   "pasa": true,
+   "nota": ""
+  },
+  {
+   "id": "V-05",
+   "objeto": "Deca2_destino",
+   "pregunta": "¿el prefijo de los .vec coincide con el de los TIF?",
+   "esperado": "Decaimiento_2",
+   "obtenido": "decaimiento2_dT10_piv_FFT",
+   "pasa": true,
+   "nota": ""
+  },
+  {
+   "id": "V-05",
+   "objeto": "Deca3_destino",
+   "pregunta": "¿el prefijo de los .vec coincide con el de los TIF?",
+   "esperado": "Decaimiento_3",
+   "obtenido": "decaimiento3_dT10_piv_FFT",
+   "pasa": true,
+   "nota": ""
+  },
+  {
+   "id": "V-05",
+   "objeto": "Deca4_destino",
+   "pregunta": "¿el prefijo de los .vec coincide con el de los TIF?",
+   "esperado": "Decaimiento_4",
+   "obtenido": "decaimiento4_dT10_piv_FFT",
+   "pasa": true,
+   "nota": ""
+  },
+  {
+   "id": "V-03",
+   "objeto": "Deca4_destino_dt5",
+   "pregunta": "¿el dt de la sesión coincide con la separación real de cuadros?",
+   "esperado": 0.08333333333333333,
+   "obtenido": 0.08333333333333333,
+   "pasa": true,
+   "nota": "secuencia (1+2),(2+3)"
+  },
+  {
+   "id": "V-02",
+   "objeto": "Deca4_destino_dt5",
+   "pregunta": "¿la ventana de la sesión es compatible con la grilla de los .vec?",
+   "esperado": [
+    "16 px @ 75%"
+   ],
+   "obtenido": "16 px",
+   "pasa": true,
+   "nota": ""
+  },
+  {
+   "id": "V-05",
+   "objeto": "Deca4_destino_dt5",
+   "pregunta": "¿el prefijo de los .vec coincide con el de los TIF?",
+   "esperado": "Decaimiento_4",
+   "obtenido": "quenching3_dt5_piv_FFT",
+   "pasa": false,
+   "nota": "ETIQUETADO INCONSISTENTE"
+  },
+  {
+   "id": "V-05",
+   "objeto": "Forza3_destino_dt5",
+   "pregunta": "¿el prefijo de los .vec coincide con el de los TIF?",
+   "esperado": "Forzado_2.1A",
+   "obtenido": "forzado3_dt5_0203_piv_FFT",
+   "pasa": true,
+   "nota": ""
+  },
+  {
+   "id": "V-05",
+   "objeto": "Quen1_destino",
+   "pregunta": "¿el prefijo de los .vec coincide con el de los TIF?",
+   "esperado": "Quenching",
+   "obtenido": "quenching1_dT10_piv_FFT",
+   "pasa": true,
+   "nota": ""
+  },
+  {
+   "id": "V-05",
+   "objeto": "Quen2_destino",
+   "pregunta": "¿el prefijo de los .vec coincide con el de los TIF?",
+   "esperado": "Quenching_2",
+   "obtenido": "quenching2_dT10_piv_FFT",
+   "pasa": true,
+   "nota": ""
+  },
+  {
+   "id": "V-05",
+   "objeto": "Quen3_destino",
+   "pregunta": "¿el prefijo de los .vec coincide con el de los TIF?",
+   "esperado": "Quenching_3",
+   "obtenido": "quenching3_dT10_1802_piv_FFT",
+   "pasa": true,
+   "nota": ""
+  },
+  {
+   "id": "V-03",
+   "objeto": "Quen3_destino_dt5",
+   "pregunta": "¿el dt de la sesión coincide con la separación real de cuadros?",
+   "esperado": 0.08333333333333333,
+   "obtenido": 0.08333333333333333,
+   "pasa": true,
+   "nota": "secuencia (1+2),(2+3)"
+  },
+  {
+   "id": "V-02",
+   "objeto": "Quen3_destino_dt5",
+   "pregunta": "¿la ventana de la sesión es compatible con la grilla de los .vec?",
+   "esperado": [
+    "16 px @ 75%"
+   ],
+   "obtenido": "16 px",
+   "pasa": true,
+   "nota": ""
+  },
+  {
+   "id": "V-05",
+   "objeto": "Quen3_destino_dt5",
+   "pregunta": "¿el prefijo de los .vec coincide con el de los TIF?",
+   "esperado": "Quenching_3",
+   "obtenido": "quenching3_dt5_2602_piv_FFT",
+   "pasa": true,
+   "nota": ""
+  }
+ ]
+}
