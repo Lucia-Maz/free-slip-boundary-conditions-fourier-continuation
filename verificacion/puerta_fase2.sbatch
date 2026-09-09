@@ -40,9 +40,32 @@ export OMPI_MCA_btl=sm,self,tcp
 # prefijo; con módulos están separados. Ver [D-34].
 eval "$(bash verificacion/toolchain_cluster.sh)"
 
-# La E/S va a /share/scratch, no a $HOME: desde los nodos de cómputo la E/S paralela
-# contra $HOME es lenta.
-export SPECTER_SCRATCH="/share/scratch/$USER/puerta-fase2-${SLURM_JOB_ID:-manual}"
+# La E/S no va a $HOME: desde los nodos de cómputo la E/S paralela contra $HOME es
+# lenta. Las reglas dicen /share/data* y /share/scratch*, CON ASTERISCO, así que los
+# directorios reales tienen algún sufijo y hay que descubrirlos en vez de adivinarlos.
+elegir_base() {
+    local d
+    for base in ${SPECTER_SCRATCH_BASE:-} /share/scratch* /share/data*; do
+        [ -d "$base" ] || continue
+        d="$base/$USER"
+        if mkdir -p "$d" 2>/dev/null && [ -w "$d" ]; then echo "$d"; return 0; fi
+    done
+    return 1
+}
+
+if BASE="$(elegir_base)"; then
+    echo "scratch: $BASE"
+else
+    # Para ESTA puerta no es grave: corre con -np 1 y arreglos de ~130 kB, así que la
+    # advertencia sobre MPI-IO paralela no aplica. Para una corrida de producción sí,
+    # y ahí hay que resolver el acceso a /share antes de lanzar.
+    BASE="${TMPDIR:-/tmp}/$USER"
+    mkdir -p "$BASE"
+    echo "[aviso] no hay /share escribible; se usa $BASE." >&2
+    echo "[aviso] alcanza para la puerta (un proceso, arreglos chicos), NO para producción." >&2
+fi
+
+export SPECTER_SCRATCH="$BASE/puerta-fase2-${SLURM_JOB_ID:-manual}"
 mkdir -p "$SPECTER_SCRATCH"
 trap 'rm -rf "$SPECTER_SCRATCH"' EXIT   # SPECTER_SCRATCH explícito no se autolimpia
 
