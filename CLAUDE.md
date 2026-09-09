@@ -53,7 +53,55 @@ correr algo largo, conviene pedir que se cierre el navegador.
 
 **Clúster (Sakura).** Es donde va el cómputo pesado: corridas de producción de SPECTER y
 estudios de convergencia. Los límites de memoria de arriba **no** aplican ahí; sí aplica
-todo lo demás de este archivo.
+todo lo demás de este archivo. Las reglas operativas están abajo.
+
+### Reglas del clúster
+
+Tal como las dieron los administradores, textuales y sin traducir, porque son operativas y
+una mala traducción se paga con un trabajo mal lanzado:
+
+> ## Cluster (sakura, SLURM)
+> - Nodes: g1,g2: two Tesla P4 (cc61) each, partition `cuda`; a1,a2: two MI210 each,
+>   partition `rocm`; c1-c5 and sakura (login) CPU nodes, `compute`/`normal`. Avoid
+>   l1-l3 nodes or ask before using. When using CPUs in a1, a2, g1, g2, leave four
+>   cores free. When using GPUs request one core per task (other jobs fill the cores,
+>   GPUs stay free) and `--gres=gpu:N`; `srun --mpi=pmix`.
+> - Network is 10 Gb Ethernet, no InfiniBand: TCP is the inter-node transport.
+>   ROCm runs: `OMPI_MCA_pml=ucx UCX_TLS=rocm_copy,rocm_ipc,sm,self,tcp`.
+>   On sakura under srun the gnu OpenMPI needs `OMPI_MCA_pml=ob1
+>   OMPI_MCA_btl=sm,self,tpc`. Short CPU jobs can run on sakura (partition normal).
+> - MPI-IO works on `/share/data*` and `/share/scratch*` (use a directory with
+>   the user name there); from compute nodes to $HOME I/O is slow when parallel.
+> - Use modules: `gnu15`, `openmpi5`, `fftw/3.3.11`, `cmake/4.1.2`, `python/3.13.13`
+>   (has numpy/PyYAML), `rocm/7.2`, `cuda/12.4`, `nvhpc-stack/24.5`.
+
+**Una errata aparente, que no corrijo por mi cuenta:** en `OMPI_MCA_btl=sm,self,tpc`, el
+`tpc` es casi seguramente `tcp` — coincide con la frase anterior, que dice que el
+transporte entre nodos es TCP. Antes de usarlo conviene confirmarlo con quien las escribió;
+si `sm,self,tcp` funciona y `tpc` no, es eso.
+
+### Qué implican para este proyecto
+
+- **SPECTER en el clúster no usa el env de conda `specter`.** Ahí se compila con los
+  módulos: `gnu15`, `openmpi5` y `fftw/3.3.11`. `Makefile.in` hay que apuntarlo al
+  `FFTWDIR` del módulo en vez de al prefijo de conda ([D-23] describe el resto de la
+  configuración, que no cambia).
+- **Es CPU puro.** SPECTER en este proyecto se compila y corre en CPU, así que la partición
+  es `compute` (o `normal` para pruebas cortas en el nodo de login). Los nodos con GPU no
+  hacen falta, y si alguna vez se usan sus CPUs hay que dejar cuatro cores libres.
+- **El scratch de las corridas va a `/share/scratch*`, no a `$HOME`.** SPECTER escribe
+  salida binaria y desde los nodos de cómputo la E/S paralela contra `$HOME` es lenta. Usar
+  un directorio con el nombre de usuario adentro.
+- **`python/3.13.13` trae numpy pero no scipy ni matplotlib**, y este proyecto los necesita:
+  `scipy.optimize` en `numerico/fase4/superficie_libre_escalas.py`, y matplotlib en todos
+  los scripts de figuras. Para eso hace falta un venv propio sobre ese módulo, o correr las
+  figuras en la laptop desde los JSON de `salidas/tablas/`, que es lo que el repositorio ya
+  permite.
+- **Las puertas de aceptación corren igual**, y son la prueba de que el árbol quedó bien
+  armado: `verificacion/test_aceptacion_fase2.py` compila SPECTER en un scratch temporal y
+  tiene que dar 6/6. Es un trabajo corto de un solo proceso, así que entra en `normal`.
+- Al lanzar con `srun`, el binario de SPECTER se invoca con `--mpi=pmix`, y en sakura la
+  OpenMPI de gnu necesita además las variables `OMPI_MCA_*` de arriba.
 
 **El disco externo con los datos crudos está sólo en la laptop.** Los scripts que lo tocan
 (`codigo/0*_*.py`, vía `piv_comun.RAIZ`) no corren en el clúster. Lo que sí viaja son los

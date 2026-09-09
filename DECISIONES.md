@@ -1168,3 +1168,32 @@ Separa además lo que **sí** depende de la máquina: los límites de memoria so
 y no aplican en Sakura, y el disco externo con los datos crudos está sólo en la laptop, de
 modo que los scripts que lo tocan no corren en el clúster —pero sus resultados ya están
 volcados en `salidas/tablas/*.json`.
+
+### [D-33] Las reglas del clúster se integran a `CLAUDE.md`, textuales y con procedencia
+
+Lucía pasó las instrucciones operativas que le dieron los administradores de Sakura y pidió
+que quedara **un único** `CLAUDE.md`, sin sobrescribir lo que ya había. Se agregaron como
+sección propia dentro de «Las dos máquinas», en un bloque citado **textual y sin traducir**:
+son reglas operativas —particiones, reserva de cores, variables de OpenMPI, dónde va la E/S
+paralela, módulos— y una mala traducción se paga con un trabajo mal lanzado. Todo lo que ya
+estaba quedó intacto.
+
+**Una errata aparente que se declara y no se corrige por cuenta propia:** en
+`OMPI_MCA_btl=sm,self,tpc`, el `tpc` es casi seguramente `tcp`, y coincide con la frase
+anterior de las mismas instrucciones, que dice que el transporte entre nodos es TCP. Queda
+anotado para confirmarlo con quien las escribió antes de usarlo.
+
+**Cuatro consecuencias para este proyecto**, que se derivaron de cruzar esas reglas con lo
+que el proyecto necesita:
+
+1. En el clúster SPECTER **no** usa el env de conda `specter`: se compila con los módulos
+   `gnu15`, `openmpi5` y `fftw/3.3.11`, apuntando `FFTWDIR` al módulo. El resto de la
+   configuración de [D-23] no cambia.
+2. Es **CPU puro**: partición `compute`, o `normal` para pruebas cortas en el nodo de
+   login. Los nodos con GPU no hacen falta.
+3. El scratch de las corridas va a `/share/scratch*`, **no a `$HOME`**: desde los nodos de
+   cómputo la E/S paralela contra `$HOME` es lenta.
+4. `python/3.13.13` trae numpy pero **no scipy ni matplotlib**, y el proyecto los usa
+   (`scipy.optimize` en `numerico/fase4/superficie_libre_escalas.py`, matplotlib en todos
+   los scripts de figuras). Hace falta un venv propio sobre ese módulo, o generar las
+   figuras en la laptop desde los JSON de `salidas/tablas/`, que el repositorio ya permite.
