@@ -1269,3 +1269,26 @@ conviene no dejarse tentar por eso.
 **Regla que queda:** trabajos cortos de un core —la puerta, los tests— a `normal`. Para la
 corrida de producción de SPECTER habrá que elegir con cuidado y mirar `sinfo` en el
 momento; y si cae en a1, a2, g1 o g2, dejar cuatro cores libres, como piden las reglas.
+
+### [D-37] El scratch del clúster queda fijado en `/share/scratch1/$USER`
+
+La primera versión buscaba por comodín entre `/share/scratch*` y `/share/data*` y tomaba el
+primero escribible. Lucía marcó que eso puede terminar en un lugar equivocado: en
+`/share/data2/$USER` están sus simulaciones de **GHOST**, y un directorio de datos no
+es lugar para el scratch de un trabajo.
+
+Queda fijado en `/share/scratch1/$USER`, que es donde cayó y es el correcto, con
+`SPECTER_SCRATCH_BASE` como escape si algún día cambia. **`/share/data*` sale de la lista
+de candidatos**: ningún script de este proyecto tiene por qué escribir ahí.
+
+**Dato de contexto:** Lucía tiene simulaciones de GHOST en el clúster, pero **ninguna de
+SPECTER todavía**. Antes de la corrida de producción vale la pena mirar si esas corridas de
+GHOST sirven de punto de comparación, pero es un tema aparte.
+
+### [H-14] `make` no está en el PATH de un trabajo de SLURM en Sakura
+
+La puerta falló con `[ERROR] [Errno 2] No such file or directory: 'make'` después de
+encontrar bien MPI y FFTW. Como el prefijo sintético se antepone al PATH,
+`toolchain_cluster.sh` resuelve ahora `make` —o `gmake`, según la instalación— y deja un
+enlace con el nombre `make` adentro. Si no encontrara ninguno, falla con un mensaje que
+sugiere buscar el módulo que lo provee.

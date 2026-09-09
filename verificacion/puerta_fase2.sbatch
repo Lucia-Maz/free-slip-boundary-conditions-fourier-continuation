@@ -41,11 +41,15 @@ export OMPI_MCA_btl=sm,self,tcp
 eval "$(bash verificacion/toolchain_cluster.sh)"
 
 # La E/S no va a $HOME: desde los nodos de cómputo la E/S paralela contra $HOME es
-# lenta. Las reglas dicen /share/data* y /share/scratch*, CON ASTERISCO, así que los
-# directorios reales tienen algún sufijo y hay que descubrirlos en vez de adivinarlos.
+# lenta.
+#
+# El destino está FIJADO a /share/scratch1/$USER, verificado el 2026-09-09. No se
+# busca por comodín entre todos los /share: /share/data2/$USER tiene las simulaciones
+# de GHOST de Lucía, y un directorio de datos no es lugar para el scratch de un
+# trabajo. Se puede pisar con SPECTER_SCRATCH_BASE si algún día cambia.
 elegir_base() {
     local d
-    for base in ${SPECTER_SCRATCH_BASE:-} /share/scratch* /share/data*; do
+    for base in ${SPECTER_SCRATCH_BASE:-} /share/scratch1; do
         [ -d "$base" ] || continue
         d="$base/$USER"
         if mkdir -p "$d" 2>/dev/null && [ -w "$d" ]; then echo "$d"; return 0; fi

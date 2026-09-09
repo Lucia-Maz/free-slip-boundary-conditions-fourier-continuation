@@ -31,6 +31,13 @@ MPIRUN="$(command -v mpirun || true)"
 # Antes que enlazar srun con el nombre mpirun y fallar de manera confusa, falla acá.
 [ -n "$MPIRUN" ] || err "no encuentro mpirun en el PATH. ¿Cargaste 'module load openmpi5'?"
 
+# --- make: en algunas instalaciones se llama gmake, o no está en el PATH del trabajo ---
+# La puerta invoca 'make' a secas. Como este prefijo se antepone al PATH, alcanza con
+# dejar acá un enlace con ese nombre, apunte a lo que apunte.
+MAKE="$(command -v make || command -v gmake || true)"
+[ -n "$MAKE" ] || err "no encuentro make ni gmake en el PATH.
+       Probá 'module avail' y buscá un módulo que lo provea (cmake, autotools, gnu)."
+
 # --- FFTW: se busca su prefijo, probando lo que suelen definir los módulos ----------
 FFTW_PREFIJO=""
 for v in "${FFTW_DIR:-}" "${FFTW_ROOT:-}" "${FFTW_HOME:-}" "${FFTWDIR:-}" \
@@ -61,6 +68,7 @@ rm -rf "$DESTINO"
 mkdir -p "$DESTINO/bin"
 ln -sf "$MPIF90" "$DESTINO/bin/mpif90"
 ln -sf "$MPIRUN" "$DESTINO/bin/mpirun"
+ln -sf "$MAKE"   "$DESTINO/bin/make"
 ln -sfn "$FFTW_PREFIJO/lib" "$DESTINO/lib"
 ln -sfn "$FFTW_PREFIJO/include" "$DESTINO/include"
 
@@ -68,6 +76,7 @@ ln -sfn "$FFTW_PREFIJO/include" "$DESTINO/include"
   echo "# prefijo sintético para SPECTER_TOOLCHAIN"
   echo "#   mpif90 -> $MPIF90"
   echo "#   mpirun -> $MPIRUN"
+  echo "#   make   -> $MAKE"
   echo "#   fftw   -> $FFTW_PREFIJO"
 } >&2
 
