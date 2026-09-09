@@ -203,18 +203,38 @@ Host github.com
 CFG
 ```
 
-Con eso, clonar y armar el árbol. **Tiene que ser por SSH**: las deploy keys no
-funcionan por HTTPS.
+**No editar `~/.ssh/config` en sakura.** Ese archivo lo genera Warewulf, el sistema de
+aprovisionamiento del clúster, y trae
+
+```
+Host *
+   IdentityFile ~/.ssh/cluster
+   StrictHostKeyChecking=no
+```
+
+Dos motivos para no tocarlo: en cuanto hay un `IdentityFile` explícito, ssh **deja de
+probar las claves por omisión**, que es exactamente por qué la clave nueva no se ofrecía;
+y si reimaginan el nodo, cualquier edición se pierde. La configuración se pone **por
+repositorio**, que vive en `.git/config` y sobrevive.
+
+Clonar **por SSH** —las deploy keys no funcionan por HTTPS— indicando la clave sólo para
+ese comando, y después fijarla en el repo:
 
 ```bash
-git clone git@github.com:Lucia-Maz/proyecto-final-piv.git
+GIT_SSH_COMMAND="ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes" \
+  git clone git@github.com:Lucia-Maz/proyecto-final-piv.git
+
 cd proyecto-final-piv
+git config core.sshCommand "ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes"
 git config user.name  "Lucia-Maz"       # local al repo: la deploy key autentica la
 git config user.email "<tu correo>"   # máquina, no firma la autoría
 
 module load gnu15 openmpi5 fftw/3.3.11        # ver CLAUDE.md
 # y después la reconstrucción de SPECTER de la sección anterior
 ```
+
+Desde ahí `git pull` y `git push` andan solos dentro de ese directorio, sin afectar las
+conexiones a los nodos de cómputo ni a ningún otro repositorio.
 
 Si alguna vez querés clonar **otro** repo tuyo en Sakura, hace falta otra clave distinta
 —GitHub rechaza la misma deploy key en dos repositorios— más un alias por repo en
