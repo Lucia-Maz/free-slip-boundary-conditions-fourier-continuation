@@ -1197,3 +1197,24 @@ que el proyecto necesita:
    (`scipy.optimize` en `numerico/fase4/superficie_libre_escalas.py`, matplotlib en todos
    los scripts de figuras). Hace falta un venv propio sobre ese módulo, o generar las
    figuras en la laptop desde los JSON de `salidas/tablas/`, que el repositorio ya permite.
+
+### [D-34] Prefijo sintético para correr la puerta de la Fase 2 en el clúster
+
+`verificacion/test_aceptacion_fase2.py` está fijada por hash y espera **un solo prefijo**
+con `bin/mpif90`, `bin/mpirun` y `lib/libfftw3` adentro, que es la forma que tiene un env
+de conda. En Sakura, con módulos, OpenMPI y FFTW viven en prefijos distintos, así que
+`SPECTER_TOOLCHAIN` no puede apuntar a uno solo.
+
+**Alternativa descartada:** editar la puerta para que acepte dos prefijos. Está fijada por
+hash justamente para que no se la toque, y flexibilizarla para una máquina nueva es
+exactamente la clase de cambio que la vuelve inútil como puerta.
+
+Se agrega `verificacion/toolchain_cluster.sh`, que arma un directorio con enlaces
+simbólicos a los dos prefijos —`bin/mpif90`, `bin/mpirun`, `lib` e `include`— y cumple la
+forma que la puerta espera. Descubre FFTW probando `FFTW_DIR`, `FFTW_ROOT`, `FFTW_HOME`,
+`FFTWDIR`, `FFTW3_DIR` y `FFTW3_ROOT`, y si ninguna sirve lo busca en `LD_LIBRARY_PATH`.
+No modifica nada fuera de su directorio de salida.
+
+    module load gnu15 openmpi5 fftw/3.3.11
+    eval "$(bash verificacion/toolchain_cluster.sh)"
+    python verificacion/test_aceptacion_fase2.py     # 6/6
