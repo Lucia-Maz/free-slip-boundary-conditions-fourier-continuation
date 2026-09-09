@@ -43,13 +43,16 @@ eval "$(bash verificacion/toolchain_cluster.sh)"
 # La E/S no va a $HOME: desde los nodos de cómputo la E/S paralela contra $HOME es
 # lenta.
 #
-# El destino está FIJADO a /share/scratch1/$USER, verificado el 2026-09-09. No se
-# busca por comodín entre todos los /share: /share/data2/$USER tiene las simulaciones
-# de GHOST de Lucía, y un directorio de datos no es lugar para el scratch de un
-# trabajo. Se puede pisar con SPECTER_SCRATCH_BASE si algún día cambia.
+# Destino: /share/data2/$USER, que es donde Lucía trabaja en el clúster (ahí están sus
+# simulaciones de GHOST). Se puede pisar con SPECTER_SCRATCH_BASE.
+#
+# PENDIENTE: la elección definitiva conviene hacerla desde el clúster, mirando espacio
+# libre y cuota de verdad (df -h, quota) en vez de decidirla a ciegas desde la laptop.
+# El trabajo escribe en un subdirectorio propio y lo borra al terminar, así que en
+# cualquier caso no se mezcla con lo que ya haya.
 elegir_base() {
     local d
-    for base in ${SPECTER_SCRATCH_BASE:-} /share/scratch1; do
+    for base in ${SPECTER_SCRATCH_BASE:-} /share/data2 /share/scratch1; do
         [ -d "$base" ] || continue
         d="$base/$USER"
         if mkdir -p "$d" 2>/dev/null && [ -w "$d" ]; then echo "$d"; return 0; fi
