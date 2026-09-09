@@ -166,30 +166,35 @@ clúster.
 
 ### La primera vez en el clúster
 
-El repositorio es **privado**, así que hay que autenticarse. Lo más limpio en una máquina
-que se va a usar seguido es una clave SSH propia del clúster.
+El repositorio es **privado**, así que hay que autenticarse. Se usa una **deploy key**:
+una clave SSH cuyo alcance es este repositorio y nada más. Sakura es una máquina
+compartida, y una clave de cuenta sin passphrase ahí daría acceso a todo el GitHub; la
+deploy key, si se filtra, sólo alcanza a este proyecto.
 
 ```bash
 # 1. ¿Sale tráfico hacia GitHub? Muchos clústeres bloquean el 22 de salida.
 ssh -T git@github.com          # "Permission denied (publickey)" YA ES BUENA SEÑAL:
                                # significa que llegó. Si queda colgado o da timeout,
-                               # ver el punto 6.
+                               # ver el punto 5.
 
-# 2. Generar la clave (dejar la passphrase vacía si no querés tipearla en cada push)
-ssh-keygen -t ed25519 -C "sakura" -f ~/.ssh/id_ed25519
-
-# 3. Mostrarla y copiarla
+# 2. Generar la clave, sin passphrase para no tipearla en cada push
+ssh-keygen -t ed25519 -C "sakura-proyecto-final-piv" -f ~/.ssh/id_ed25519 -N ""
 cat ~/.ssh/id_ed25519.pub
-#    GitHub -> Settings -> SSH and GPG keys -> New SSH key -> pegar -> Add
 
-# 4. Probar
-ssh -T git@github.com          # "Hi Lucia-Maz! You've successfully authenticated..."
+# 3. Cargarla en el REPOSITORIO (no en la cuenta):
+#    github.com/Lucia-Maz/proyecto-final-piv -> Settings -> Deploy keys
+#    -> Add deploy key -> pegar -> MARCAR "Allow write access" -> Add
+#    Sin esa marca queda de sólo lectura y no se puede pushear.
+#    Desde una máquina con gh autenticado es equivalente:
+#      gh repo deploy-key add ~/.ssh/id_ed25519.pub \
+#         --repo Lucia-Maz/proyecto-final-piv --title sakura --allow-write
 
-# 5. Identidad de git en esa máquina
-git config --global user.name  "Lucia-Maz"
-git config --global user.email "<tu correo>"
+# 4. Probar. Con deploy key el mensaje nombra al REPO, no al usuario, y eso es correcto:
+ssh -T git@github.com
+#    Hi Lucia-Maz/proyecto-final-piv! You've successfully authenticated, but GitHub
+#    does not provide shell access.
 
-# 6. Si el puerto 22 está bloqueado, GitHub escucha SSH también en el 443:
+# 5. Si el puerto 22 está bloqueado, GitHub escucha SSH también en el 443:
 cat >> ~/.ssh/config <<'CFG'
 Host github.com
   Hostname ssh.github.com
@@ -198,15 +203,22 @@ Host github.com
 CFG
 ```
 
-Con eso, clonar y armar el árbol:
+Con eso, clonar y armar el árbol. **Tiene que ser por SSH**: las deploy keys no
+funcionan por HTTPS.
 
 ```bash
 git clone git@github.com:Lucia-Maz/proyecto-final-piv.git
 cd proyecto-final-piv
+git config user.name  "Lucia-Maz"       # local al repo: la deploy key autentica la
+git config user.email "<tu correo>"   # máquina, no firma la autoría
 
 module load gnu15 openmpi5 fftw/3.3.11        # ver CLAUDE.md
 # y después la reconstrucción de SPECTER de la sección anterior
 ```
+
+Si alguna vez querés clonar **otro** repo tuyo en Sakura, hace falta otra clave distinta
+—GitHub rechaza la misma deploy key en dos repositorios— más un alias por repo en
+`~/.ssh/config`.
 
 ### Trabajar en las dos máquinas
 
