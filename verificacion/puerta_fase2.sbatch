@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=puerta-fase2
-#SBATCH --partition=compute
+#SBATCH --partition=normal
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
@@ -8,10 +8,17 @@
 #SBATCH --output=puerta-fase2-%j.out
 #
 # La puerta de aceptación de la Fase 2 en Sakura. Se manda al planificador y no se
-# corre a mano en el nodo de login: compila SPECTER y lanza unas quince simulaciones
-# chicas, o sea diez a quince minutos de CPU. Las reglas del clúster permiten trabajos
-# CPU cortos en la partición 'normal' (nodo de login); acá se usa 'compute' para no
-# cargar el login, y cambiarlo es de una línea.
+# corre a mano: compila SPECTER y lanza unas quince simulaciones chicas, o sea diez a
+# quince minutos de CPU en un solo core.
+#
+# Partición 'normal', que es la de omisión y la correcta acá. Medido con sinfo el
+# 2026-09-09: 'normal' abarca a1, c1-c5, g1-g2 y sakura; 'compute' es un SUBCONJUNTO
+# (c1-c5 y sakura, o sea que tampoco evita el nodo de login) y tiene menos prioridad,
+# de modo que un trabajo mandado ahí queda esperando huecos que se reservan para
+# 'normal'. Ver [D-36].
+#
+# NO usar 'legacy' (l1-l3) aunque figure 'idle': las reglas del clúster dicen de
+# evitar esos nodos o preguntar antes.
 #
 #   sbatch verificacion/puerta_fase2.sbatch
 #

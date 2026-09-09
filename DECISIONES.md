@@ -1243,3 +1243,29 @@ incumplimientos de lo que yo había propuesto, y uno propio:
 En el clúster, en cambio:
 
     sbatch verificacion/puerta_fase2.sbatch
+
+### [D-36] La puerta va a la partición `normal`, y corrige a [D-35]
+
+[D-35] mandaba la puerta a `compute` con el argumento de no cargar el nodo de login. **El
+argumento era falso**, y el trabajo 6885 quedó encolado con *«Nodes required for job are
+DOWN, DRAINED or reserved for jobs in higher priority partitions»*. Medido con `sinfo` el
+2026-09-09:
+
+| partición | nodos | estado |
+|---|---|---|
+| `normal*` (por omisión) | a1, c[1-5], g[1-2], sakura | mix / alloc |
+| `compute` | c[1-5], **sakura** | mix / alloc, ninguno idle |
+| `legacy` | l[1-3] | **idle** |
+| `cuda` | g[1-2] | mix |
+| `rocm` | a1, a2 | mix / alloc |
+
+Dos cosas que desmienten lo que yo había supuesto: **`compute` incluye sakura**, así que no
+evita el nodo de login; y es un **subconjunto** de `normal`, que al ser la partición por
+omisión tiene más prioridad sobre los nodos compartidos. De ahí el encolado indefinido.
+
+`legacy` es la única con nodos `idle`, y es justamente la que las reglas dicen de evitar:
+conviene no dejarse tentar por eso.
+
+**Regla que queda:** trabajos cortos de un core —la puerta, los tests— a `normal`. Para la
+corrida de producción de SPECTER habrá que elegir con cuidado y mirar `sinfo` en el
+momento; y si cae en a1, a2, g1 o g2, dejar cuatro cores libres, como piden las reglas.
