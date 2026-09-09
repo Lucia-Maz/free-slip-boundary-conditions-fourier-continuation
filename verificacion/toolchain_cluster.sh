@@ -25,9 +25,11 @@ err() { echo "ERROR: $*" >&2; exit 1; }
 
 # --- MPI: tiene que estar en el PATH, o sea con el módulo cargado -------------------
 MPIF90="$(command -v mpif90 || true)"
-MPIRUN="$(command -v mpirun || command -v srun || true)"
+MPIRUN="$(command -v mpirun || true)"
 [ -n "$MPIF90" ] || err "no encuentro mpif90 en el PATH. ¿Cargaste 'module load openmpi5'?"
-[ -n "$MPIRUN" ] || err "no encuentro mpirun ni srun en el PATH."
+# Tiene que ser mpirun y no srun: la puerta lo invoca con '-np', que srun no acepta.
+# Antes que enlazar srun con el nombre mpirun y fallar de manera confusa, falla acá.
+[ -n "$MPIRUN" ] || err "no encuentro mpirun en el PATH. ¿Cargaste 'module load openmpi5'?"
 
 # --- FFTW: se busca su prefijo, probando lo que suelen definir los módulos ----------
 FFTW_PREFIJO=""

@@ -1215,6 +1215,31 @@ forma que la puerta espera. Descubre FFTW probando `FFTW_DIR`, `FFTW_ROOT`, `FFT
 `FFTWDIR`, `FFTW3_DIR` y `FFTW3_ROOT`, y si ninguna sirve lo busca en `LD_LIBRARY_PATH`.
 No modifica nada fuera de su directorio de salida.
 
+### [D-35] En el clúster todo va por el planificador, no a mano en el nodo de login
+
+Al revisar contra las reglas que dieron los administradores aparecieron tres
+incumplimientos de lo que yo había propuesto, y uno propio:
+
+1. **Correr la puerta «en normal» a mano.** `normal` es una **partición de SLURM**: la
+   forma correcta es mandarla al planificador. La puerta compila SPECTER y lanza unas
+   quince simulaciones, diez a quince minutos de CPU que no van por fuera del scheduler en
+   una máquina compartida. Se agrega `verificacion/puerta_fase2.sbatch`, que usa la
+   partición `compute` para no cargar el nodo de login.
+2. **Faltaban las variables de transporte.** Las reglas piden `OMPI_MCA_pml=ob1` y
+   `OMPI_MCA_btl=sm,self,tcp` para la OpenMPI de gnu (red Ethernet de 10 Gb, sin
+   InfiniBand). La puerta define tres `OMPI_MCA_*` propias pero no éstas; como copia el
+   entorno heredado, alcanza con exportarlas antes, sin tocarla.
+3. **El scratch iba a `/tmp` del nodo.** Va a `/share/scratch/$USER/...`, que es donde las
+   reglas dicen que funciona la E/S paralela. Como `SPECTER_SCRATCH` explícito hace que la
+   puerta **no** lo borre al terminar, el sbatch lo limpia con un `trap`.
+4. **Un defecto propio de `toolchain_cluster.sh`:** hacía `command -v mpirun || command -v
+   srun`. Si hubiera caído en ese fallback habría enlazado `srun` con el nombre `mpirun`, y
+   la puerta lo invoca con `-np`, que `srun` no acepta. Ahora falla con un mensaje claro.
+
     module load gnu15 openmpi5 fftw/3.3.11
     eval "$(bash verificacion/toolchain_cluster.sh)"
     python verificacion/test_aceptacion_fase2.py     # 6/6
+
+En el clúster, en cambio:
+
+    sbatch verificacion/puerta_fase2.sbatch
