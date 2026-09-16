@@ -26,13 +26,19 @@ término no lineal se desestabiliza sobre mallas donde el canal aguanta. Un apar
 que NO converge con la resolución es numérico, no físico, y ese es el confundido que hay
 que descartar.
 
-Se usa la condición inicial vparam1=1 de la puerta de la Fase 2 (un modo solenoidal con
-dependencia en x), sin escribir Fortran nuevo. No cumple el no-deslizamiento del fondo, así
-que hay un transitorio inicial; se descarta y se ajusta sobre una ventana temprana, con
-el flujo todavía fuerte, que es donde delta es grande y donde habría algo que ver.
+La condición inicial es propia ([H-13]): celular y tridimensional, el modo fundamental
+del par rígido-libre en z por una suma de dos modos horizontales que no es autofunción
+del laplaciano, para que el término no lineal no se anule por simetría.
+
+Dos casos, por [D-41]/[H-16]: `forzado` (eps = 1,78, el fundamental de la red de imanes,
+delta hasta 30) y `ventana` (eps = 0,71, la ventana del ajuste experimental, delta hasta
+15). La ventana de ajuste es tardía, a más de tres memorias modales, porque la pregunta
+([P-02]) es sobre el régimen cuasi-estacionario y no sobre el transitorio.
 
 Uso:
-    /home/lucia/miniforge3/envs/piv-dt/bin/python verificacion/barrido_delta_etapa1.py
+    /home/lucia/miniforge3/envs/piv-dt/bin/python verificacion/barrido_delta_etapa1.py --caso forzado
+    /home/lucia/miniforge3/envs/piv-dt/bin/python verificacion/barrido_delta_etapa1.py --caso ventana
+    ... --prueba   corrida de humo (una malla, dos amplitudes, pasos/20), JSON aparte
 """
 
 import importlib.util
@@ -51,7 +57,10 @@ _spec = importlib.util.spec_from_file_location(
 fase2 = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(fase2)
 
-SALIDA = os.path.join(RAIZ, "salidas", "tablas", "barrido_delta_etapa1.json")
+def ruta_salida(caso):
+    return os.path.join(RAIZ, "salidas", "tablas",
+                        "barrido_delta_etapa1_%s.json" % caso)
+
 
 # --- geometría y física de las corridas ------------------------------------------
 # Los números de onda de SPECTER son ENTEROS (specter.fpp:777-780, ky(j)=j-1), o sea
@@ -59,15 +68,35 @@ SALIDA = os.path.join(RAIZ, "salidas", "tablas", "barrido_delta_etapa1.json")
 # es k=1. Verificado comparando <v^2> del código contra la fórmula analítica de la
 # condición inicial: 4.750e-3 contra 4.750e-3 con u0=0.1. Por eso Lz NO lleva 2*pi:
 # es la longitud literal.
-LZ = 0.5               # eps = k*h = 0.5, prácticamente el 0.53 de la celda medida
-NU = 1.0e-2
+#
+# Dos casos, porque el experimento tiene dos regímenes con eps distinto ([D-41], [H-16]):
+# el estado forzado y el arranque del decaimiento están en el fundamental de la red de
+# imanes, k = 296 1/m, eps = k h = 1,78; y la ventana donde se ajusta alfa (t > 10 s)
+# tiene la energía ya migrada a k ~ 60-130 1/m, eps ~ 0,35-0,8. El modo dominante de
+# la condición inicial es el diagonal, |k| = sqrt(2) en unidades de código, así que
+# Lz = eps / sqrt(2). (La versión anterior tenía Lz = 0,5 y decía "eps = 0,5" contando
+# k = 1, el axial; con el diagonal es 0,71, que cae en la ventana del ajuste y por eso
+# el caso se conserva tal cual, reinterpretado.)
+#
+# nu escala con Lz^2 para que el tiempo de código sea el mismo múltiplo de h^2/nu en
+# los dos casos: adimensionalizando con h y h^2/nu los únicos parámetros son eps y
+# delta, y nu sólo fija la unidad de tiempo. Con eso dz^2/nu, la memoria modal
+# Lz^2/(2 pi^2 nu) = 1,27 y el margen de dt son idénticos entre casos.
+LZ_REF, NU_REF = 0.5, 1.0e-2
+CASOS = {
+    # eps del fundamental de la red; delta en la ventana hasta ~30 (arranque: 27)
+    "forzado": {"eps": 1.7772, "delta_objetivo": (0.3, 1.0, 3.0, 10.0, 20.0, 30.0)},
+    # eps de la ventana del ajuste; delta hasta ~15 (ahí va de ~10 a ~1)
+    "ventana": {"eps": 0.7071, "delta_objetivo": (0.3, 1.0, 3.0, 6.0, 10.0, 15.0)},
+}
+for _c in CASOS.values():
+    _c["lz"] = _c["eps"] / math.sqrt(2.0)
+    _c["nu"] = NU_REF * (_c["lz"] / LZ_REF) ** 2
 NZ, CZ = 64, 25        # 39 puntos físicos en z: de sobra para sin(pi z / 2h)
-DT = 5.0e-4            # ~1/6 del límite de estabilidad viscosa explícita
+DT = 5.0e-4            # ~1/6 del límite de estabilidad viscosa explícita (dz^2/nu no
+                       # cambia entre casos, así que el margen tampoco)
 RESOLUCIONES = (16, 32)
-# delta ~ 15.5*u0 para esta condición inicial: el barrido cubre 0.5 a 15, que es el
-# rango que tiene el experimento (de ~20 al arranque a ~1 al final del registro)
-U0S = (0.03, 0.1, 0.2, 0.4, 0.7, 1.0)
-U0_REFERENCIA = 1.0e-4  # referencia lineal: delta ~ 1.5e-3
+U0_REFERENCIA = 1.0e-4  # referencia lineal: delta ~ 1e-3
 VPARAM1 = 1.0
 
 # --- condición inicial propia -----------------------------------------------------
@@ -116,22 +145,101 @@ IC_CELULAR = r"""
       CALL fftp1d_real_to_complex_z(planfc,vz,MPI_COMM_WORLD)
 """
 
-# La ventana de ajuste va TEMPRANO y es corta, y eso es una decisión de diseño, no
-# una economía. Con esta condición inicial la energía cae unas dos décadas por unidad
-# de tiempo; si se ajustara sobre la cola, el ajuste quedaría a amplitud minúscula, o
-# sea en el régimen LINEAL, que es justo donde no hay nada que medir. Se ajusta
-# entonces sobre [0,25 T, 0,70 T]: después del transitorio de arranque —la condición
-# inicial no cumple el no-deslizamiento del fondo y el código se lo impone por
-# inyección— y con el flujo todavía fuerte. Dentro de esa ventana delta cae un factor
-# ~2,5, así que se informa su valor en el medio y también el rango.
+# --- amplitudes: de delta objetivo a u0 --------------------------------------------
+# Para esta condición inicial <v^2> = (1/2)|grad_perp psi|^2_rms = 0,475 u0^2 (con
+# b = 0,6; verificado contra el código, ver arriba), la velocidad de la clausura es el
+# promedio vertical U = (2/pi) sqrt(2 <v^2>) = 0,62 u0, y el k del campo pesado por
+# enstrofía es sqrt((2·0,5 + 5·0,45)/0,95) = 1,85. Entonces delta(t=0) = U k Lz^2/nu =
+# 28,7 u0 en los dos casos (Lz^2/nu es el mismo). En la ventana la energía ya cayó
+# exp(-2 lambda_lin t), y eso sí depende de eps; el factor se estima acá con la
+# lambda_lin analítica y el delta REAL se calibra después desde el <v^2> medido en la
+# ventana, así que estos u0 son un punto de partida y no un resultado.
+def _u0_para_delta(caso, delta):
+    c = CASOS[caso]
+    v2_0 = 0.5 * (0.5 + 1.25 * B_SEGUNDO_MODO ** 2)
+    U_por_u0 = (2.0 / math.pi) * math.sqrt(2.0 * v2_0)
+    k_ef = math.sqrt((2.0 * 0.5 + 5.0 * 1.25 * B_SEGUNDO_MODO ** 2)
+                     / (0.5 + 1.25 * B_SEGUNDO_MODO ** 2))
+    delta_por_u0 = U_por_u0 * k_ef * c["lz"] ** 2 / c["nu"]
+    lam = c["nu"] * (k_ef ** 2 + (math.pi / (2.0 * c["lz"])) ** 2)
+    t_medio = 0.5 * (VENT[0] + VENT[1]) * T_FINAL
+    return delta / (delta_por_u0 * math.exp(-lam * t_medio))
+
+
+# --- la ventana de ajuste, y por qué es TARDÍA ---------------------------------------
+# La versión anterior ajustaba temprano, en [0,25 T, 0,70 T] con T = 3, con el
+# argumento de que sobre la cola el flujo ya sería lineal. Pero la pregunta que hay que
+# contestar ([P-02], candidato iv) es sobre la ventana del ajuste experimental, t > 10 s
+# después del corte: más de cinco memorias modales (1,82 s), o sea con el perfil
+# vertical en balance cuasi-estacionario con el término no lineal. Una ventana a menos
+# de una memoria modal del arranque mide el transitorio, que es otra cosa. Se ajusta
+# entonces en [3,0; 4,25] memorias modales, y se corre hasta 4,7. La energía en la
+# ventana está al 13 % (forzado) o al 34 % (ventana) de la inicial: lejos de minúscula,
+# y delta se lee ahí, no en t = 0. Dentro de la ventana la energía cae ~25 %, así que
+# delta se informa en el medio y con su rango.
 # La condición inicial ES el modo fundamental del par rígido-libre, así que en el caso
-# lineal no hay transitorio: decae como una exponencial pura desde t=0. La ventana no
-# necesita ser tardía, y conviene que sea corta para que delta no cambie mucho adentro:
-# en [0.25 T, 0.70 T] la energía cae un 25 % y delta un 16 %.
-T_FINAL = 3.0
+# lineal decae como una exponencial pura desde t=0, y la referencia no tiene transitorio.
+T_MEM = LZ_REF ** 2 / (2.0 * math.pi ** 2 * NU_REF)     # = 1,27, igual en los dos casos
+T_FINAL = 4.7 * T_MEM
 PASOS = int(round(T_FINAL / DT))
 CSTEP = 30
-VENT = (0.25, 0.70)
+VENT = (3.0 / 4.7, 4.25 / 4.7)
+
+
+def diagnostico_campo(dirrun, indice, nx, ny, nzf, lz, nu):
+    """k horizontal, k tridimensional y alfa_eff, MEDIDOS sobre el campo escrito.
+
+    Por qué sobre el campo y no sobre balance.txt: el <omega^2> que SPECTER escribe ahí
+    no reproduce el rotor del campo que el mismo código guarda. Sobre la condición
+    inicial del caso forzado (Lz = 1,257) el campo da <omega^2>/<v^2> = 4,983 contra
+    4,982 analítico, y balance.txt dice 2,12; con Lz = 0,5 coincidían (13,4 vs 13,3),
+    que es por lo que no se había notado. La puerta ya advertía que ese cociente trae
+    una normalización que no se cancela. No se investigó la causa dentro de SPECTER:
+    se deja de usar ([H-17]).
+
+    El campo se escribe en (nx, ny, nz-Cz) doble precisión, orden Fortran, sólo el
+    dominio físico. Derivadas espectrales en x,y (k enteros) y diferencias finitas de
+    segundo orden en z. Devuelve:
+      k_h        sqrt(<omega_z^2>/<u_h^2>): el k horizontal pesado por energía, que es
+                 el que entra en delta
+      k_3d       sqrt(<|omega|^2>/<v^2>), para contrastar con balance.txt
+      alfa_eff   nu <d_z u_h|_0 . U_h> / (h <|U_h|^2>) con U_h el promedio vertical:
+                 la fricción de fondo SIN clausura, dividida por la de la clausura
+                 nu pi^2/(4 h^2). Vale 1 exactamente para el perfil sin(pi z/2h).
+    """
+    ext = "%04d" % indice
+    ruta = os.path.join(dirrun, "out")
+    def leer(nombre):
+        return np.fromfile(os.path.join(ruta, nombre), dtype="<f8").reshape(
+            (nx, ny, nzf), order="F")
+    u, v, w = leer("vx.%s.out" % ext), leer("vy.%s.out" % ext), leer("vz.%s.out" % ext)
+    z = np.loadtxt(os.path.join(dirrun, "z.txt"))
+    kx = np.fft.fftfreq(nx, d=1.0 / nx)
+    ky = np.fft.fftfreq(ny, d=1.0 / ny)
+    def dx(f):
+        return np.real(np.fft.ifft(1j * kx[:, None, None] * np.fft.fft(f, axis=0), axis=0))
+    def dy(f):
+        return np.real(np.fft.ifft(1j * ky[None, :, None] * np.fft.fft(f, axis=1), axis=1))
+    def dz(f):
+        return np.gradient(f, z, axis=2, edge_order=2)
+    oz = dx(v) - dy(u)
+    e_h = np.mean(u ** 2 + v ** 2)
+    e = e_h + np.mean(w ** 2)
+    k_h = math.sqrt(np.mean(oz ** 2) / e_h)
+    ox = dy(w) - dz(v)
+    oy = dz(u) - dx(w)
+    k_3d = math.sqrt(np.mean(ox ** 2 + oy ** 2 + oz ** 2) / e)
+    del ox, oy, oz
+    # alfa_eff: tensión en el fondo contra promedio vertical, proyectada sobre U_h
+    dzu0 = dz(u)[:, :, 0]
+    dzv0 = dz(v)[:, :, 0]
+    Ub = np.trapezoid(u, z, axis=2) / lz
+    Vb = np.trapezoid(v, z, axis=2) / lz
+    alfa_eff = nu * np.mean(dzu0 * Ub + dzv0 * Vb) / (lz * np.mean(Ub ** 2 + Vb ** 2))
+    alfa_clausura = nu * math.pi ** 2 / (4.0 * lz ** 2)
+    return {"k_h": float(k_h), "k_3d": float(k_3d),
+            "alfa_eff_sobre_alfa": float(alfa_eff / alfa_clausura),
+            "v2_campo": float(e), "w2_sobre_v2": float(np.mean(w ** 2) / e)}
 
 
 def tasa_en_ventana(t, e, t0, t1):
@@ -167,11 +275,26 @@ def _compilar_liviano():
 def main():
     import argparse
     ap = argparse.ArgumentParser()
+    ap.add_argument("--caso", choices=sorted(CASOS), default="forzado",
+                    help="régimen del experimento a reproducir (eps); ver CASOS")
     ap.add_argument("--resolucion", type=int, default=None,
                     help="correr una sola malla, para no tener dos compilaciones "
                          "vivas en la misma sesión de memoria")
+    ap.add_argument("--prueba", action="store_true",
+                    help="humo: una malla, dos amplitudes, 1/20 de los pasos; escribe "
+                         "a un JSON aparte y no toca el de producción")
     args = ap.parse_args()
+    caso = CASOS[args.caso]
+    LZ, NU = caso["lz"], caso["nu"]
+    U0S = tuple(round(_u0_para_delta(args.caso, d), 4) for d in caso["delta_objetivo"])
     resoluciones = (args.resolucion,) if args.resolucion else RESOLUCIONES
+    pasos = PASOS
+    salida = ruta_salida(args.caso)
+    if args.prueba:
+        resoluciones = resoluciones[:1]
+        U0S = U0S[-2:]
+        pasos = max(PASOS // 20, 2 * CSTEP)
+        salida = ruta_salida(args.caso + "_prueba")
     _compilar_liviano()
 
     scratch = os.environ.get("SPECTER_SCRATCH")
@@ -180,8 +303,20 @@ def main():
         import tempfile
         scratch = tempfile.mkdtemp(prefix="delta1_")
     print("scratch: %s" % scratch, flush=True)
-    print("Lz=%.2f  nu=%.1e  dt=%.1e  pasos=%d  t_final=%.3f  ventana=[%.3f, %.3f]"
-          % (LZ, NU, DT, PASOS, T_FINAL, VENT[0]*T_FINAL, VENT[1]*T_FINAL), flush=True)
+    print("caso %s: eps=%.3f  Lz=%.4f  nu=%.3e  dt=%.1e  pasos=%d  t_final=%.3f  "
+          "ventana=[%.3f, %.3f]  (t_mem=%.3f)"
+          % (args.caso, caso["eps"], LZ, NU, DT, pasos, T_FINAL, VENT[0]*T_FINAL,
+             VENT[1]*T_FINAL, T_MEM), flush=True)
+    print("u0 del barrido (para delta objetivo %s): %s"
+          % (caso["delta_objetivo"], U0S), flush=True)
+    # un campo en el MEDIO de la ventana: el archivo 0001 es t=0 y el 0002 sale a los
+    # tstep pasos (specter.fpp:859, 1005). Se toca la plantilla en memoria, no la puerta.
+    paso_medio = int(round(0.5 * (VENT[0] + VENT[1]) * pasos))
+    assert "tstep = 1000000" in fase2.PLANTILLA_INP
+    fase2.PLANTILLA_INP = fase2.PLANTILLA_INP.replace("tstep = 1000000",
+                                                      "tstep = %d" % paso_medio)
+    print("campo escrito en el paso %d (t = %.3f)" % (paso_medio, paso_medio * DT),
+          flush=True)
 
     # la malla vertical es la misma en todas las corridas
     fase2.NZ, fase2.CZ = NZ, CZ
@@ -191,7 +326,10 @@ def main():
     # incluye initialv.f90 (specter.fpp:104-105), así que se usan tal cual.
     fase2.IC_SHEAR = IC_CELULAR.replace("BSEG", "%.4f_GP" % B_SEGUNDO_MODO)
 
-    res = {"Lz": LZ, "nu": NU, "dt": DT, "pasos": PASOS, "t_final": T_FINAL,
+    res = {"caso": args.caso, "eps": caso["eps"], "Lz": LZ, "nu": NU, "dt": DT,
+           "pasos": pasos, "t_final": pasos * DT, "t_mem": T_MEM,
+           "ventana": [VENT[0] * pasos * DT, VENT[1] * pasos * DT],
+           "delta_objetivo": list(caso["delta_objetivo"]),
            "nz": NZ, "cz": CZ, "ord": fase2.ORD, "u0s": list(U0S),
            "u0_referencia": U0_REFERENCIA, "resoluciones": list(RESOLUCIONES),
            "corridas": {}}
@@ -199,9 +337,9 @@ def main():
     # Se ANEXA sobre lo ya calculado y se guarda DESPUÉS DE CADA MALLA. Cada malla
     # cuesta varios minutos y esta máquina ya mató dos corridas por falta de memoria;
     # perder una malla entera porque el guardado estaba al final es un defecto.
-    if os.path.exists(SALIDA):
+    if os.path.exists(salida):
         try:
-            with open(SALIDA) as fh:
+            with open(salida) as fh:
                 previo = json.load(fh)
             if all(previo.get(c) == res[c] for c in
                    ("Lz", "nu", "dt", "pasos", "nz", "cz", "u0s")):
@@ -214,7 +352,7 @@ def main():
                 print("[aviso] el JSON previo es de otros parámetros; se ignora",
                       flush=True)
         except (ValueError, OSError) as exc:
-            print("[aviso] no se pudo leer %s (%s)" % (SALIDA, exc), flush=True)
+            print("[aviso] no se pudo leer %s (%s)" % (salida, exc), flush=True)
 
     for nxy in resoluciones:
         if "n%d" % nxy in res["corridas"]:
@@ -229,38 +367,47 @@ def main():
             etiqueta = "n%d_u%.0e" % (nxy, u0)
             _, _, dirrun = fase2.correr(
                 bindir, etiqueta, bcsta="noslip", bcend=fase2.CADENA_LIBRE,
-                vparam1=VPARAM1, dt=DT, step=PASOS, cstep=CSTEP, lz=LZ, nu=NU, u0=u0)
+                vparam1=VPARAM1, dt=DT, step=pasos, cstep=CSTEP, lz=LZ, nu=NU, u0=u0)
             t, e, w = fase2.leer_balance(dirrun)
 
-            t0, t1 = VENT[0] * T_FINAL, VENT[1] * T_FINAL
+            t0, t1 = VENT[0] * pasos * DT, VENT[1] * pasos * DT
             lam, disp = tasa_en_ventana(t, e, t0, t1)
-            # k efectivo y amplitud en el MEDIO de la ventana. <w^2>/<v^2> es un
-            # cociente, así que no depende de la normalización del dominio extendido.
+            # amplitud en el MEDIO de la ventana, de balance.txt; k y alfa_eff del
+            # campo escrito ahí (ver diagnostico_campo: el <omega^2> de balance.txt
+            # no sirve)
             tm = 0.5 * (t0 + t1)
             im = int(np.argmin(np.abs(t - tm)))
             i0 = int(np.argmin(np.abs(t - t0)))
             i1 = int(np.argmin(np.abs(t - t1)))
-            k_ef = float(np.sqrt(w[im] / e[im]))
+            k_bal = float(np.sqrt(w[im] / e[im]))
+            dg = diagnostico_campo(dirrun, 2, nxy, nxy, NZ - CZ, LZ, NU)
+            k_h, k_ef = dg["k_h"], dg["k_3d"]
+            # el campo y balance.txt tienen que contar la misma energía a ese instante
+            im_c = int(np.argmin(np.abs(t - paso_medio * DT)))
+            if abs(dg["v2_campo"] / e[im_c] - 1.0) > 2e-2:
+                print("   [aviso] <v2> del campo %.4e vs balance %.4e en t=%.3f"
+                      % (dg["v2_campo"], e[im_c], t[im_c]), flush=True)
             filas.append({
                 "u0": u0, "lambda": lam, "dispersion": disp,
-                "k_efectivo": k_ef,
+                "k_efectivo": k_h, "k_3d_campo": k_ef, "k_3d_balance": k_bal,
+                "alfa_eff_sobre_alfa": dg["alfa_eff_sobre_alfa"],
+                "w2_sobre_v2": dg["w2_sobre_v2"],
                 "v2_inicial": float(e[0]), "v2_medio": float(e[im]),
                 "v2_ventana": [float(e[i0]), float(e[i1])],
                 "v2_final": float(e[-1]),
                 "crece": bool(e[-1] > e[0]),
             })
-            print("   u0=%.1e  lambda=%.6e  disp=%.2e  k_ef=%.2f  "
-                  "<v2>: %.3e -> %.3e%s"
-                  % (u0, lam, disp, k_ef, e[0], e[-1],
+            print("   u0=%.1e  lambda=%.6e  disp=%.2e  k_h=%.2f  k_3d=%.2f (bal %.2f)  "
+                  "alfa_eff/alfa=%.4f  <v2>: %.3e -> %.3e%s"
+                  % (u0, lam, disp, k_h, k_ef, k_bal, dg["alfa_eff_sobre_alfa"],
+                     e[0], e[-1],
                      "   [CRECE: inestable]" if e[-1] > e[0] else ""), flush=True)
             del t, e, w
 
         ref = filas[0]["lambda"]
         for f in filas:
             f["lambda_sobre_referencia"] = f["lambda"] / ref
-            # delta a menos de una constante de forma O(1): U ~ sqrt(<v^2>) en la
-            # ventana de ajuste, k del propio campo, h = Lz
-            # delta CALIBRADO. Para esta condición inicial <v^2> = <F^2>|grad_perp
+            # delta CALIBRADO, con el k horizontal del propio campo y h = Lz. Para esta condición inicial <v^2> = <F^2>|grad_perp
             # psi|^2_rms = (1/2)|grad_perp psi|^2_rms, y la velocidad que entra en la
             # clausura es el PROMEDIO VERTICAL, U = <F>|grad_perp psi|_rms con
             # <F> = 2/pi. De ahí U = (2/pi) sqrt(2 <v^2>), y delta = U k h^2 / nu.
@@ -271,34 +418,36 @@ def main():
             f["delta_rango"] = [_delta(v) for v in f["v2_ventana"]]
         res["corridas"]["n%d" % nxy] = filas
         res.setdefault("lambda_referencia", {})["n%d" % nxy] = ref
-        os.makedirs(os.path.dirname(SALIDA), exist_ok=True)
-        with open(SALIDA, "w") as f:
+        os.makedirs(os.path.dirname(salida), exist_ok=True)
+        with open(salida, "w") as f:
             json.dump(res, f, indent=1)
         print("   guardado parcial (%s)" % ", ".join(sorted(res["corridas"])),
               flush=True)
 
-    os.makedirs(os.path.dirname(SALIDA), exist_ok=True)
-    with open(SALIDA, "w") as f:
+    os.makedirs(os.path.dirname(salida), exist_ok=True)
+    with open(salida, "w") as f:
         json.dump(res, f, indent=1)
 
-    if len(res["corridas"]) < len(RESOLUCIONES):
+    if len(res["corridas"]) < len(resoluciones):
         print("\nfalta(n) la(s) malla(s): %s"
-              % ", ".join(str(n) for n in RESOLUCIONES
+              % ", ".join(str(n) for n in resoluciones
                           if "n%d" % n not in res["corridas"]))
-        print("escrito %s" % os.path.relpath(SALIDA, RAIZ))
+        print("escrito %s" % os.path.relpath(salida, RAIZ))
         return 0
 
-    print("\nRESUMEN  lambda/lambda_lineal")
-    print("  u0        " + "".join("  %dx%d      " % (n, n) for n in RESOLUCIONES))
+    print("\nRESUMEN  lambda/lambda_lineal  (caso %s, eps=%.2f)" % (args.caso, caso["eps"]))
+    print("  u0        delta    " + "".join("  %dx%d      " % (n, n) for n in resoluciones))
     for i, u0 in enumerate(U0S):
-        fila = "  %.1e " % u0
-        for n in RESOLUCIONES:
+        fila = "  %.2e " % u0
+        for j, n in enumerate(resoluciones):
             f = res["corridas"]["n%d" % n][i + 1]
+            if j == 0:
+                fila += " %6.2f " % f["delta"]
             fila += "  %9.6f%s" % (f["lambda_sobre_referencia"],
                                    "*" if f["crece"] else " ")
         print(fila)
     print("  (* = la energía creció: corrida inestable, no usable)")
-    print("\nescrito %s" % os.path.relpath(SALIDA, RAIZ))
+    print("\nescrito %s" % os.path.relpath(salida, RAIZ))
 
     if temporal and os.environ.get("SPECTER_KEEP") != "1":
         import shutil

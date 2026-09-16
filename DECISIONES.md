@@ -1503,3 +1503,67 @@ empuja para el otro lado; (iv) el perfil vertical no es el fundamental en la ven
 (δ ≈ 3–10 ahí), y la fricción efectiva difiere de α — que es exactamente lo que el
 barrido en δ con SPECTER mide. Hasta resolverlo, el número que se entrega es el cociente
 contra α pelado **con esta salvedad escrita al lado**, no como acuerdo.
+
+### [D-42] El barrido en δ se rediseña con la geometría real: dos casos en ε, ν escalado, ventana tardía
+
+Lucía, 2026-09-16, sobre la corrección del paso: *"hacé ambas para que el experimento
+numérico se planee y realice informado de estos cambios"*. `verificacion/barrido_delta_etapa1.py`
+estaba diseñado con `Lz = 0,5` y δ hasta 15, y nunca había corrido a término. Lo que
+cambia:
+
+1. **Dos casos, por ε.** El experimento tiene dos regímenes con ε distinto ([D-41],
+   [H-16]): el estado forzado y el arranque del decaimiento en el fundamental de la red,
+   ε = 1,78, δ hasta ~27; y la ventana del ajuste (t > 10 s) con la energía en
+   k ≈ 60–130 m⁻¹, ε ≈ 0,35–0,8, δ de ~10 a ~1. El modo dominante de la condición inicial
+   es el diagonal, |k| = √2 en unidades de código, así que `Lz = ε/√2`: **1,257** para el
+   caso `forzado` y **0,5** para el caso `ventana`. Ese 0,5 es el `Lz` que ya estaba —el
+   comentario decía "ε = 0,5" contando el k axial; con el diagonal es 0,71, que cae en la
+   ventana del ajuste—, así que el caso viejo se conserva tal cual, reinterpretado.
+2. **ν escala con Lz².** Adimensionalizando con h y h²/ν los únicos parámetros son ε y
+   δ; ν sólo fija la unidad de tiempo. Con ν ∝ Lz² la memoria modal Lz²/(2π²ν) = 1,27, el
+   cociente dz²/ν y el margen de `dt` son idénticos entre casos.
+3. **La ventana de ajuste es tardía: [3,0; 4,25] memorias modales, corriendo hasta 4,7.**
+   La versión anterior ajustaba en [0,25 T; 0,70 T] con T = 3 (≈ 0,6–1,7 memorias),
+   temprano a propósito para tener el flujo fuerte. Pero la pregunta que hay que contestar
+   ([P-02], candidato iv) es sobre la ventana experimental, a más de cinco memorias del
+   corte, con el perfil vertical en balance cuasi-estacionario con el término no lineal.
+   A menos de una memoria del arranque se mide el transitorio, que es otra cosa. Costo: la
+   energía en la ventana está al 6 % (forzado) o al 30 % (ventana) de la inicial, y para
+   llegar a δ = 30 en la ventana del caso forzado hace falta u0 = 4,4, con un arranque a
+   δ ≈ 120. Es lo que las dos resoluciones tienen que aguantar; si no convergen ahí, esos
+   puntos se descartan y se dice.
+4. **Las amplitudes salen de δ objetivo**, no de una lista a mano: `_u0_para_delta`
+   invierte δ(t=0) = 28,7·u0 (calibración analítica de la condición inicial) con el
+   decaimiento lineal hasta el medio de la ventana. El δ que se informa se **mide** ahí.
+5. **k y α_eff se miden sobre el campo escrito en el medio de la ventana**, no sobre
+   `balance.txt` ([H-17]). `k_h = √(⟨ω_z²⟩/⟨u_h²⟩)` es el k horizontal pesado por energía
+   que entra en δ, y `α_eff = ν⟨∂_z u_h|₀·Ū_h⟩/(h⟨|Ū_h|²⟩)` es la fricción de fondo sin
+   clausura —la cantidad que la sección 1 de `teoria/P01_validez_reduccion_2D.md` pedía
+   medir— dividida por νπ²/4h². Sobre la referencia lineal da 1,0007.
+
+**Alternativas descartadas:** un solo caso en ε = 1,78 (deja sin contestar la ventana del
+ajuste, que es donde está [P-02]); mantener la ventana temprana (mide el transitorio);
+seguir con `Lz = 0,5` y ν = 0,01 pero alargar la corrida del caso forzado (mismo problema
+físico, cuatro veces más pasos).
+
+**Corrección de paso que la prueba de humo destapó:** el `k_efectivo` anterior salía de
+`⟨ω²⟩/⟨v²⟩` **tridimensional**, que incluye el cizallamiento vertical `(π/2Lz)² = 9,87`
+contra 3,4 del laplaciano horizontal, e inflaba δ un factor 2 en el caso ventana. Nunca
+llegó a un resultado publicado.
+
+### [H-17] El `⟨ω²⟩` de `balance.txt` no reproduce el rotor del campo que SPECTER guarda
+
+Sobre la condición inicial del caso forzado (Lz = 1,257, malla 16×16×64), el campo
+`vx/vy/vz.0001.out` transformado con numpy (espectral en x,y, diferencias finitas en z,
+dominio físico) da `⟨|ω|²⟩/⟨v²⟩ = 4,983`, contra 4,982 analítico
+(`k_h² + (π/2Lz)² = 3,42 + 1,56`). `balance.txt` en el mismo instante escribe 2,12, y el
+cociente se mantiene en 2,12–2,13 a lo largo de la corrida. Con Lz = 0,5 el cociente de
+`balance.txt` era 13,4 contra 13,3 analítico, y por eso no se había notado. La energía
+`⟨v²⟩` de `balance.txt` sí coincide con la del campo (es lo que el barrido verifica en
+cada corrida). La puerta de la Fase 2 ya advertía en `tasa_de_ajuste` que `⟨v²⟩` y `⟨ω²⟩`
+traen normalizaciones que no se cancelan entre sí.
+
+**No se investigó la causa** dentro de `pseudospec_hd.f90`; la decisión es no usar ese
+número. Las tasas λ, que salen de la pendiente de `log⟨v²⟩`, no están afectadas, y
+coinciden con la analítica al 0,1 % (ventana) y al 1,3 % (forzado; la diferencia es la
+deriva del segundo modo horizontal dentro de la ventana, que decae más rápido).
