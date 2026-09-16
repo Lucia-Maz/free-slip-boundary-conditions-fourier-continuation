@@ -346,8 +346,14 @@ def main():
                 res["corridas"].update(previo.get("corridas", {}))
                 res.setdefault("lambda_referencia", {}).update(
                     previo.get("lambda_referencia", {}))
-                print("anexando sobre: %s" % ", ".join(sorted(res["corridas"])),
-                      flush=True)
+                # mallas a medias: se guarda después de CADA corrida, porque el
+                # vigilante de memoria de la laptop puede matar el proceso en
+                # cualquier momento y una malla de 32x32 son ~40 min
+                res["parciales"] = previo.get("parciales", {})
+                print("anexando sobre: %s%s" % (
+                    ", ".join(sorted(res["corridas"])),
+                    "".join("; %s a medias (%d corridas)" % (k, len(v))
+                            for k, v in res["parciales"].items())), flush=True)
             else:
                 print("[aviso] el JSON previo es de otros parámetros; se ignora",
                       flush=True)
@@ -362,8 +368,13 @@ def main():
         bindir = fase2.construir(os.path.join(scratch, "arbol_%d" % nxy))
         print("\n=== malla %dx%dx%d compilada" % (nxy, nxy, NZ), flush=True)
 
-        filas = []
+        clave = "n%d" % nxy
+        filas = list(res.get("parciales", {}).get(clave, []))
+        hechas = {f["u0"] for f in filas}
         for u0 in (U0_REFERENCIA,) + U0S:
+            if u0 in hechas:
+                print("   u0=%.1e ya calculada, se saltea" % u0, flush=True)
+                continue
             etiqueta = "n%d_u%.0e" % (nxy, u0)
             _, _, dirrun = fase2.correr(
                 bindir, etiqueta, bcsta="noslip", bcend=fase2.CADENA_LIBRE,
@@ -403,6 +414,10 @@ def main():
                      e[0], e[-1],
                      "   [CRECE: inestable]" if e[-1] > e[0] else ""), flush=True)
             del t, e, w
+            res.setdefault("parciales", {})[clave] = filas
+            os.makedirs(os.path.dirname(salida), exist_ok=True)
+            with open(salida, "w") as f:
+                json.dump(res, f, indent=1)
 
         ref = filas[0]["lambda"]
         for f in filas:
@@ -416,8 +431,9 @@ def main():
                 return U * f["k_efectivo"] * LZ ** 2 / NU
             f["delta"] = _delta(f["v2_medio"])
             f["delta_rango"] = [_delta(v) for v in f["v2_ventana"]]
-        res["corridas"]["n%d" % nxy] = filas
-        res.setdefault("lambda_referencia", {})["n%d" % nxy] = ref
+        res["corridas"][clave] = filas
+        res.setdefault("lambda_referencia", {})[clave] = ref
+        res.get("parciales", {}).pop(clave, None)
         os.makedirs(os.path.dirname(salida), exist_ok=True)
         with open(salida, "w") as f:
             json.dump(res, f, indent=1)

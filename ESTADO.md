@@ -215,7 +215,9 @@ geometría de los imanes quedan declarados en `codigo/celda.py` ([D-27]).
 
 **Hechos el 2026-09-16:** el paso de los imanes corregido a 1,5 cm ([D-41]) a partir de
 que Lucía notó que el pico del espectro no estaba donde la figura marcaba el forzado
-([H-16]); ε, δ y λ(k) recalculados, y la comparación de [V-13] abierta como [P-02].
+([H-16]); ε, δ y λ(k) recalculados, y la comparación de [V-13] abierta como [P-02]. El
+barrido en δ rediseñado con esa geometría ([D-42]) y lanzado en la laptop, secuencial,
+con `ulimit -v`; logs en `verificacion/logs/barrido_delta_etapa1_*.log`.
 
 **Lo que sigue, en este orden:**
 
@@ -223,10 +225,13 @@ que Lucía notó que el pico del espectro no estaba donde la figura marcaba el f
    [P-01] y es el candidato (iv) de [P-02]: el promedio vertical da, sin ninguna
    clausura, `α_eff = (ν/h)·∂_z u|₀ / ⟨u⟩`, y la curva de `α_eff/λ(k)` contra
    δ ≈ 0,3…30 (con k = 296 m⁻¹ el inicio del decaimiento está en 27, [D-41]) **es** la
-   respuesta. **Ojo:** `verificacion/barrido_delta_etapa1.py` está diseñado con
-   `LZ = 0.5` (ε = 0,5, el valor viejo) y amplitudes hasta δ ≈ 15; con la geometría
-   corregida ε = 1,78 y el barrido tiene que llegar a δ ≈ 30. Cambiar la geometría del
-   barrido es decisión de Lucía, no está hecho. Con dos resoluciones horizontales, porque además es el estudio de
+   respuesta. **Rediseñado el 2026-09-16 ([D-42])**: `verificacion/barrido_delta_etapa1.py`
+   corre dos casos, `--caso forzado` (ε = 1,78, δ hasta 30) y `--caso ventana` (ε = 0,71,
+   δ hasta 15), con ν escalado con Lz², ventana de ajuste tardía (3–4,25 memorias
+   modales) y `k_h` y `α_eff` medidos sobre el campo escrito en el medio de la ventana —
+   no sobre el `⟨ω²⟩` de `balance.txt`, que no reproduce el rotor del campo ([H-17]).
+   Un JSON por caso en `salidas/tablas/barrido_delta_etapa1_<caso>.json`; figuras y PDF
+   con `codigo/10_figuras_barrido_delta.py --caso …` y `11_pdf_barrido_delta.py --caso …`. Con dos resoluciones horizontales, porque además es el estudio de
    convergencia con el tope free-slip puesto que [H-09] dejó pendiente para producción. El diseño
    está escrito en la sección 7 de `teoria/P01_validez_reduccion_2D.md`.
 2. **Una corrida de producción en Sakura** con la geometría real de la celda, y de ahí el

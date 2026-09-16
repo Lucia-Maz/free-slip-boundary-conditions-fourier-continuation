@@ -82,8 +82,10 @@ método.
 
 Esto \emph{no} demuestra que el efecto sea nulo: demuestra que, si existe, es menor que la
 incertidumbre con la que se lo compararía. Para el uso que tiene en este trabajo
-—contrastar $\alpha$ calculado contra $\alpha$ medido— eso alcanza, y quiere decir que el
-acuerdo del 2,4\,\%% reportado en~[V-13] no está contaminado por no linealidad.""",
+—contrastar $\alpha$ calculado contra $\alpha$ medido— eso alcanza, y quiere decir que la
+comparación de~[V-13] no está contaminada por no linealidad en este régimen. Lo que sigue
+abierto en~[P-02] —que el $\alpha$ medido queda por debajo de $\lambda(k)$— no se explica
+entonces por este candidato.""",
  "hay": r"""\textbf{Hay apartamiento, y converge con la resolución.} El máximo es
 %(ap).2f\,\%%, por encima de la barra experimental (%(barra).1f\,\%%), y las dos mallas
 coinciden dentro de %(conv).2f\,\%%, de modo que no es un artefacto de resolución. La
@@ -98,7 +100,11 @@ Hace falta una malla más fina antes de sacar conclusiones.""",
 
 
 def main():
-    with open(os.path.join(TABLAS, "barrido_delta_etapa1.json")) as f:
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--caso", default="forzado")
+    args = ap.parse_args()
+    with open(os.path.join(TABLAS, "barrido_delta_etapa1_%s.json" % args.caso)) as f:
         d = json.load(f)
     ver, ev = veredicto(d)
 
@@ -109,15 +115,16 @@ def main():
         for c in claves:
             f = d["corridas"][c][i + 1]
             celdas.append((f["delta"], f["lambda_sobre_referencia"],
-                           f["crece"]))
+                           f.get("alfa_eff_sobre_alfa", float("nan")), f["crece"]))
         filas.append((u0, celdas))
 
     cuerpo = []
     for u0, celdas in filas:
-        s = r"\num{%.0e}" % u0
-        for delta, rat, crece in celdas:
-            s += " & %.3g & %s" % (delta,
-                                   r"\emph{inestable}" if crece else "%.5f" % rat)
+        s = r"\num{%.2e}" % u0
+        for delta, rat, aeff, crece in celdas:
+            s += " & %.3g & %s & %s" % (
+                delta, r"\emph{inestable}" if crece else "%.5f" % rat,
+                "--" if crece else "%.4f" % aeff)
         cuerpo.append(s + r" \\")
 
     tex = r"""\documentclass[11pt,a4paper]{article}
@@ -133,9 +140,9 @@ def main():
 \sisetup{output-exponent-marker=\text{e}}
 
 \title{¿Se aparta la fricción de fondo calculada cuando el flujo deja de ser lento?\\
-\large Barrido en $\delta$, etapa 1}
+\large Barrido en $\delta$, etapa 1 --- caso \emph{%(caso)s}, $\epsilon = %(eps).2f$}
 \author{Proyecto final --- capa delgada con superficie libre}
-\date{9 de septiembre de 2026}
+\date{%(fecha)s}
 
 \begin{document}
 \maketitle
@@ -163,12 +170,25 @@ campo de banda ancha no tiene esa protección. Las dos se cierran midiendo.
 
 Se integra la ecuación de Navier--Stokes incompresible con el esquema de partición de
 Fontana \emph{et al.}~\cite{fontana2020}, con fondo no deslizante y tope free-slip,
-y se mide la tasa de decaimiento $\lambda$ de $\langle v^2\rangle$ sobre la
-cola del registro, cuando el campo ya relajó al modo vertical más lento.
+y se mide la tasa de decaimiento $\lambda$ de $\langle v^2\rangle$ sobre una ventana
+tardía, entre %(v0).2f y %(v1).2f memorias modales $h^2/(2\pi^2\nu)$ desde el arranque:
+la pregunta [P-02] es sobre la ventana del ajuste experimental, a más de cinco memorias
+del corte, con el perfil vertical en balance cuasi-estacionario con el término no lineal
+([D-42]). Además, sobre el campo escrito en el medio de esa ventana se mide directamente
+$\alpha_\text{eff} = \nu\,\langle \partial_z u_h|_0 \cdot \bar U_h\rangle / (h\,\langle|\bar U_h|^2\rangle)$,
+la fricción de fondo \emph{sin} clausura, que vale exactamente $\alpha$ para el perfil
+$\sin(\pi z/2h)$; y el $k$ horizontal pesado por energía, que es el que entra en $\delta$.
+
+\paragraph{El caso.} $\epsilon = kh = %(eps).2f$ reproduce el régimen \emph{%(caso)s} del
+experimento ([D-41]): con el paso real de la red de imanes, el estado forzado y el arranque
+del decaimiento están en $\epsilon = 1{,}78$, y la ventana del ajuste de $\alpha$
+($t > 10$~s), con la energía ya migrada a $k \approx 60$--$130$~m$^{-1}$, en
+$\epsilon \approx 0{,}35$--$0{,}8$. El modo dominante de la condición inicial es el diagonal,
+$|k| = \sqrt2$ en unidades de código, así que $L_z = \epsilon/\sqrt2$.
 
 \paragraph{La referencia lineal se mide, no se escribe.} El punto de comparación sale de
 correr \emph{el mismo binario, la misma malla y la misma condición inicial} a amplitud
-$u_0 = \num{1e-5}$, cuatro órdenes por debajo de la corrida más chica del barrido, donde
+$u_0 = \num{1e-4}$, dos órdenes por debajo de la corrida más chica del barrido, donde
 el término no lineal es despreciable por construcción. Así la referencia incluye
 automáticamente el $k$ discreto de la malla, el sesgo del integrador y el filtro de
 \emph{dealiasing}, y el cociente $\lambda/\lambda_\text{lin}$ es un número puro:
@@ -181,10 +201,13 @@ mallas donde el canal aguanta: a amplitud alta y malla chica la energía \emph{c
 forzado, que es imposible. Un apartamiento que no converge al refinar es numérico, no
 físico. Por eso todo el barrido se corre a $16\times16$ y a $32\times32$.
 
-\paragraph{Parámetros.} Caja $1\times1\times%(lz)s$, $\nu = \num{%(nu)s}$,
-$N_z = %(nz)d$ con $C_z = %(cz)d$ puntos de continuación, Runge--Kutta de orden %(ord)d,
-$\Delta t = \num{%(dt)s}$ (un tercio del límite de estabilidad viscosa explícita),
-%(pasos)d pasos hasta $t = %(tf).3f$, que es un tiempo de fricción $1/\alpha$.
+\paragraph{Parámetros.} Caja $2\pi\times2\pi\times%(lz).4f$, $\nu = \num{%(nu)s}$
+(escalada con $L_z^2$ para que el tiempo de código sea el mismo múltiplo de $h^2/\nu$ en
+los dos casos), $N_z = %(nz)d$ con $C_z = %(cz)d$ puntos de continuación, Runge--Kutta de
+orden %(ord)d, $\Delta t = \num{%(dt)s}$ (un sexto del límite de estabilidad viscosa
+explícita), %(pasos)d pasos hasta $t = %(tf).3f$, es decir %(tf_tmem).1f memorias
+modales. Las amplitudes $u_0$ se eligieron para cubrir $\delta$ objetivo
+%(delta_obj)s en la ventana; el $\delta$ de la tabla es el medido ahí.
 
 \paragraph{El criterio, fijado antes de mirar los resultados.} Se declara que
 \emph{hay} apartamiento si alguna corrida estable se aparta más que la barra de error del
@@ -201,7 +224,7 @@ sección~\ref{sec:res} lo produce el código, no el autor.
 \centering
 \begin{tabular}{l%(cols)s}
 \toprule
-& \multicolumn{%(ncol)d}{c}{$\delta$ y $\lambda/\lambda_\text{lin}$ por malla}\\
+& \multicolumn{%(ncol)d}{c}{$\delta$, $\lambda/\lambda_\text{lin}$ y $\alpha_\text{eff}/\alpha$ por malla}\\
 \cmidrule(l){2-%(lastcol)d}
 $u_0$ %(cab)s \\
 \midrule
@@ -268,20 +291,26 @@ Su sección 2.3 se aplicó al esquema de este solver en~[V-15].
 \end{document}
 """
 
-    ncol = 2 * len(claves)
-    cab = "".join(r" & \multicolumn{2}{c}{$%s\times%s$}" % (c[1:], c[1:])
+    ncol = 3 * len(claves)
+    cab = "".join(r" & \multicolumn{3}{c}{$%s\times%s$}" % (c[1:], c[1:])
                   for c in claves)
-    cab = cab.replace(r"\multicolumn{2}{c}", r"\multicolumn{2}{c}")
-    sub = " ".join(r"& $\delta$ & $\lambda/\lambda_\text{lin}$" for _ in claves)
+    sub = " ".join(r"& $\delta$ & $\lambda/\lambda_\text{lin}$ & $\alpha_\text{eff}/\alpha$"
+                   for _ in claves)
 
     datos = {
-        "lz": d["Lz"], "nu": "%.0e" % d["nu"], "nz": d["nz"], "cz": d["cz"],
+        "lz": d["Lz"], "nu": "%.3e" % d["nu"], "nz": d["nz"], "cz": d["cz"],
         "ord": d["ord"], "dt": "%.0e" % d["dt"], "pasos": d["pasos"],
         "tf": d["t_final"], "barra": 100 * BARRA_EXPERIMENTAL,
-        "cols": "rr" * len(claves), "ncol": ncol, "lastcol": ncol + 1,
+        "caso": d.get("caso", args.caso), "eps": d.get("eps", float("nan")),
+        "fecha": __import__("datetime").date.today().strftime("%d de %B de %Y"),
+        "v0": d["ventana"][0] / d["t_mem"], "v1": d["ventana"][1] / d["t_mem"],
+        "tf_tmem": d["t_final"] / d["t_mem"],
+        "delta_obj": ", ".join("%g" % x for x in d.get("delta_objetivo", [])),
+        "cols": "rrr" * len(claves), "ncol": ncol, "lastcol": ncol + 1,
         "cab": cab + r" \\ " + sub,
         "cuerpo": "\n".join(cuerpo),
-        "fig": os.path.relpath(os.path.join(FIGS, "f7_barrido_delta.pdf"), DESTINO),
+        "fig": os.path.relpath(os.path.join(FIGS, "f7_barrido_delta_%s.pdf"
+                                            % d.get("caso", args.caso)), DESTINO),
         "veredicto": TEXTO[ver] % {
             "ap": 100 * ev["apartamiento_maximo"],
             "barra": 100 * BARRA_EXPERIMENTAL,
@@ -290,7 +319,7 @@ Su sección 2.3 se aplicó al esquema de este solver en~[V-15].
     }
 
     os.makedirs(DESTINO, exist_ok=True)
-    ruta_tex = os.path.join(DESTINO, "barrido_delta_etapa1.tex")
+    ruta_tex = os.path.join(DESTINO, "barrido_delta_etapa1_%s.tex" % datos["caso"])
     with open(ruta_tex, "w") as f:
         f.write(tex % datos)
 

@@ -8,7 +8,10 @@ tema de quien mira. Paleta: slots 1 y 2 de la paleta categórica de referencia, 
 con dos series la validación por pares adyacentes de esa paleta aplica directamente.
 
 Uso:
-    /home/lucia/miniforge3/envs/piv-dt/bin/python codigo/10_figuras_barrido_delta.py
+    /home/lucia/miniforge3/envs/piv-dt/bin/python codigo/10_figuras_barrido_delta.py --caso forzado
+    /home/lucia/miniforge3/envs/piv-dt/bin/python codigo/10_figuras_barrido_delta.py --caso ventana
+
+Un JSON por caso ([D-42]): salidas/tablas/barrido_delta_etapa1_<caso>.json.
 """
 
 import importlib.util
@@ -49,6 +52,7 @@ def guardar(fig, nombre):
 def fig_apartamiento(d):
     t = figs.estilo("claro")
     fig, ax = plt.subplots(figsize=(7.0, 4.3))
+    caso = d.get("caso", "")
 
     ax.axhspan(1 - BARRA_EXPERIMENTAL, 1 + BARRA_EXPERIMENTAL,
                color=t["grilla"], alpha=0.8, lw=0, zorder=0)
@@ -62,6 +66,10 @@ def fig_apartamiento(d):
         x = [f["delta"] for f in filas]
         y = [f["lambda_sobre_referencia"] for f in filas]
         ax.plot(x, y, "o-", color=c, ms=6.5, mec=t["fondo"], mew=1.5, zorder=3)
+        # alfa_eff/alfa medido sobre el campo: la fricción de fondo sin clausura
+        if filas and "alfa_eff_sobre_alfa" in filas[0]:
+            ax.plot(x, [f["alfa_eff_sobre_alfa"] for f in filas], "s--", color=c,
+                    ms=5.5, mfc=t["fondo"], mec=c, mew=1.5, lw=1.1, zorder=3)
         if malos:
             ax.plot([f["delta"] for f in malos],
                     [f["lambda_sobre_referencia"] for f in malos],
@@ -72,12 +80,14 @@ def fig_apartamiento(d):
                         va="center", fontweight="semibold")
 
     ax.set_xscale("log")
-    ax.set_xlabel("δ del campo simulado  (a menos de una constante de forma O(1))")
-    ax.set_ylabel("λ medida / λ lineal")
-    ax.set_title("¿Se aparta la tasa de decaimiento al crecer el término no lineal?")
-    ax.annotate("banda gris: ±7 %, la barra del α medido en el experimento",
+    ax.set_xlabel("δ medido en la ventana de ajuste  (k horizontal del propio campo)")
+    ax.set_ylabel("cociente contra la referencia lineal")
+    ax.set_title("¿Se aparta la fricción al crecer el término no lineal?  caso %s, ε = %.2f"
+                 % (caso, d.get("eps", float("nan"))))
+    ax.annotate("círculos llenos: λ/λ_lin · cuadrados vacíos: α_eff/α del campo\n"
+                "banda gris: ±7 %, la barra del α medido en el experimento",
                 (0.02, 0.05), xycoords="axes fraction", color=t["tinta2"], fontsize=9)
-    return guardar(fig, "f7_barrido_delta")
+    return guardar(fig, "f7_barrido_delta_%s" % caso if caso else "f7_barrido_delta")
 
 
 def fig_decaimientos(d):
@@ -99,7 +109,11 @@ def fig_decaimientos(d):
 
 
 def main():
-    with open(os.path.join(TABLAS, "barrido_delta_etapa1.json")) as f:
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--caso", default="forzado")
+    args = ap.parse_args()
+    with open(os.path.join(TABLAS, "barrido_delta_etapa1_%s.json" % args.caso)) as f:
         d = json.load(f)
     r1 = fig_apartamiento(d)
     print("escrito %s" % os.path.relpath(r1, RAIZ))
@@ -111,6 +125,9 @@ def main():
         print("  %s: " % clave + "  ".join(
             "%.5f%s" % (f["lambda_sobre_referencia"], "*" if f["crece"] else "")
             for f in filas[1:]))
+        if "alfa_eff_sobre_alfa" in filas[1]:
+            print("  %s  alfa_eff/alfa: " % (" " * len(clave)) + "  ".join(
+                "%.5f" % f["alfa_eff_sobre_alfa"] for f in filas[1:]))
         buenos = [f for f in filas[1:] if not f["crece"]]
         if buenos:
             ap = max(abs(f["lambda_sobre_referencia"] - 1) for f in buenos)
