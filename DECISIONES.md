@@ -1388,3 +1388,118 @@ constancia de cómo se habló en su momento (no se reescribe el log, [README.md]
 —es la fuente de la que sale esta decisión, no algo que corregirle—; y
 `verificacion/test_aceptacion_fase1.py`/`test_aceptacion_fase2.py`, las puertas fijadas
 por hash, que no se editan aunque usen la frase en un docstring o un mensaje.
+
+## 2026-09-16
+
+### [H-16] El pico del espectro forzado está en 295 m⁻¹, y era el fundamental de la red con el paso bien puesto
+
+Lucía, mirando `f4_espectros`: *"creo que lo estás localizando mal (k más chico que el que
+veo que tiene un pico)"*. Tenía razón, y los datos ya lo decían.
+
+**Lo que había.** `celda.py` declaraba imanes de 1 cm en una red de 5 cm de paso, y de ahí
+`k_fundamental = π√2/a = 88,9 m⁻¹` (λ = 7,07 cm), que [V-11] llamó "el k del forzado".
+`p01_validez.py` lo "verificaba" tomando el **argmax modo a modo** de la transformada de
+un patrón de discos ±1. Eso sólo prueba que el modo individual más alto es el fundamental,
+lo que es cierto para cualquier red, y no dice dónde está la energía: el mismo script
+devolvía `fraccion_energia_en_fundamental = 0,115` y `k_medio_pesado = 575 m⁻¹`, y ese
+dato quedó anotado como "salvedad del modelo crudo" en vez de leerse como lo que era.
+
+**Lo que dicen los campos.** En `salidas/tablas/decaimiento.json`, los doce espectros de la
+meseta forzada (t < 10 s, los cuatro registros, [D-30]) tienen su pico **en el mismo bin:
+294,9 m⁻¹**, con bins de 23,6 (campo de 26,9 cm). Es un pico único y angosto, λ ≈ 2,1 cm,
+3,3 veces por encima de los 88,9 que marcaba la línea punteada de la figura. Durante el
+decaimiento migra a 59–130 m⁻¹, consistente con que los modos de k = 295 decaen a
+λ(k) = α(1 + νk²/α) ≈ 2,3α y los grandes a ~α.
+
+**La causa era un dato, no el método.** Al preguntar la geometría, Lucía: *"son 5 mm entre
+imanes, fue un typo"*: 1 cm de imán más 5 mm de vacío, **1,5 cm entre centros**, y un
+acrílico de casi 6 mm entre la cara del imán y la capa. Con a = 1,5 cm el fundamental de
+la red es **296,2 m⁻¹** (λ = 2,12 cm): cociente contra el pico medido **0,996**, dentro
+de un cuarto de bin. Con los imanes ocupando dos tercios del paso y el acrílico
+suavizando el campo sobre una distancia comparable, el patrón es casi un coseno puro y el
+fundamental se lleva la energía —el modelo de discos ±1, que sobrestima los armónicos,
+ya da 79 % en el fundamental—, así que "k de la red" y "k donde el forzado inyecta" son
+lo mismo. Con el paso de 5 cm no lo eran (3 % de llenado: fuentes puntuales), y esa
+diferencia fue la que se discutió antes de descubrir el typo.
+
+De paso: el `ℓ = 2 cm` heredado que [V-11] descartó como "ninguna longitud de la celda"
+era, a un 6 %, la longitud de onda del flujo forzado.
+
+**Alternativa descartada:** definir un "k del forzado" medido, separado del fundamental
+de la red, con procedencia propia en `celda.py`. Con el paso correcto no hace falta; la
+red lo predice y el espectro lo confirma. Ahora `p01_validez.py` lee el pico de la meseta
+desde `decaimiento.json` si existe y lo imprime al lado del de la red.
+
+### [D-41] El paso de la red de imanes es 1,5 cm entre centros; corrige a [D-27]
+
+`codigo/celda.py`: `paso = 1,5 cm`, más dos campos nuevos con procedencia, `separacion =
+5 mm` (vacío entre cilindros) y `acrilico = 6 mm` (cara del imán a fondo de la capa), y
+una comprobación de que `paso = diametro + separacion`. El diámetro de 1 cm y el patrón de
+tablero no cambian. Procedencia: Lucía, 2026-09-16.
+
+**Lo que se recalculó**, todo desde el mismo `celda.py` y sin tocar los espectros (que no
+dependen del paso):
+
+| | antes (a = 5 cm) | ahora (a = 1,5 cm) |
+|---|---|---|
+| k fundamental de la red | 88,9 m⁻¹ | **296,2 m⁻¹** |
+| ε = kh | 0,533 | **1,777** |
+| λ(k)/α = 1 + 4ε²/π² | 1,115 | **2,28** |
+| δ en el forzado (⟨u⟩ = 0,84 mm/s) | 2,69 | **8,97** |
+| δ al inicio del decaimiento (⟨u⟩ = 2,55 mm/s) | 8,15 | **27,2** |
+| distorsión estimada \|a₁/a₀\| ≈ 0,0077 δ | 2 % y 6 % | **7 % y 21 %** |
+| cota de la película, μ_s = β μ/(k²h) para β = 0,15 | 3·10⁻⁶ N·s/m | **2,8·10⁻⁷ N·s/m** |
+
+Salidas regeneradas: `p01_validez.json`, `superficie_libre_escalas.json`,
+`decaimiento_resumen.json`, figuras `f4`/`f5` y `salidas/decaimiento.html`.
+`decaimiento.json` guarda en `celda.k_forzado_1_m` el 88,9 con que se corrió
+`06_decaimiento.py`; no se editó a mano (es la configuración con que se produjo) y
+`07_figuras_decaimiento.py` ya no lo lee: toma el k de `celda.py`.
+
+**Qué cambia de conclusión y qué no.**
+
+- **[V-11] sigue teniendo razón en el método y cambia en el número.** El criterio
+  correcto es la distorsión del perfil y no δ; pero con k = 296 la distorsión estimada al
+  inicio del decaimiento es 21 %, no 6 %: la clausura de un modo es **mala en la meseta
+  y en los primeros segundos**, y buena recién cuando la energía migró a k ≲ 130 y U
+  cayó, que es dentro de la ventana del ajuste (t > 10 s). El barrido en δ con SPECTER
+  del punto 1 de la Fase 4 tiene que llegar a δ ≈ 30, no a 10.
+- **[H-11] se invierte en la lectura.** El k pesado por energía (240 → 135 m⁻¹) ya no
+  está "por encima del forzado": está **por debajo** del fundamental de la red desde el
+  primer instante, porque el promedio pesado incluye el hombro de k chico. El pico, no
+  el promedio, es lo que coincide con la red.
+- **[D-28] queda igual en conclusión y no en la frase.** La longitud capilar (k = 369 m⁻¹)
+  ya no es "bastante mayor" que el k del forzado: 296 está a un 20 %. Restituye igual la
+  gravedad (9810 contra 6317 Pa/m) y η/h sigue en 10⁻⁵; sólo cambia el margen.
+- **La comparación de [V-13] queda abierta:** ver [P-02].
+
+**Alternativa descartada:** dejar el paso como estaba y tratar los 295 medidos como
+"escala del flujo, distinta de la del forzado". Era la lectura de [H-11] y se sostenía
+sólo porque el paso estaba mal.
+
+### [P-02] Pregunta abierta: el α medido está por debajo de λ(k) para cualquier k que tenga energía
+
+[V-13] compara el α medido (0,0669 ± 0,0049 s⁻¹, t > 10 s) contra α pelado (0,0685) y
+lo da a 2,4 %. Pero la tasa de decaimiento de u_rms es, sin ninguna clausura horizontal,
+`α + ν⟨k²⟩_E` —cada modo decae con λ(k) = α + νk² y u_rms² es la suma—, y **siempre está
+por encima de α**. Con el k corregido esto ya no es un detalle:
+
+| k que se use | λ(k) [1/s] | medido / λ(k) |
+|---|---|---|
+| α pelado (k → 0) | 0,0685 | 0,98 |
+| pico en la ventana del ajuste, 59–130 m⁻¹ | 0,0720–0,0854 | 0,93–0,78 |
+| k pesado por energía al final, 135 m⁻¹ | 0,0868 | 0,77 |
+| fundamental de la red, 296 m⁻¹ | 0,156 | 0,43 |
+
+O sea que el "acuerdo al 2,4 %" es contra el único valor que el flujo **no** puede tener.
+La tensión pre-existía —ESTADO.md ya decía que había que comparar contra 1,115α, y [V-13]
+no lo hizo— y con k = 296 en la meseta se vuelve un 7–25 % en la ventana del ajuste.
+
+Candidatos, ninguno chequeado: (i) el k pesado está inflado por el piso de ruido, que
+[V-14] mostró que no es blanco, y el pico (59–83 al final) es una lectura mejor que el
+promedio; (ii) h es mayor que 6 mm —α ∝ 1/h², y 6,5 mm bajan α a 0,058, que con
++27 % de viscosidad horizontal da 0,074—; (iii) la película superficial no aplica porque
+empuja para el otro lado; (iv) el perfil vertical no es el fundamental en la ventana
+(δ ≈ 3–10 ahí), y la fricción efectiva difiere de α — que es exactamente lo que el
+barrido en δ con SPECTER mide. Hasta resolverlo, el número que se entrega es el cociente
+contra α pelado **con esta salvedad escrita al lado**, no como acuerdo.

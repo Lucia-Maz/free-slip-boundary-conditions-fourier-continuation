@@ -44,7 +44,8 @@ los archivos siguen exactamente ese orden.
 
 **Condiciones**: Photron FASTCAM-1024PCI, 1024×1024, 10 bits, 60 fps, shutter 1/60 s.
 Escala 3800 px/m (0,263 mm/px, campo de 26,9 cm). Capa de 6 mm de KNO₃ al 16 % m/m con
-partículas de 100 µm, sobre imanes de 1 cm en red tipo tablero de 5 cm de paso.
+partículas de 100 µm, sobre imanes de 1 cm en red tipo tablero de 1,5 cm entre centros
+(5 mm de vacío entre imanes, acrílico de 6 mm hasta la capa; [D-41]).
 Corrientes de forzado: 0,9–1,0 A (16 V), 1,9–2,0 A y 2,1–2,2 A (32 V).
 
 Estos valores **cambian entre experiencias** y por eso están declarados una sola vez, con

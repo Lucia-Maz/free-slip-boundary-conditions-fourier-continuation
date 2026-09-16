@@ -1,6 +1,6 @@
 # Estado — dónde estamos y cómo retomar
 
-**Instantánea del 2026-09-09 (segunda del día).** Este archivo existe para que se pueda retomar el trabajo
+**Instantánea del 2026-09-16.** Este archivo existe para que se pueda retomar el trabajo
 sin la conversación que lo produjo: si la sesión se cae, o pasa una semana, alcanza con
 leer esto, `DECISIONES.md` y `bibliografia/REFERENCIAS.md`.
 
@@ -79,9 +79,10 @@ de instrumento y la barra de error de la comparación con el experimento. Las en
 | Convención de base de SPECTER | φ = C₁·exp(k(z−Lz)) + C₂·exp(−kz) |
 
 Con los parámetros de `codigo/celda.py` (h = 6 mm, ν = 10⁻⁶ m²/s): **α = 0,06854 s⁻¹**,
-τ = 1/α = **14,59 s**, contra los 51,2 s que dura cada registro. Para el armónico
-fundamental del forzado hay que comparar contra **λ(k) = α(1 + 4ε²/π²) = 1,115 α**, no
-contra α pelado ([V-11]).
+τ = 1/α = **14,59 s**, contra los 51,2 s que dura cada registro. Un modo de número de
+onda k decae con **λ(k) = α(1 + 4ε²/π²)**, ε = kh, no con α pelado; para el fundamental
+de la red de imanes (k = 296 m⁻¹, [D-41]) eso es **2,28 α**, y ahí está la pregunta
+abierta [P-02].
 
 ### De la Fase 2, medidos con SPECTER ya modificado
 
@@ -124,17 +125,19 @@ Derivación en `teoria/P01_validez_reduccion_2D.md`, cuentas en
 | | |
 |---|---|
 | Parámetro que gobierna la clausura | **δ = U k h²/ν = Re_h·ε**, con ε = k h |
-| ε para esta celda | 0,533 → la viscosidad horizontal agrega **11,5 %** a α |
-| δ en el forzado (⟨u⟩ = 0,84 mm/s) | **2,69** |
-| δ al inicio del decaimiento (⟨u⟩ = 2,55 mm/s) | **8,15** |
-| Distorsión del perfil vertical, \|a₁/a₀\| ≈ 0,0077 δ | **2 %** y **6 %** |
+| ε para esta celda (k = 296 m⁻¹, [D-41]) | 1,78 → la viscosidad horizontal agrega **128 %** a α para ese modo |
+| δ en el forzado (⟨u⟩ = 0,84 mm/s) | **8,97** |
+| δ al inicio del decaimiento (⟨u⟩ = 2,55 mm/s) | **27,2** |
+| Distorsión del perfil vertical, \|a₁/a₀\| ≈ 0,0077 δ | **7 %** y **21 %** |
 | Memoria del segundo modo vertical, h²/(2π²ν) | 1,82 s, contra registros de 51,2 s |
 
-**Lo que hay que retener:** el criterio heredado estaba mal escrito (usaba ℓ = 2 cm, que
-no es ninguna longitud de la celda, y ℓ en vez de k, que es ambiguo por 2π). Bien escrito,
-δ es **peor** que lo que decía la pregunta abierta; pero δ no es lo que tiene que ser
-chico, y la distorsión que sí lo es queda en pocos por ciento. **La clausura no queda
-invalidada en el régimen medido.**
+**Lo que hay que retener:** el criterio heredado estaba mal escrito (ℓ en vez de k, ambiguo
+por 2π), y el que lo reemplazó tenía el paso de los imanes mal por un factor 3,3 ([D-41]).
+Con los números de hoy, δ no es lo que tiene que ser chico, pero la distorsión que sí lo
+es vale **21 % al inicio del decaimiento**: la clausura de un modo es **mala en la meseta
+y en los primeros segundos**, y buena recién dentro de la ventana del ajuste (t > 10 s),
+cuando la energía migró a k ≲ 130 m⁻¹ y U cayó. El barrido en δ con SPECTER tiene que
+llegar a δ ≈ 30.
 
 ### De la Fase 4 — el decaimiento medido ([V-13])
 
@@ -152,10 +155,19 @@ Página de revisión con figuras: `salidas/decaimiento.html`
 comparación que motivaba el proyecto. Limitado por `h`, no por la estadística: medio
 milímetro de error en el espesor mueve α un 17 %.
 
+> **Salvedad abierta desde el 2026-09-16 ([P-02]):** α pelado es la tasa de un modo con
+> k → 0, y la de u_rms es α + ν⟨k²⟩, siempre mayor. Con el k que sí tiene el flujo en la
+> ventana del ajuste (pico en 59–130 m⁻¹) la predicción es 0,072–0,085 s⁻¹ y el medido
+> queda un 7–22 % **por debajo**. El "2,4 %" es contra el único valor que el flujo no
+> puede tener. No está resuelto.
+
 Dos cosas más que salieron de ahí:
 
-- **El k del flujo no es el del forzado** ([H-11]): pesado por energía va de 240 a
-  135 m⁻¹ contra los 88,9 del forzado, y con él δ arranca en ~20 y termina en ~1.
+- **El pico del espectro forzado es el fundamental de la red de imanes** ([H-16]): los
+  doce espectros de la meseta pican en 295 m⁻¹, y la red con el paso correcto da 296
+  ([D-41]; el 88,9 anterior venía de un paso de 5 cm que era un typo por 5 mm). El k
+  pesado por energía va de 240 a 135 m⁻¹ durante el decaimiento, y con él δ arranca en
+  ~20 y termina en ~1.
 - **`med_S0008` contiene un decaimiento** aunque está etiquetado como forzado: cae de
   3,10 a 0,335 mm/s. `med_S0002` sí es estacionario. Ver [H-12].
 
@@ -168,8 +180,8 @@ Dos cosas más que salieron de ahí:
 | Corridas | 3 forzados (0,95 / 1,95 / 2,15 A), **4 decaimientos**, 3 quenchings |
 | Cada corrida | 3072 cuadros = 51,2 s |
 | Capa de electrolito | 6 mm, KNO₃ al 16 % m/m, partículas de 100 µm |
-| Imanes | discos de 1 cm, red tipo tablero de 5 cm de paso |
-| Armónico dominante del forzado | **diagonal**, λ = 7,07 cm, k = 88,86 m⁻¹ ([V-11]) |
+| Imanes | discos de 1 cm, 5 mm de vacío entre ellos → red tipo tablero de **1,5 cm** entre centros; acrílico de 6 mm hasta la capa ([D-41]) |
+| Armónico dominante del forzado | **diagonal**, λ = 2,12 cm, k = 296,2 m⁻¹ — medido en la meseta forzada: 295 ([H-16]) |
 | Velocidad del forzado a 2,15 A | 1,321 mm/s, IC68 [1,306–1,346] |
 | Velocidad al inicio de un decaimiento | **4,07 mm/s**, medida y corregida por ruido ([V-13]); cierra [H-10] |
 
@@ -201,12 +213,20 @@ cientos de MB. `SPECTER_KEEP=1` deja el scratch para inspeccionar.
 **Hechos el 2026-09-09:** [P-01] queda resuelto ([V-11]) y el espesor, la viscosidad y la
 geometría de los imanes quedan declarados en `codigo/celda.py` ([D-27]).
 
+**Hechos el 2026-09-16:** el paso de los imanes corregido a 1,5 cm ([D-41]) a partir de
+que Lucía notó que el pico del espectro no estaba donde la figura marcaba el forzado
+([H-16]); ε, δ y λ(k) recalculados, y la comparación de [V-13] abierta como [P-02].
+
 **Lo que sigue, en este orden:**
 
 1. **Medir α_eff con SPECTER en un barrido en δ.** Es lo que cierra el fleco que dejó
-   [P-01]: el promedio vertical da, sin ninguna clausura,
-   `α_eff = (ν/h)·∂_z u|₀ / ⟨u⟩`, y la curva de `α_eff/λ(k)` contra δ ≈ 0,3…10 **es** la
-   respuesta. Con dos resoluciones horizontales, porque además es el estudio de
+   [P-01] y es el candidato (iv) de [P-02]: el promedio vertical da, sin ninguna
+   clausura, `α_eff = (ν/h)·∂_z u|₀ / ⟨u⟩`, y la curva de `α_eff/λ(k)` contra
+   δ ≈ 0,3…30 (con k = 296 m⁻¹ el inicio del decaimiento está en 27, [D-41]) **es** la
+   respuesta. **Ojo:** `verificacion/barrido_delta_etapa1.py` está diseñado con
+   `LZ = 0.5` (ε = 0,5, el valor viejo) y amplitudes hasta δ ≈ 15; con la geometría
+   corregida ε = 1,78 y el barrido tiene que llegar a δ ≈ 30. Cambiar la geometría del
+   barrido es decisión de Lucía, no está hecho. Con dos resoluciones horizontales, porque además es el estudio de
    convergencia con el tope free-slip puesto que [H-09] dejó pendiente para producción. El diseño
    está escrito en la sección 7 de `teoria/P01_validez_reduccion_2D.md`.
 2. **Una corrida de producción en Sakura** con la geometría real de la celda, y de ahí el
@@ -242,13 +262,17 @@ Los puntos 1, 2 y 4 son independientes entre sí; el 1 y el 4 son cómputo local
 
 ## Preguntas abiertas
 
-- **[P-01] quedó resuelto ([V-11]), pero con dos flecos.** La clausura no queda
-  invalidada —la distorsión del perfil es de pocos por ciento—, pero la estimación toma
-  igual a 1 un factor geométrico O(1) del término no lineal que no se calculó, y no está
-  decidido si el sesgo sobre α es de orden δ o δ². Los dos se cierran midiendo α_eff.
-- **La menor escala con energía del flujo medido.** δ ∝ k, así que el criterio lo fija esa
-  escala y no el fundamental del forzado. Hay que sacarla del espectro o de la
-  autocorrelación de los campos PIV. Necesita el disco montado.
+- **[P-02] El α medido está por debajo de λ(k) para cualquier k con energía.** Es la
+  comparación principal del proyecto y hoy se lee como acuerdo sólo contra α pelado.
+  Candidatos en la entrada; el barrido en δ con SPECTER decide uno de ellos.
+- **[P-01] quedó resuelto ([V-11]) en el método, y [D-41] le cambió el número.** La
+  distorsión estimada al inicio del decaimiento es 21 %, no 6 %; en la ventana del
+  ajuste sigue siendo de pocos por ciento. La estimación toma igual a 1 un factor
+  geométrico O(1) del término no lineal que no se calculó, y no está decidido si el
+  sesgo sobre α es de orden δ o δ². Se cierra midiendo α_eff.
+- ~~La menor escala con energía del flujo medido~~ — **medida** ([H-11], [H-16]): pico
+  en 295 m⁻¹ en la meseta, que es el fundamental de la red; migra a 59–130 durante el
+  decaimiento.
 - **La viscosidad es la del agua, no la del electrolito.** Decisión explícita de usarla y
   declararla ([D-27]); entra a primer orden en α.
 - **La superficie libre real no es free-slip ideal.** Un electrolito con

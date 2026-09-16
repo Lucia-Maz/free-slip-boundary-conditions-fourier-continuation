@@ -27,10 +27,10 @@
   }
  },
  "alfa_predicho_1_s": 0.06853891945200942,
- "lambda_predicho_con_k_forzado_1_s": 0.0764346029728809,
+ "lambda_predicho_con_k_forzado_1_s": 0.1562687363505815,
  "lambda_predicho_con_k_medido_1_s": 0.12616745339382446,
  "alfa_predicho_canal_1_s": 0.2741556778080377,
- "k_forzado_1_m": 88.85765876316732,
+ "k_forzado_1_m": 296.19219587722444,
  "k_medido_inicio_1_m": 240.05943835186952,
  "k_medido_final_1_m": 134.98241127876906,
  "k_por_instante": [

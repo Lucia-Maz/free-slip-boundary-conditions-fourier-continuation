@@ -180,6 +180,12 @@ esta página es su resumen para leer de corrido.</p>
   lo que predeciría una tapa rígida (el supuesto que usan hoy los códigos del grupo). Es
   la comparación que motiva todo el proyecto: la fricción de fondo se puede
   <b>calcular</b> a partir de la condición de contorno real, en vez de ajustarla.</p>
+  <p class="salvedad" style="max-width:46rem"><b>Salvedad abierta (2026-09-16, [P-02]).</b>
+  α pelado es la tasa de un modo con k&nbsp;→&nbsp;0; la de u_rms es
+  α&nbsp;+&nbsp;ν⟨k²⟩, siempre mayor. Con el k que tiene el flujo en la ventana del
+  ajuste (pico en 59–130&nbsp;m⁻¹) la predicción es 0,072–0,085&nbsp;s⁻¹ y el medido
+  queda un 7–22&nbsp;% <b>por debajo</b>. El 2,4&nbsp;% es contra el único valor que el
+  flujo no puede tener; la lectura correcta de esta comparación no está cerrada.</p>
 </div>
 
 <nav class="indice">
@@ -278,27 +284,30 @@ fórmula de α de arriba:</p>
 <table class="num">
 <thead><tr><th>régimen</th><th>δ</th><th>distorsión del perfil</th></tr></thead>
 <tbody>
-<tr><td>forzado (2,15 A, ⟨u⟩ = 0,84 mm/s)</td><td>2,69</td><td>≈ 2 %</td></tr>
-<tr><td>inicio del decaimiento (⟨u⟩ = 2,55 mm/s)</td><td>8,15</td><td>≈ 6 %</td></tr>
+<tr><td>forzado (2,15 A, ⟨u⟩ = 0,84 mm/s)</td><td>8,97</td><td>≈ 7 %</td></tr>
+<tr><td>inicio del decaimiento (⟨u⟩ = 2,55 mm/s)</td><td>27,2</td><td>≈ 21 %</td></tr>
 </tbody>
 </table>
 </div>
 <figure>
   <img class="clara" src="figuras/f5_delta_claro.png" alt="δ a lo largo de los cuatro decaimientos, con k medido del campo y k del forzado">
   <img class="oscura" src="figuras/f5_delta_oscuro.png" alt="δ a lo largo de los cuatro decaimientos, con k medido del campo y k del forzado">
-  <figcaption><b>δ medido a lo largo de los cuatro decaimientos.</b> Con el k medido del
-  campo (puntos) δ arranca por encima de 20 y cruza δ&nbsp;=&nbsp;1 recién cerca del
-  final del registro; con el k del forzado (punteado) el cruce es más temprano. La
-  distorsión del perfil vertical, que es lo que realmente hay que acotar, se mantiene en
-  pocos por ciento en todo el tramo relevante.</figcaption>
+  <figcaption><b>δ medido a lo largo de los cuatro decaimientos.</b> Con el k pesado por
+  energía del campo (puntos) δ arranca por encima de 20 y cruza δ&nbsp;=&nbsp;1 recién
+  cerca del final del registro; con el k fundamental de la red de imanes fijo (punteado)
+  queda más arriba, porque la escala del flujo crece durante el decaimiento. La
+  distorsión del perfil vertical, que es lo que realmente hay que acotar, es de ~20&nbsp;%
+  al inicio y de pocos por ciento dentro de la ventana del ajuste (t&nbsp;&gt;&nbsp;10&nbsp;s).</figcaption>
 </figure>
-<p><b>Conclusión:</b> escribiendo δ explícitamente a partir de la geometría real de los
-imanes y del número de onda del patrón —no de una longitud aproximada—, resulta más
-grande de lo que sugería una estimación preliminar del proyecto. Pero δ no es la
-cantidad que tiene que ser chica: la que sí importa es la distorsión del perfil
-vertical, que tiene un prefactor pequeño y queda en pocos por ciento en todo el rango
-medido. <b>La clausura de un modo no queda invalidada en el régimen medido</b> — es la
-respuesta a la pregunta que abre esta sección.</p>
+<p><b>Conclusión:</b> escribiendo δ a partir de la geometría real de los imanes
+(1,5&nbsp;cm entre centros, k&nbsp;=&nbsp;296&nbsp;m⁻¹, que es donde pica el espectro
+medido del estado forzado), resulta grande: ≈&nbsp;9 en el forzado y ≈&nbsp;27 al inicio
+del decaimiento. Pero δ no es la cantidad que tiene que ser chica: la que sí importa es
+la distorsión del perfil vertical, que tiene un prefactor pequeño (≈&nbsp;0,0077).
+<b>La clausura de un modo es mala en la meseta forzada y en los primeros segundos del
+decaimiento (distorsión ≈&nbsp;20&nbsp;%), y buena dentro de la ventana donde se ajusta
+α</b>, cuando la energía ya migró a k&nbsp;≲&nbsp;130&nbsp;m⁻¹ y U cayó — es la respuesta
+a la pregunta que abre esta sección, y el barrido en δ con SPECTER la pone a prueba.</p>
 
 <h2 id="decaimiento"><span class="n">5</span>El decaimiento medido</h2>
 <p>Los cuatro registros de decaimiento de la campaña (<code>med_S0003</code>,
@@ -360,10 +369,12 @@ física incluyen:</p>
 <figure>
   <img class="clara" src="figuras/f4_espectros_claro.png" alt="Espectro de energía al inicio y al final de un decaimiento, mostrando que la escala dominante crece">
   <img class="oscura" src="figuras/f4_espectros_oscuro.png" alt="Espectro de energía al inicio y al final de un decaimiento, mostrando que la escala dominante crece">
-  <figcaption><b>La escala con energía del flujo no es la del forzado.</b> El número de
-  onda pesado por energía va de 240 m⁻¹ al inicio del decaimiento a 135 m⁻¹ al final,
-  contra los 88,9 m⁻¹ del armónico diagonal del forzado. Es el k que hay que usar para
-  evaluar δ en cada instante, no el del patrón de imanes.</figcaption>
+  <figcaption><b>El estado forzado pica en el fundamental de la red de imanes.</b> Los
+  doce espectros de la meseta forzada tienen su pico en 295&nbsp;m⁻¹ (λ&nbsp;≈&nbsp;2,1&nbsp;cm),
+  y la red con el paso correcto de 1,5&nbsp;cm da 296 ([H-16]; la línea punteada). Durante
+  el decaimiento la escala crece: el número de onda pesado por energía va de 240&nbsp;m⁻¹
+  al inicio a 135&nbsp;m⁻¹ al final. Es el k que hay que usar para evaluar δ en cada
+  instante.</figcaption>
 </figure>
 <p class="salvedad"><b>Pendiente</b>: el barrido en Δt que da σ&nbsp;=&nbsp;0,169&nbsp;px
 supone un registro estacionario. El próximo paso de este capítulo es repetir esa
@@ -380,8 +391,9 @@ entre experiencias — nunca se escriben sueltos dentro de una cuenta.</p>
     <p>0,263 mm/px · campo de 26,9 cm</p></div>
   <div class="tarjeta"><h4>Capa de electrolito</h4><div class="val">h = 6 mm</div>
     <p>KNO₃ al 16&nbsp;% m/m, partículas trazadoras de 100 µm</p></div>
-  <div class="tarjeta"><h4>Imanes</h4><div class="val">Ø 1 cm, paso 5 cm</div>
-    <p>Red tipo tablero; armónico dominante diagonal, λ = 7,07 cm (k = 88,9 m⁻¹)</p></div>
+  <div class="tarjeta"><h4>Imanes</h4><div class="val">Ø 1 cm, 1,5 cm entre centros</div>
+    <p>Red tipo tablero, 5 mm de vacío entre imanes, acrílico de 6 mm hasta la capa;
+    armónico dominante diagonal, λ = 2,12 cm (k = 296 m⁻¹), medido en 295</p></div>
   <div class="tarjeta"><h4>Corridas</h4><div class="val">3 forzados · 4 decaimientos · 3 quenchings</div>
     <p>3072 cuadros por corrida = 51,2 s</p></div>
   <div class="tarjeta"><h4>Viscosidad usada</h4><div class="val">ν = 10⁻⁶ m²/s</div>

@@ -53,10 +53,15 @@ def espectro_forzado(forzado, celdas=8, puntos_por_celda=64):
     El modelo del campo es crudo a propósito: B_z vale +1 o -1 dentro de cada disco y 0
     fuera. Con una corriente horizontal uniforme la fuerza de Lorentz J x B es
     proporcional a ese patrón rotado 90 grados, así que el contenido espectral del
-    forzado es el del patrón. Lo que se quiere de acá es *qué número de onda domina*, y
-    eso no depende del perfil real del campo de cada imán mientras los imanes estén
-    bien separados: la red fija las posiciones de los picos y la forma del imán sólo
-    pesa sus amplitudes.
+    forzado es el del patrón. La red fija las posiciones de los picos y la forma del
+    imán sólo pesa sus amplitudes.
+
+    Lo que esta función NO decide es si el fundamental de la red es donde el forzado
+    pone la energía: el argmax modo a modo cae en el fundamental para cualquier red,
+    también para una de fuentes puntuales donde el fundamental lleva pocos por ciento.
+    Eso lo decide `fraccion_energia_en_fundamental` junto con el espectro medido de
+    los campos forzados ([H-16]): con imanes que ocupan dos tercios del paso las dos
+    cosas coinciden.
 
     Devuelve el pico dominante, el número de onda medio pesado por energía, y la
     orientación del pico, que es lo que decide si la contribución es diagonal.
@@ -213,9 +218,39 @@ def ventana_temporal(celda, delta_0, umbral):
     return math.log(delta_0 / umbral) / celda.alfa()
 
 
+def pico_medido_forzado(t_max=10.0):
+    """El pico del espectro de los campos medidos en la meseta forzada, si existe.
+
+    Lee `salidas/tablas/decaimiento.json` (lo produce `codigo/06_decaimiento.py`, que
+    necesita el disco). La meseta inicial de cada registro es el estado forzado
+    ([D-30]), así que el pico ahí es la escala de inyección medida, independiente de
+    cualquier modelo del imán. Devuelve None si el archivo no está.
+    """
+    ruta = os.path.join(RAIZ, "salidas", "tablas", "decaimiento.json")
+    if not os.path.exists(ruta):
+        return None
+    with open(ruta) as f:
+        d = json.load(f)
+    picos, anchos = [], []
+    for reg in d["registros"].values():
+        for e in reg["espectros"]:
+            if e["t_s"] < t_max:
+                picos.append(e["k_pico_1_m"])
+                anchos.append(e["k_1_m"][1] - e["k_1_m"][0])
+    if not picos:
+        return None
+    return {"k_1_m": float(np.median(picos)), "n": len(picos),
+            "k_min_1_m": float(min(picos)), "k_max_1_m": float(max(picos)),
+            "ancho_bin_1_m": float(np.median(anchos)),
+            "registros": sorted(d["registros"]), "t_max_s": t_max}
+
+
 def main():
     c = CAMPANA_02_06_25
     esp = espectro_forzado(c.forzado)
+    k_med = pico_medido_forzado()
+    if k_med is not None:
+        esp["pico_medido_meseta"] = k_med
     modos = modos_verticales()
     k = esp["k_pico_1_m"]
 
@@ -283,7 +318,13 @@ def main():
              "DIAGONAL" if 0 not in esp["orientacion_pico"] else "axial"))
     print("  energía en el fundamental: %.1f %%"
           % (100 * esp["fraccion_energia_en_fundamental"]))
-    print("  el l = 2 cm heredado equivalía a k = %.1f 1/m" % (1 / 0.02))
+    print("  longitud de onda equivalente al l = 2 cm heredado: k = 2 pi / l = %.1f 1/m"
+          % (2 * math.pi / 0.02))
+    if k_med is not None:
+        print("  pico medido en la meseta forzada (mediana de %d espectros, t < 10 s): "
+              "%.1f 1/m, bins de %.1f  -> cociente contra la red: %.3f"
+              % (k_med["n"], k_med["k_1_m"], k_med["ancho_bin_1_m"],
+                 k_med["k_1_m"] / esp["k_pico_1_m"]))
     print()
     print("MODOS VERTICALES (cuadratura contra forma cerrada)")
     print("  beta = %.12f  vs pi^2/8 = %.12f" % (modos["beta_medido"],

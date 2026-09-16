@@ -2,7 +2,7 @@
  "celda": {
   "h_m": 0.006,
   "nu_m2_s": 1e-06,
-  "k_forzado_1_m": 88.85765876316732,
+  "k_forzado_1_m": 296.19219587722444,
   "mu_Pa_s": 0.001,
   "rho_kg_m3": 1000.0,
   "tension_N_m": 0.072,
@@ -10,11 +10,11 @@
  },
  "deformacion": {
   "forzado_2.15A": {
-   "eta_m": 6.819325177735429e-08,
-   "eta_sobre_h": 1.136554196289238e-05,
+   "eta_m": 4.388682438029212e-08,
+   "eta_sobre_h": 7.314470730048687e-06,
    "froude": 0.0034675891895834116,
    "restitucion_gravedad_Pa_por_m": 9810.0,
-   "restitucion_capilar_Pa_por_m": 568.489213502747,
+   "restitucion_capilar_Pa_por_m": 6316.54681669719,
    "manda": "gravedad",
    "longitud_capilar_m": 0.0027091418459143854,
    "k_capilar_1_m": 369.120576505835,
@@ -22,11 +22,11 @@
    "u_rms_superficie_m_s": 0.0013214710285395503
   },
   "inicio_decaimiento_medido": {
-   "eta_m": 5.145639513696131e-07,
-   "eta_sobre_h": 8.576065856160219e-05,
+   "eta_m": 3.3115560818125765e-07,
+   "eta_sobre_h": 5.519260136354294e-05,
    "froude": 0.009525255178767664,
    "restitucion_gravedad_Pa_por_m": 9810.0,
-   "restitucion_capilar_Pa_por_m": 568.489213502747,
+   "restitucion_capilar_Pa_por_m": 6316.54681669719,
    "manda": "gravedad",
    "longitud_capilar_m": 0.0027091418459143854,
    "k_capilar_1_m": 369.120576505835,
@@ -39,9 +39,9 @@
   "alfa_canal_1_s": 0.27415567780803773,
   "cociente": 4.0,
   "beta_para_10pc": 0.12655717342871817,
-  "mu_s_para_10pc_N_s_por_m": 2.671442210463822e-06,
+  "mu_s_para_10pc_N_s_por_m": 2.40429798941744e-07,
   "beta_para_duplicar": 1.6910120633103292,
-  "mu_s_para_duplicar_N_s_por_m": 3.569486329334883e-05,
+  "mu_s_para_duplicar_N_s_por_m": 3.212537696401394e-06,
   "tabla": [
    {
     "beta": 0.0,
@@ -55,70 +55,70 @@
     "qh_sobre_pi": 0.5020182498522917,
     "alfa_1_s": 0.06909335083547365,
     "alfa_sobre_alfa_libre": 1.0080892927390317,
-    "mu_s_N_s_por_m": 2.110857992548704e-07
+    "mu_s_N_s_por_m": 1.8997721932938333e-08
    },
    {
     "beta": 0.03,
     "qh_sobre_pi": 0.5060063958825856,
     "alfa_1_s": 0.07019549764360944,
     "alfa_sobre_alfa_libre": 1.0241698906963355,
-    "mu_s_N_s_por_m": 6.332573977646111e-07
+    "mu_s_N_s_por_m": 5.6993165798815e-08
    },
    {
     "beta": 0.1,
     "qh_sobre_pi": 0.5194799922103123,
     "alfa_1_s": 0.07398350380164052,
     "alfa_sobre_alfa_libre": 1.0794378492273045,
-    "mu_s_N_s_por_m": 2.1108579925487038e-06
+    "mu_s_N_s_por_m": 1.8997721932938333e-07
    },
    {
     "beta": 0.3,
     "qh_sobre_pi": 0.5543039426327739,
     "alfa_1_s": 0.08423511631608256,
     "alfa_sobre_alfa_libre": 1.2290114432729498,
-    "mu_s_N_s_por_m": 6.332573977646111e-06
+    "mu_s_N_s_por_m": 5.699316579881499e-07
    },
    {
     "beta": 1.0,
     "qh_sobre_pi": 0.6457736765434056,
     "alfa_1_s": 0.11432939904707004,
     "alfa_sobre_alfa_libre": 1.6680945652655472,
-    "mu_s_N_s_por_m": 2.110857992548704e-05
+    "mu_s_N_s_por_m": 1.8997721932938332e-06
    },
    {
     "beta": 3.0,
     "qh_sobre_pi": 0.7816557185010787,
     "alfa_1_s": 0.16750518836937384,
     "alfa_sobre_alfa_libre": 2.44394264906175,
-    "mu_s_N_s_por_m": 6.332573977646111e-05
+    "mu_s_N_s_por_m": 5.6993165798814995e-06
    },
    {
     "beta": 10.0,
     "qh_sobre_pi": 0.9112488165020408,
     "alfa_1_s": 0.22765185799523613,
     "alfa_sobre_alfa_libre": 3.32149762230548,
-    "mu_s_N_s_por_m": 0.00021108579925487037
+    "mu_s_N_s_por_m": 1.899772193293833e-05
    },
    {
     "beta": 30.0,
     "qh_sobre_pi": 0.9678481858863762,
     "alfa_1_s": 0.25680987848344405,
     "alfa_sobre_alfa_libre": 3.7469204436941976,
-    "mu_s_N_s_por_m": 0.0006332573977646111
+    "mu_s_N_s_por_m": 5.699316579881499e-05
    },
    {
     "beta": 100.0,
     "qh_sobre_pi": 0.9901021695958332,
     "alfa_1_s": 0.26875544322356454,
     "alfa_sobre_alfa_libre": 3.921209224953504,
-    "mu_s_N_s_por_m": 0.0021108579925487037
+    "mu_s_N_s_por_m": 0.00018997721932938332
    },
    {
     "beta": 1000.0,
     "qh_sobre_pi": 0.9990010022777213,
     "alfa_1_s": 0.27360818961907063,
     "alfa_sobre_alfa_libre": 3.9920120102075662,
-    "mu_s_N_s_por_m": 0.021108579925487037
+    "mu_s_N_s_por_m": 0.0018997721932938333
    }
   ]
  }

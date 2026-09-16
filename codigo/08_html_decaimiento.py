@@ -18,6 +18,8 @@ import math
 import os
 import sys
 
+import numpy as np
+
 AQUI = os.path.dirname(os.path.abspath(__file__))
 RAIZ = os.path.dirname(AQUI)
 sys.path.insert(0, AQUI)
@@ -312,10 +314,13 @@ independiente para la sección de más abajo.</p>
 
 <h2>La escala del flujo, y qué le hace a [P-01]</h2>
 <p>El parámetro que decide si la reducción bidimensional vale es
-<code>δ = U·k·h²/ν</code>, y depende de <b>k</b>. Hasta ahora se lo evaluaba con el
-armónico del forzado (88,9&nbsp;m⁻¹, diagonal, 7,07&nbsp;cm). Los espectros medidos dicen
-que el flujo tiene energía a escalas bastante más chicas, y que <b>la escala crece durante
-el decaimiento</b>: el k pesado por energía pasa de ${k_ini} a ${k_fin}&nbsp;m⁻¹.</p>
+<code>δ = U·k·h²/ν</code>, y depende de <b>k</b>. El armónico fundamental de la red de
+imanes (paso de 1,5&nbsp;cm centro a centro, diagonal) está en ${k_red}&nbsp;m⁻¹, o sea
+${lambda_red}&nbsp;cm, y el estado forzado de los cuatro registros tiene su pico
+justo ahí (mediana ${k_meseta}&nbsp;m⁻¹, con bins de 24). Hasta [D-41] el paso figuraba
+como 5&nbsp;cm por un error de tipeo, y el k que se usaba, 88,9&nbsp;m⁻¹, caía en la zona
+plana del espectro. Durante el decaimiento <b>la escala crece</b>: el k pesado por
+energía pasa de ${k_ini} a ${k_fin}&nbsp;m⁻¹.</p>
 
 ${f4}
 ${f5}
@@ -323,7 +328,12 @@ ${f5}
 <p>Con el k medido, δ arranca en ~20 y termina en ~1: la distorsión estimada del perfil
 vertical (≈&nbsp;0,0077·δ) va del <b>15&nbsp;% al 1&nbsp;%</b>. O sea que la clausura de
 un modo es marginal en los primeros segundos y buena en el resto — que es justamente la
-ventana donde se ajustó α.</p>
+ventana donde se ajustó α. Lo que el k corregido sí cambia es la <b>predicción</b>: la
+tasa lineal de un modo es λ(k)&nbsp;=&nbsp;α(1&nbsp;+&nbsp;νk²/α), y con
+k&nbsp;=&nbsp;${k_red}&nbsp;m⁻¹ vale ${lambda_red_sobre_alfa}·α. En la ventana del
+ajuste la energía ya migró a k&nbsp;≈&nbsp;${k_fin}, donde λ/α&nbsp;≈&nbsp;${lambda_fin_sobre_alfa};
+el α medido está por debajo de eso, y la comparación de arriba contra α pelado hay que
+releerla con esto en mano ([P-02]).</p>
 
 <h2>¿Se está filtrando de más?</h2>
 <p>Conviene separar lo que <b>es</b> un filtro de lo que no. La mediana móvil de la
@@ -418,7 +428,7 @@ energía con el ruido blanco de PIV restado, y el piso se lee por debajo de Nyqu
 </ul>
 
 <p class="pie">h = ${h} mm · ν = 10⁻⁶ m²/s (agua, supuesto declarado) · imanes de 1 cm en
-red tipo tablero de 5 cm · 3800 px/m · 60 fps · registros de 51,2 s.
+red tipo tablero de 1,5 cm entre centros, acrílico de 6 mm · 3800 px/m · 60 fps · registros de 51,2 s.
 Parámetros en <code>codigo/celda.py</code>; derivación en
 <code>teoria/P01_validez_reduccion_2D.md</code>; log en <code>DECISIONES.md</code>.</p>
 
@@ -435,6 +445,14 @@ Parámetros en <code>codigo/celda.py</code>; derivación en
         fac="%.1f" % (a_canal / a_cola),
         k_ini="%.0f" % r["k_medido_inicio_1_m"],
         k_fin="%.0f" % r["k_medido_final_1_m"],
+        k_red="%.0f" % CELDA.forzado.k_fundamental(),
+        lambda_red=("%.2f" % (200 * math.pi / CELDA.forzado.k_fundamental())).replace(".", ","),
+        k_meseta="%.0f" % np.median([e["k_pico_1_m"] for reg in d["registros"].values()
+                                     for e in reg["espectros"] if e["t_s"] < 10]),
+        lambda_red_sobre_alfa=("%.2f" % (r["lambda_predicho_con_k_forzado_1_s"]
+                                         / r["alfa_predicho_1_s"])).replace(".", ","),
+        lambda_fin_sobre_alfa=("%.2f" % (1 + CELDA.fluido.nu * r["k_medido_final_1_m"] ** 2
+                                         / r["alfa_predicho_1_s"])).replace(".", ","),
         h="%.0f" % (CELDA.h * 1e3),
         h_equiv="%.2f" % (CELDA.h * 1e3 * math.sqrt(a_libre / a_cola)),
         f1=figura("f1_decaimiento", "Figura 1 — el decaimiento.",
@@ -451,10 +469,11 @@ Parámetros en <code>codigo/celda.py</code>; derivación en
                   "dos caen con el flujo: es la confirmación directa de [H-07]."),
         f4=figura("f4_espectros", "Figura 4 — espectro de energía.",
                   "Decaimiento 1, tres instantes. Tenue: crudo. Grueso: con el ruido "
-                  "blanco de PIV restado. La línea vertical es el armónico del forzado."),
+                  "blanco de PIV restado. La línea vertical es el armónico fundamental "
+                  "de la red de imanes, con el paso corregido en [D-41]."),
         f5=figura("f5_delta", "Figura 5 — el parámetro δ de [P-01].",
-                  "Puntos: con el k medido del campo. Punteado: con el k del forzado, "
-                  "que es lo que se venía usando. La diferencia es un factor ~2,5."),
+                  "Puntos: con el k medido del campo (pesado por energía). Punteado: "
+                  "con el k fundamental de la red de imanes, fijo en el tiempo."),
         t_alfa=tabla(["registro", "α [1/s]", "error", "τ = 1/α [s]"], filas_alfa, "num"),
         t_puntos=tabla(["registro", "t [s]", "u_rms [mm/s]", "crudo n=1", "inflación",
                         "n", "desp [px]", "σ/comp [px]", "R²", "k pico [1/m]"],

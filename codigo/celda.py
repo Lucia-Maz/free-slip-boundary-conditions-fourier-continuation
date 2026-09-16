@@ -37,16 +37,27 @@ class Forzado:
     """Geometría del arreglo de imanes que produce la fuerza de Lorentz.
 
     El modelo es: imanes cilíndricos de diámetro `diametro` con sus ejes verticales,
-    dispuestos en una red cuadrada de paso `paso` con la polaridad alternada como un
-    tablero de ajedrez, y una corriente horizontal aproximadamente uniforme que
-    atraviesa la celda. La fuerza por unidad de volumen es J x B, y con B casi vertical
-    bajo cada imán el patrón de fuerza reproduce el patrón de polaridades.
+    dispuestos en una red cuadrada de paso `paso` (centro a centro) con la polaridad
+    alternada como un tablero de ajedrez, y una corriente horizontal aproximadamente
+    uniforme que atraviesa la celda. La fuerza por unidad de volumen es J x B, y con B
+    casi vertical bajo cada imán el patrón de fuerza reproduce el patrón de polaridades.
+
+    `separacion` es el espacio vacío entre cilindros vecinos y `acrilico` la distancia
+    entre la cara del imán y el fondo de la capa. Son los datos tal como se miden en la
+    celda; `paso` se declara aparte porque es lo que entra en las cuentas, y se
+    comprueba que sea `diametro + separacion`.
     """
 
-    paso: float                   # separación entre imanes vecinos [m]
+    paso: float                   # separación entre centros de imanes vecinos [m]
     diametro: float               # diámetro de cada imán [m]
+    separacion: float             # espacio vacío entre cilindros vecinos [m]
+    acrilico: float               # de la cara del imán al fondo de la capa [m]
     patron: str                   # "tablero" (polaridad alternada en red cuadrada)
     procedencia: str
+
+    def __post_init__(self):
+        if abs(self.paso - (self.diametro + self.separacion)) > 1e-9:
+            raise ValueError("paso tiene que ser diametro + separacion")
 
     def k_fundamental(self) -> float:
         """Número de onda del armónico fundamental del patrón de polaridades [1/m].
@@ -54,9 +65,15 @@ class Forzado:
         Para el signo (-1)^(i+j) sobre una red cuadrada de paso a, el primer armónico
         no nulo está en k = (pi/a)(±1, ±1): es DIAGONAL, y su longitud de onda es
         a*sqrt(2), no a. Este valor es una propiedad de la red, no del imán; la forma
-        del imán sólo pesa las amplitudes. `numerico/fase4/p01_validez.py` lo verifica
-        numéricamente contra la transformada del patrón real, con imanes de diámetro
-        finito, en vez de darlo por sentado.
+        del imán sólo pesa las amplitudes.
+
+        Que sea también el k donde el forzado inyecta la energía depende de que los
+        imanes llenen la red: acá ocupan dos tercios del paso y el acrílico suaviza el
+        campo sobre una distancia comparable, así que el patrón es casi un coseno puro.
+        Lo confirma el espectro medido: los cuatro registros forzados tienen un único
+        pico angosto en 295-318 1/m, y este valor da 296 ([H-16]). Con el paso de 5 cm
+        que figuraba antes ([D-27], un error de tipeo por 5 mm) daba 88,9 y caía en la
+        zona plana del espectro ([D-41]).
         """
         if self.patron != "tablero":
             raise NotImplementedError("sólo está modelado el patrón de tablero")
@@ -164,13 +181,19 @@ CAMPANA_02_06_25 = Celda(
     ),
     fluido=AGUA,
     forzado=Forzado(
-        paso=5.0e-2,
+        paso=1.5e-2,
         diametro=1.0e-2,
+        separacion=0.5e-2,
+        acrilico=6.0e-3,
         patron="tablero",
         procedencia=(
-            "Lucía, 2026-09-09: 'los imanes tienen un diámetro de 1 cm, están en una "
-            "grid tipo checkerboard separados por 5 cm'. Corrige el valor heredado de "
-            "l = 2 cm que se venía usando en [P-01] como escala de inyección."
+            "Lucía, 2026-09-16: 'los 5 cm son de espacio vacío entre los cilindros de "
+            "1 cm' fue un error de tipeo por 5 mm; 'de centro a centro hay 1,5 cm', y "
+            "'de la cara del imán a la capa está un acrílico de casi 6 mm'. Corrige el "
+            "paso de 5 cm declarado el 2026-09-09 ([D-27]), que daba un k fundamental "
+            "de 88,9 1/m contra el pico medido en 295-318 1/m ([D-41], [H-16]). El "
+            "diámetro de 1 cm y el patrón de tablero vienen de la misma conversación "
+            "del 09-09 y no cambian."
         ),
     ),
     camara=Camara(

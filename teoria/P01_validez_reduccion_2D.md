@@ -1,25 +1,34 @@
 # [P-01] Cuándo vale la reducción bidimensional, derivado y no heredado
 
+> **Corregido el 2026-09-16 ([D-41], [H-16]).** La versión del 09-09 usaba un paso de
+> imanes de 5 cm, que era un error de tipeo por 5 mm: el paso es 1,5 cm entre centros y
+> el fundamental de la red está en **k = 296 m⁻¹** (λ = 2,12 cm), donde efectivamente
+> pica el espectro medido del estado forzado. Los números de este documento están
+> recalculados con ese k; la derivación (secciones 1–3) no cambia. Lo que sí cambia de
+> conclusión está marcado en la sección 5, y la comparación con el α medido queda abierta
+> en [P-02].
+
 **2026-09-09.** Primera cosa de la Fase 4. La pregunta abierta decía: la condición
 `Re_h·ε ≪ 1` da `U ≪ 0,56 mm/s`, y las velocidades medidas son de 1,32 a 4,0 mm/s, así
 que estaría *"violada por un factor de 2 a 7 justo donde arranca el decaimiento"*.
 
 Esa cuenta se rehizo de cero. **Dos cosas cambian, y en direcciones opuestas.**
 
-- La escala horizontal estaba mal. `ℓ = 2 cm` no correspondía a ninguna longitud de la
-  celda; el espaciado real de los imanes es 5 cm y el armónico que dominan es el
-  **diagonal**, de 7,07 cm. Además el criterio se escribió con `ℓ` en vez de con el
-  número de onda `k`, y esa ambigüedad vale un factor 2π. Con `k` medido sobre el patrón
-  real, el parámetro es **peor** de lo que decía la cuenta heredada: δ ≈ 2,7 en el
-  forzado y ≈ 8 al inicio del decaimiento, no 2 a 7 veces uno.
+- La escala horizontal. El criterio heredado se escribió con `ℓ = 2 cm` en vez de con el
+  número de onda `k`, y esa ambigüedad vale un factor 2π. Los imanes están en una red de
+  1,5 cm entre centros ([D-41]) y el armónico que dominan es el **diagonal**, de 2,12 cm:
+  `k = 296 m⁻¹`, que es donde pica el espectro medido ([H-16]). Con ese `k` el parámetro
+  es **mucho peor** de lo que decía la cuenta heredada: δ ≈ 9 en el forzado y ≈ 27 al
+  inicio del decaimiento, no 2 a 7 veces uno.
 - Pero δ no es lo que tiene que ser chico. Lo que tiene que ser chica es la **distorsión
   del perfil vertical**, y esa lleva un prefactor calculable de ≈ 0,008. En el régimen
-  medido vale **2 % en el forzado y 6 % al inicio del decaimiento**.
+  medido vale **7 % en el forzado y 21 % al inicio del decaimiento**.
 
-La conclusión, entonces, es distinta de la que sugería la pregunta abierta: la clausura
-de un modo **no queda invalidada** en el régimen medido. Lo que queda es un error
-estimado de pocos por ciento, un factor geométrico O(1) que no se calculó, y una manera
-concreta de medirlo con el código que ya existe.
+La conclusión, entonces: la clausura de un modo es **mala en la meseta forzada y en los
+primeros segundos del decaimiento**, y buena recién cuando la energía migró a k ≲ 130 m⁻¹
+y U cayó, que es dentro de la ventana donde se ajusta α (t > 10 s). Queda un factor
+geométrico O(1) que no se calculó, y una manera concreta de medirlo con el código que ya
+existe.
 
 Todos los números de acá salen de `numerico/fase4/p01_validez.py`; los parámetros de la
 celda, de `codigo/celda.py`. La salida cruda queda en `salidas/tablas/p01_validez.json`.
@@ -72,8 +81,8 @@ Dos observaciones que la versión heredada no hacía:
 **(a) El criterio se escribe con `k`, no con `ℓ`.** «La menor escala horizontal» es
 ambigua por un factor 2π según se entienda longitud de onda o inverso del número de
 onda. El adimensional que sale de la ecuación es `k·h`, sin ambigüedad. La cuenta
-heredada usaba `ℓ = 2 cm`, es decir `k = 50 m⁻¹`; el valor correcto para esta celda es
-`k = 88,86 m⁻¹` (sección 4).
+heredada usaba `ℓ = 2 cm`, es decir `k = 50 m⁻¹` si ℓ es 1/k, o 314 m⁻¹ si es una
+longitud de onda; el valor de esta celda es `k = 296,2 m⁻¹` (sección 4).
 
 **(b) `ε ≪ 1` no hace falta para la ley de fricción.** El término viscoso horizontal es
 lineal y diagonal en el modo horizontal: no acopla con la estructura vertical. Se puede
@@ -81,11 +90,13 @@ conservar **exacto**, y entonces la tasa de decaimiento lineal del modo `k` es
 
     λ(k) = ν[k² + (π/2h)²] = α·(1 + 4ε²/π²) .
 
-Para esta celda ε = 0,533 y ε² = 0,284, o sea que la viscosidad horizontal agrega un
-**11,5 %** a la tasa de decaimiento del armónico fundamental del forzado. Eso no es una
-falla de validez: es una corrección que hay que **incluir** al comparar con el
-experimento, y que el modelo 2D ya incluye porque conserva `ν∇²U`. El único parámetro
-genuinamente pequeño que hace falta es δ.
+Para esta celda ε = 1,777 y ε² = 3,158, o sea que la viscosidad horizontal **más que
+duplica** (λ/α = 2,28) la tasa de decaimiento del armónico fundamental del forzado. Eso
+no es una falla de validez: es una corrección que hay que **incluir** al comparar con el
+experimento, y que el modelo 2D ya incluye porque conserva `ν∇²U`. Es también por lo que
+el pico del espectro migra a k chico durante el decaimiento: los modos de k = 296 mueren
+2,3 veces más rápido que los grandes. El único parámetro genuinamente pequeño que hace
+falta es δ.
 
 ## 3. Qué es lo que realmente tiene que ser chico
 
@@ -124,46 +135,55 @@ fundamental supuesto.
 
 ## 4. El forzado: dónde está `k`, medido y no elegido
 
-Los imanes son discos de 1 cm de diámetro en una red cuadrada de 5 cm de paso, con la
-polaridad alternada como un tablero. Para el signo `(−1)^(i+j)` sobre una red de paso
-`a`, el primer armónico está en `k = (π/a)(±1,±1)`: es **diagonal**, y su longitud de
-onda es `a√2`, no `a`.
+Los imanes son discos de 1 cm de diámetro con 5 mm de vacío entre ellos —**1,5 cm entre
+centros** ([D-41])— en una red cuadrada con la polaridad alternada como un tablero, y un
+acrílico de 6 mm entre la cara del imán y la capa. Para el signo `(−1)^(i+j)` sobre una
+red de paso `a`, el primer armónico está en `k = (π/a)(±1,±1)`: es **diagonal**, y su
+longitud de onda es `a√2`, no `a`.
 
-`p01_validez.py` no da eso por sentado: arma el patrón con discos de diámetro finito, lo
-transforma y busca el pico. Resultado:
+`p01_validez.py` arma el patrón con discos de diámetro finito, lo transforma y busca el
+pico, y lo pone al lado del pico del espectro medido en la meseta forzada
+(`decaimiento.json`, [D-30]). Resultado:
 
 | | |
 |---|---|
-| k dominante | **88,858 m⁻¹**, contra π√2/a = 88,858 (error 0) |
-| orientación | (−1, +1)·π/a — **diagonal**, como decía Lucía |
-| longitud de onda | **7,071 cm** = 5 cm × √2 |
-| ε = k·h | 0,5331 |
+| k dominante del patrón | **296,19 m⁻¹**, contra π√2/a = 296,19 (error 0) |
+| orientación | (1, −1)·π/a — **diagonal** |
+| longitud de onda | **2,121 cm** = 1,5 cm × √2 |
+| energía del patrón en el fundamental | 79 % (modelo de discos ±1, que sobrestima los armónicos) |
+| **pico medido**, mediana de 12 espectros forzados | **294,9 m⁻¹** (bins de 23,6) — cociente 0,996 |
+| ε = k·h | 1,777 |
 
-**Salvedad sobre este modelo, que es deliberadamente crudo.** El campo se modeló como
-±1 dentro de cada disco y 0 afuera. Eso fija la **posición** de los picos exactamente,
-porque es una propiedad de la red y no del imán, pero **sobrestima el contenido en
-armónicos**: un imán real tiene un campo suave a la altura del fluido, y el patrón
-verdadero se parece mucho más a una sinusoide que este tablero de discos. Por eso el
-«11,5 % de la energía en el fundamental» que devuelve el script no debe usarse como si
-fuera del experimento. El contenido espectral real del **flujo** —que es lo que importa,
-porque δ ∝ k— hay que sacarlo de los campos de velocidad medidos, y eso queda pendiente
-(sección 6).
+**Dos cosas que hay que decir sobre este chequeo.** (i) El argmax modo a modo cae en el
+fundamental para *cualquier* red, también para una de fuentes puntuales donde el
+fundamental lleva pocos por ciento de la energía: lo que dice que acá la red y la
+inyección coinciden es la fracción de energía junto con el pico medido, no el argmax.
+Con el paso de 5 cm que figuraba antes la fracción era 11,5 % y el pico medido estaba
+3,3 veces más arriba que la red; ese desacuerdo es lo que destapó el error ([H-16]).
+(ii) El modelo de discos ±1 es crudo a propósito: fija la posición de los picos, que es
+propiedad de la red, y sobrestima los armónicos, porque el campo real a 6 mm de la cara
+del imán es suave. La fracción real en el fundamental es mayor que 79 %.
 
 ## 5. Evaluación sobre la celda
 
 El PIV mide la superficie, porque las partículas flotan, y la clausura vive sobre el
 promedio vertical: hay que dividir por `u(h)/⟨u⟩ = π/2` antes de evaluar δ. Con
-h = 6 mm, ν = 10⁻⁶ m²/s y k = 88,86 m⁻¹, resulta `δ = 3199 · U[m/s]`:
+h = 6 mm, ν = 10⁻⁶ m²/s y k = 296,2 m⁻¹, resulta `δ = 10663 · U[m/s]`:
 
 | u_rms superficie | ⟨u⟩ | Re_h | **δ** | **distorsión \|a₁/a₀\|** |
 |---|---|---|---|---|
-| 0,25 mm/s | 0,159 | 0,95 | 0,51 | 0,4 % |
-| 0,50 | 0,318 | 1,91 | 1,02 | 0,8 % |
-| 1,00 | 0,637 | 3,82 | 2,04 | 1,6 % |
-| **1,32** (forzado 2,15 A) | 0,840 | 5,04 | **2,69** | **2,1 %** |
-| 2,00 | 1,273 | 7,64 | 4,07 | 3,1 % |
-| **4,00** (inicio de decaimiento) | 2,546 | 15,28 | **8,15** | **6,2 %** |
-| 6,00 | 3,820 | 22,92 | 12,22 | 9,3 % |
+| 0,25 mm/s | 0,159 | 0,95 | 1,70 | 1,3 % |
+| 0,50 | 0,318 | 1,91 | 3,39 | 2,6 % |
+| 1,00 | 0,637 | 3,82 | 6,79 | 5,2 % |
+| **1,32** (forzado 2,15 A) | 0,840 | 5,04 | **8,96** | **6,9 %** |
+| 2,00 | 1,273 | 7,64 | 13,58 | 10,4 % |
+| **4,00** (inicio de decaimiento) | 2,546 | 15,28 | **27,2** | **20,8 %** |
+| 6,00 | 3,820 | 22,92 | 40,73 | 31,1 % |
+
+Estos δ usan el k de la red, que es el del estado forzado. Durante el decaimiento el k
+del flujo baja (pico en 59–130 m⁻¹ para t > 17 s, [H-11]) al mismo tiempo que U, así que
+el δ efectivo cae más rápido que `e^{−αt}`; la figura `f5_delta` lo muestra con el k
+pesado medido en cada instante.
 
 Dos condiciones más, y las dos se cumplen con holgura:
 
@@ -171,8 +191,9 @@ Dos condiciones más, y las dos se cumplen con holgura:
   `1/(λ₁−λ₀) = h²/(2π²ν) = 1,82 s`. Los registros duran 51,2 s: después de unos 5 s el
   segundo modo vertical está 15 veces atenuado. La clausura no vale en el primer
   segundo del decaimiento, y sí en todo el resto.
-- **Decaimiento de δ.** δ ∝ U, así que `δ(t) = δ₀·e^{−αt}`. Aun arrancando de δ₀ = 8, a
-  los 30 s vale 1,0 y la distorsión baja al 0,8 %. La clausura **mejora sola** a lo
+- **Decaimiento de δ.** δ ∝ U, así que `δ(t) = δ₀·e^{−αt}` a k fijo. Arrancando de
+  δ₀ = 27 con k = 296, a los 30 s vale 3,5 y la distorsión 2,7 %; con el k medido, que
+  también baja, es menos. La clausura **mejora sola** a lo
   largo del registro; el peor momento es el primero.
 
 **La velocidad de 4,0 mm/s no está verificada.** Figura en `ESTADO.md` sin script que la
@@ -193,10 +214,9 @@ montado, así que no se pudo recalcular. Queda anotada como tal en `codigo/celda
    onda horizontales 0 y 2k, no en k, así que para un único modo celular no realimentan
    la tasa del modo k hasta orden δ². Para un campo de banda ancha hay tríadas que sí lo
    hacen a orden δ. No está decidido analíticamente.
-3. **La menor escala presente en el flujo.** δ ∝ k, así que el criterio lo fija la
-   escala más chica con energía apreciable, no el fundamental del forzado. Hay que
-   sacarla del espectro o de la autocorrelación de los campos PIV medidos. Requiere el
-   disco externo montado.
+3. ~~La menor escala presente en el flujo~~ — **medida** ([H-11], [H-16]): en el estado
+   forzado el espectro pica en el fundamental de la red, 295 m⁻¹, y no hay energía
+   apreciable por encima; durante el decaimiento el pico baja a 59–130 m⁻¹.
 4. **La viscosidad.** Se usa la del agua y no la del electrolito (KNO₃ al 16 % m/m), por
    decisión explícita de Lucía del 2026-09-09, declarada en `codigo/celda.py`. Entra a
    primer orden: `δα/α = δν/ν − 2δh/h`.
@@ -212,7 +232,7 @@ Fase 2 puede producirla. El diseño mínimo:
 - Caja delgada, periódica en x e y, con `freeslip` arriba y `noslip` abajo, sin forzado.
 - Condición inicial `u = F₀(z)·∇^⊥ψ(x,y)` con `ψ` el patrón celular del forzado, que ya
   cumple `w = 0` y divergencia horizontal nula.
-- Barrido en la amplitud inicial para recorrer δ ≈ 0,3 … 10, que es el rango de la
+- Barrido en la amplitud inicial para recorrer δ ≈ 0,3 … 30, que es el rango de la
   tabla de la sección 5.
 - Se mide `α_eff = (ν/h)·∂_z u|₀ / ⟨u⟩` y se lo compara con `λ(k) = α(1+4ε²/π²)`. La
   curva `α_eff/λ(k)` contra δ **es** la respuesta a [P-01], y de paso da el factor
@@ -225,8 +245,10 @@ Fase 2 puede producirla. El diseño mínimo:
 ## 8. Consecuencia para el resto de la Fase 4
 
 - Al comparar con el decaimiento medido hay que contrastar contra **λ(k) = α(1+4ε²/π²)**
-  y no contra α pelado: son 11,5 % en el fundamental, muy por encima de la barra de
-  error del capítulo de instrumento.
+  y no contra α pelado: para el fundamental es un factor 2,28, y aun con el k al que
+  migra la energía en la ventana del ajuste (59–130 m⁻¹) son 5–25 %, muy por encima de
+  la barra de error del capítulo de instrumento. [V-13] comparó contra α pelado y dio
+  2,4 %; con λ(k) el medido queda **por debajo**. Es [P-02].
 - El primer segundo de cada registro está fuera de la clausura por memoria modal, y el
   arranque es además donde δ es mayor. Ajustar sobre el registro completo y mirar si el
   residuo tiene tendencia sistemática en los primeros ~10 s.

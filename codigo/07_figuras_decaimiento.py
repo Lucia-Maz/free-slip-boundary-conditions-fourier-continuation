@@ -294,9 +294,14 @@ def fig_espectros(d, tema, med="med_S0003"):
     ax.text(0.02, 0.06, "tenue: espectro crudo · grueso: con el ruido blanco de PIV "
                         "restado", transform=ax.transAxes, color=t["tinta2"],
             fontsize=9)
-    kf = d["celda"]["k_forzado_1_m"]
+    # El k de la red sale de celda.py, no del JSON: el JSON guarda el valor que tenía
+    # celda.py cuando se corrió 06_decaimiento.py, y ese cambió en [D-41] sin que los
+    # espectros dependan de él.
+    kf = CELDA.forzado.k_fundamental()
     ax.axvline(kf, color=t["tinta2"], lw=1.4, ls="--")
-    ax.annotate("k del forzado\n88,9 m⁻¹ (7,07 cm)", (kf, 1.0), xytext=(-6, -4),
+    ax.annotate("k de la red de imanes\n%s m⁻¹ (%s cm)"
+                % (("%.0f" % kf), ("%.2f" % (200 * math.pi / kf)).replace(".", ",")),
+                (kf, 3e-3), xytext=(-6, 0),
                 textcoords="offset points", color=t["tinta2"], fontsize=9, ha="right",
                 va="top")
     ax.set_xlabel("número de onda k  [1/m]")
@@ -322,7 +327,7 @@ def fig_delta(d, tema, resumen):
             _, _, _, _, kw = espectro_limpio(e)
             tt.append(p["t_s"])
             dd.append(U * kw * h ** 2 / nu)
-            dk.append(U * d["celda"]["k_forzado_1_m"] * h ** 2 / nu)
+            dk.append(U * CELDA.forzado.k_fundamental() * h ** 2 / nu)
         ax.plot(tt, dd, "o-", color=c, ms=6.5, mec=t["fondo"], mew=1.5)
         ax.plot(tt, dk, ":", color=c, lw=1.4, alpha=0.7)
         if tt:
@@ -337,7 +342,7 @@ def fig_delta(d, tema, resumen):
     ax.set_ylabel("δ = U k h² / ν")
     ax.set_title("El parámetro de [P-01], con k y U sacados de los datos")
     ax.text(0.02, 0.06,
-            "puntos: con el k medido del campo · punteado: con el k del forzado\n"
+            "puntos: con el k medido del campo · punteado: con el k de la red de imanes\n"
             "distorsión del perfil vertical ≈ 0,0077·δ",
             transform=ax.transAxes, color=t["tinta2"], fontsize=9)
     return guardar(fig, "f5_delta", tema)
