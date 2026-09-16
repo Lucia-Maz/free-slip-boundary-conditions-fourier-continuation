@@ -171,6 +171,33 @@ Dos cosas más que salieron de ahí:
 - **`med_S0008` contiene un decaimiento** aunque está etiquetado como forzado: cae de
   3,10 a 0,335 mm/s. `med_S0002` sí es estacionario. Ver [H-12].
 
+### De la Fase 4 — el barrido en δ con SPECTER ([V-16])
+
+`verificacion/barrido_delta_etapa1.py`, dos casos ([D-42]), dos mallas cada uno, corrido
+en la laptop el 2026-09-16. Informes en `informe/barrido_delta_etapa1_{ventana,forzado}.pdf`.
+Dos medidas independientes: λ/λ_lin (pendiente de log⟨v²⟩ contra la corrida lineal) y
+α_eff/α (tensión en el fondo sobre promedio vertical, medida en el campo, contra νπ²/4h²).
+
+| δ en la ventana | ε = 0,71 (ventana del ajuste): λ/λ_lin · α_eff/α | ε = 1,78 (meseta forzada): λ/λ_lin · α_eff/α |
+|---|---|---|
+| 0,3 | 1,000 · 1,001 | 1,000 · 1,001 |
+| 1 | 1,005 · 1,004 | 1,002 · 1,004 |
+| 3 | 1,044 · 1,025 | 1,014 · 1,028 |
+| 5–7 | 1,143 · 1,083 | 1,007 · 1,155 |
+| 8–10 | 1,27–1,31 · 1,18–1,28 | no convergido |
+
+Convergido entre 16² y 32² dentro de 1,2 % en ε = 0,71 hasta δ = 10, y hasta δ = 7 en
+ε = 1,78 (los dos puntos de más amplitud no convergen: [H-09]).
+
+**Lo que hay que retener:** el término no lineal **sube** la fricción de fondo — 2,5 % en
+δ = 3, 8 % en δ = 5, 15–18 % en δ ≈ 7–8, 26–28 % en δ = 10 — y la estimación de orden de
+[V-11] la subestimaba por un factor ~3. En ε = 1,78 la tasa total no lo muestra porque
+la energía migra a escalas grandes que disipan menos horizontalmente; en ε = 0,71 sí. En
+la ventana del ajuste experimental (δ de ~10 a ~1,3) la corrección es del 10–30 % en la
+primera mitad y despreciable en la segunda. **[P-02] no se explica por esto: empeora**;
+el candidato nuevo es que el PIV ajusta u(h) y no ⟨u⟩, y con perfil distorsionado
+u(h)/⟨u⟩ ≠ π/2 y cambia con el tiempo.
+
 ### De la campaña
 
 | | |
@@ -221,21 +248,16 @@ con `ulimit -v`; logs en `verificacion/logs/barrido_delta_etapa1_*.log`.
 
 **Lo que sigue, en este orden:**
 
-1. **Medir α_eff con SPECTER en un barrido en δ.** Es lo que cierra el fleco que dejó
-   [P-01] y es el candidato (iv) de [P-02]: el promedio vertical da, sin ninguna
-   clausura, `α_eff = (ν/h)·∂_z u|₀ / ⟨u⟩`, y la curva de `α_eff/λ(k)` contra
-   δ ≈ 0,3…30 (con k = 296 m⁻¹ el inicio del decaimiento está en 27, [D-41]) **es** la
-   respuesta. **Rediseñado el 2026-09-16 ([D-42])**: `verificacion/barrido_delta_etapa1.py`
-   corre dos casos, `--caso forzado` (ε = 1,78, δ hasta 30) y `--caso ventana` (ε = 0,71,
-   δ hasta 15), con ν escalado con Lz², ventana de ajuste tardía (3–4,25 memorias
-   modales) y `k_h` y `α_eff` medidos sobre el campo escrito en el medio de la ventana —
-   no sobre el `⟨ω²⟩` de `balance.txt`, que no reproduce el rotor del campo ([H-17]).
-   Un JSON por caso en `salidas/tablas/barrido_delta_etapa1_<caso>.json`; figuras y PDF
-   con `codigo/10_figuras_barrido_delta.py --caso …` y `11_pdf_barrido_delta.py --caso …`. Con dos resoluciones horizontales, porque además es el estudio de
-   convergencia con el tope free-slip puesto que [H-09] dejó pendiente para producción. El diseño
-   está escrito en la sección 7 de `teoria/P01_validez_reduccion_2D.md`.
+1. ~~Medir α_eff con SPECTER en un barrido en δ~~ — **hecho** ([D-42], [V-16]):
+   `verificacion/barrido_delta_etapa1.py --caso {forzado,ventana}`, dos mallas cada uno,
+   resultados arriba. Lo que dejó: el candidato (iv) de [P-02] descartado, y un candidato
+   nuevo, (v), medible con el mismo script escribiendo dos campos en la ventana en vez de
+   uno: la pendiente de log u(h) —que es lo que ajusta el PIV— contra la de log⟨u⟩.
+   Pendiente también una malla más fina para los dos puntos no convergidos del caso
+   forzado (δ ≥ 11), que es el estudio de convergencia de [H-09] para producción.
 2. **Una corrida de producción en Sakura** con la geometría real de la celda, y de ahí el
-   α calculado. Depende de 1 para la resolución.
+   α calculado. La resolución sale de 1: 32² alcanza hasta δ ≈ 7 en ε = 1,78 y hasta
+   δ ≈ 10 en ε = 0,71.
 3. ~~El decaimiento medido~~ — **hecho** ([V-13], [H-11], [H-12]).
 4. **Reanalizar el capítulo de instrumento a la luz de [H-12].** `med_S0008` no es
    estacionario, y el barrido en Δt supone que lo es. Hay que rehacerlo sobre
@@ -269,12 +291,14 @@ Los puntos 1, 2 y 4 son independientes entre sí; el 1 y el 4 son cómputo local
 
 - **[P-02] El α medido está por debajo de λ(k) para cualquier k con energía.** Es la
   comparación principal del proyecto y hoy se lee como acuerdo sólo contra α pelado.
-  Candidatos en la entrada; el barrido en δ con SPECTER decide uno de ellos.
-- **[P-01] quedó resuelto ([V-11]) en el método, y [D-41] le cambió el número.** La
-  distorsión estimada al inicio del decaimiento es 21 %, no 6 %; en la ventana del
-  ajuste sigue siendo de pocos por ciento. La estimación toma igual a 1 un factor
-  geométrico O(1) del término no lineal que no se calculó, y no está decidido si el
-  sesgo sobre α es de orden δ o δ². Se cierra midiendo α_eff.
+  [V-16] descartó la no linealidad como explicación (empuja para el otro lado). Quedan
+  el contenido en k del campo medido (piso de ruido no blanco, [V-14]), h > 6 mm, y el
+  candidato nuevo: el PIV ajusta u(h), no ⟨u⟩, y con perfil distorsionado u(h)/⟨u⟩ no
+  es π/2 ni constante en el tiempo. Ese es el siguiente paso, y es barato.
+- **[P-01] cerrado en lo cuantitativo ([V-16]).** La clausura de un modo tiene un error
+  de pocos por ciento para δ ≲ 3 y de 15–30 % en δ ≈ 7–10, medido con el código y no
+  estimado; el sesgo sobre α es hacia arriba. Lo que no se probó: un campo de banda
+  ancha como condición inicial, y la meseta como estado forzado.
 - ~~La menor escala con energía del flujo medido~~ — **medida** ([H-11], [H-16]): pico
   en 295 m⁻¹ en la meseta, que es el fundamental de la red; migra a 59–130 durante el
   decaimiento.

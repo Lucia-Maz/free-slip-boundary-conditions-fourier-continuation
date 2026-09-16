@@ -1567,3 +1567,81 @@ traen normalizaciones que no se cancelan entre sí.
 número. Las tasas λ, que salen de la pendiente de `log⟨v²⟩`, no están afectadas, y
 coinciden con la analítica al 0,1 % (ventana) y al 1,3 % (forzado; la diferencia es la
 deriva del segundo modo horizontal dentro de la ventana, que decae más rápido).
+
+### [V-16] El barrido en δ, etapa 1, corrido: la no linealidad SUBE la fricción de fondo, y no explica [P-02]
+
+`verificacion/barrido_delta_etapa1.py`, los dos casos de [D-42], a 16×16×64 y 32×32×64,
+en la laptop (cuatro procesos secuenciales, 127 MB de pico cada uno, 13 min por malla de
+16² y 58 min por malla de 32²; logs en `verificacion/logs/barrido_delta_etapa1_*`).
+JSON en `salidas/tablas/barrido_delta_etapa1_{ventana,forzado}.json`, figuras
+`f7_barrido_delta_*`, informes `informe/barrido_delta_etapa1_*.pdf` con el veredicto que
+produce el código sobre el criterio fijado de antemano.
+
+Las dos columnas de resultado son independientes: λ/λ_lin es la pendiente de log⟨v²⟩
+contra la de la corrida lineal de la misma malla; α_eff/α es la tensión en el fondo
+proyectada sobre el promedio vertical, medida sobre el campo escrito en el medio de la
+ventana, dividida por νπ²/4h². δ es el medido ahí, con el k horizontal del propio campo;
+dentro de la ventana cae un 25 %.
+
+**Caso `ventana` (ε = 0,71: la ventana del ajuste experimental).** Convergido: las dos
+mallas coinciden dentro de 0,1 % hasta δ = 5 y de 1,2 % en δ = 10.
+
+| δ | λ/λ_lin (16² / 32²) | α_eff/α (16² / 32²) |
+|---|---|---|
+| 0,29 | 1,0005 / 1,0005 | 1,001 / 1,001 |
+| 0,97 | 1,005 / 1,005 | 1,004 / 1,004 |
+| 2,84 | 1,044 / 1,044 | 1,025 / 1,025 |
+| 5,3 | 1,142 / 1,143 | 1,083 / 1,083 |
+| 8,0 | 1,268 / 1,270 | 1,176 / 1,183 |
+| 10 | 1,325 / 1,313 | 1,259 / 1,279 |
+
+**Caso `forzado` (ε = 1,78: la meseta forzada y el arranque del decaimiento).**
+Convergido hasta δ = 7,3 (las mallas coinciden dentro de 0,1 %); **no convergido** en
+δ = 11 y 14 (λ difiere 2 % y 12 %, α_eff 1 % y 6 %: es [H-09], amplitud alta sobre
+malla chica), así que esos dos puntos no se usan. El veredicto automático del PDF dice
+"hay" porque la discrepancia máxima entre mallas (9,2 %) queda justo debajo de un tercio
+del apartamiento máximo (28 %); el criterio no mira punto a punto, y acá hay que leerlo
+punto a punto.
+
+| δ | λ/λ_lin (16² / 32²) | α_eff/α (16² / 32²) | k_h (32²) |
+|---|---|---|---|
+| 0,30 | 1,0002 / 1,0002 | 1,001 / 1,001 | 1,55 |
+| 0,98 | 1,002 / 1,002 | 1,004 / 1,004 | 1,55 |
+| 2,82 | 1,014 / 1,014 | 1,028 / 1,028 | 1,54 |
+| 7,3 | 1,007 / 1,007 | 1,155 / 1,155 | 1,45 |
+| 11 (no conv.) | 0,860 / 0,843 | 1,182 / 1,171 | 1,22 |
+| 14 (no conv.) | 0,813 / 0,720 | 1,187 / 1,121 | 1,04 |
+
+**Lo que dice.**
+
+1. **El término no lineal sube la fricción de fondo**, en los dos ε: α_eff/α = 1,025 en
+   δ ≈ 3, 1,08 en δ ≈ 5, 1,15–1,18 en δ ≈ 7–8, 1,26–1,28 en δ ≈ 10. El perfil vertical
+   distorsionado tiene más cizallamiento en el fondo por unidad de velocidad media que
+   el fundamental. La estimación de orden de [V-11] (|a₁/a₀| ≈ 0,0077 δ: 2 % en δ = 3,
+   8 % en δ = 10) da el orden pero subestima el efecto sobre α por un factor ~3.
+2. **Lo que le pasa a la tasa total depende de ε.** En ε = 0,71 la fricción domina
+   (α ≈ 3 νk²) y λ sigue a α_eff, incluso algo más (1,04 → 1,31). En ε = 1,78 la
+   viscosidad horizontal domina (νk² ≈ 1,5 α) y el término no lineal manda energía a
+   escalas más grandes (k_h cae de 1,55 a 1,45 ya en δ = 7): esas escalas disipan menos,
+   y la tasa total queda dentro de 1,4 % de la lineal mientras α_eff subió 15 %. Las dos
+   medidas se separan porque miden cosas distintas, y por eso hacía falta medir las dos.
+3. **[P-01] queda cuantificado con el código y no estimado:** la clausura de un modo
+   tiene un error de pocos por ciento para δ ≲ 3 y de 15–30 % en δ ≈ 7–10. En el
+   experimento la ventana del ajuste va de δ ≈ 10 (t ≈ 11 s) a δ ≈ 1,3 (t ≈ 40 s), con
+   el k medido: la primera mitad de la ventana está en el régimen donde la corrección es
+   del 10–30 %, la segunda donde es despreciable.
+4. **[P-02] no se explica por no linealidad: empeora.** El α medido (0,0669 ± 0,0049)
+   está por debajo de α pelado (0,0685) y de λ(k) para el k de la ventana
+   (0,072–0,085), y ahora la corrección no lineal empuja la predicción más arriba todavía
+   en la primera mitad de la ventana. El candidato (iv) de [P-02] queda **descartado**.
+   Quedan (i) el contenido en k del campo medido, con el piso de ruido que [V-14] mostró
+   que no es blanco; (ii) h mayor que 6 mm; y uno nuevo, (v): **el PIV mide la velocidad
+   de superficie y el ajuste es sobre u(h), no sobre ⟨u⟩**; con el perfil distorsionado
+   el cociente u(h)/⟨u⟩ deja de ser π/2 y cambia en el tiempo a medida que δ cae, así que
+   la pendiente de log u(h) no es la de log⟨u⟩. Es medible con el mismo barrido
+   escribiendo dos campos en la ventana en vez de uno.
+
+**Lo que no se chequeó:** un campo de banda ancha como condición inicial (el barrido usa
+dos modos horizontales); la meseta forzada como estado forzado y no como decaimiento
+libre; una malla más fina para los puntos no convergidos del caso forzado; y el
+candidato (v), que es el siguiente paso barato.

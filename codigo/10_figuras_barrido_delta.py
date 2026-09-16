@@ -42,9 +42,12 @@ BARRA_EXPERIMENTAL = 0.0730
 
 
 def guardar(fig, nombre):
+    """PDF para el informe y PNG para la página HTML de la entrega."""
     os.makedirs(FIGS, exist_ok=True)
     ruta = os.path.join(FIGS, nombre + ".pdf")
     fig.savefig(ruta, bbox_inches="tight", pad_inches=0.2)
+    fig.savefig(os.path.join(FIGS, nombre + ".png"), dpi=150, bbox_inches="tight",
+                pad_inches=0.2)
     plt.close(fig)
     return ruta
 

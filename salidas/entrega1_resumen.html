@@ -185,7 +185,9 @@ esta página es su resumen para leer de corrido.</p>
   α&nbsp;+&nbsp;ν⟨k²⟩, siempre mayor. Con el k que tiene el flujo en la ventana del
   ajuste (pico en 59–130&nbsp;m⁻¹) la predicción es 0,072–0,085&nbsp;s⁻¹ y el medido
   queda un 7–22&nbsp;% <b>por debajo</b>. El 2,4&nbsp;% es contra el único valor que el
-  flujo no puede tener; la lectura correcta de esta comparación no está cerrada.</p>
+  flujo no puede tener. El barrido en δ con SPECTER (§4.1) descartó que la no linealidad
+  lo explique —empuja para el otro lado—; lo que queda es robusto en lo cualitativo
+  (free-slip, no tapa rígida: factor 4) y abierto en lo cuantitativo.</p>
 </div>
 
 <nav class="indice">
@@ -230,7 +232,7 @@ free-slip y además plano —dos aproximaciones apiladas—, y así lo nombra el
 <tr class="hecha"><td>1 · Teoría</td><td>Derivación analítica y solver de referencia no espectral</td><td>hecha</td></tr>
 <tr class="hecha"><td>2 · Implementación</td><td>Tope libre de tensiones en Fortran, dentro de SPECTER</td><td>hecha</td></tr>
 <tr class="hecha"><td>3 · Verificación</td><td>Seis casos de aceptación, incluido uno que falla a propósito</td><td>hecha — puerta 6/6</td></tr>
-<tr class="curso"><td>4 · Física y entrega</td><td>Validez de la reducción 2D, decaimiento medido, corrida de producción, informe</td><td>en curso</td></tr>
+<tr class="curso"><td>4 · Física y entrega</td><td>Validez de la reducción 2D (hecha, cuantificada con el barrido en δ), decaimiento medido (hecho), corrida de producción, informe</td><td>en curso</td></tr>
 </tbody>
 </table>
 </div>
@@ -308,6 +310,53 @@ la distorsión del perfil vertical, que tiene un prefactor pequeño (≈&nbsp;0,
 decaimiento (distorsión ≈&nbsp;20&nbsp;%), y buena dentro de la ventana donde se ajusta
 α</b>, cuando la energía ya migró a k&nbsp;≲&nbsp;130&nbsp;m⁻¹ y U cayó — es la respuesta
 a la pregunta que abre esta sección, y el barrido en δ con SPECTER la pone a prueba.</p>
+
+<h3 id="barrido">4.1 · Lo que dice el barrido en δ con SPECTER</h3>
+<p>Con SPECTER ya modificado se integró el decaimiento libre de un campo celular
+tridimensional (dos modos horizontales por el perfil vertical fundamental) a amplitud
+creciente, en dos regímenes de ε&nbsp;=&nbsp;kh que reproducen el experimento —
+ε&nbsp;=&nbsp;0,71 para la ventana del ajuste y ε&nbsp;=&nbsp;1,78 para la meseta forzada
+— y a dos resoluciones horizontales, 16×16 y 32×32, con la referencia lineal medida con el
+mismo binario a amplitud minúscula. Dos medidas independientes: la tasa de decaimiento de
+⟨v²⟩ contra la lineal, y la fricción de fondo <b>sin clausura</b>,
+α_eff&nbsp;=&nbsp;ν⟨∂_z u|₀·Ū⟩/(h⟨Ū²⟩), leída del campo en la ventana de ajuste y
+dividida por νπ²/4h².</p>
+<div class="scroll">
+<table class="num">
+<thead><tr><th>δ en la ventana</th><th>ε = 0,71 · λ/λ_lin</th><th>ε = 0,71 · α_eff/α</th><th>ε = 1,78 · λ/λ_lin</th><th>ε = 1,78 · α_eff/α</th></tr></thead>
+<tbody>
+<tr><td>0,3</td><td>1,000</td><td>1,001</td><td>1,000</td><td>1,001</td></tr>
+<tr><td>1</td><td>1,005</td><td>1,004</td><td>1,002</td><td>1,004</td></tr>
+<tr><td>3</td><td>1,044</td><td>1,025</td><td>1,014</td><td>1,028</td></tr>
+<tr><td>5 – 7</td><td>1,143</td><td>1,083</td><td>1,007</td><td>1,155</td></tr>
+<tr><td>8 – 10</td><td>1,27 – 1,31</td><td>1,18 – 1,28</td><td colspan="2">no convergido entre mallas</td></tr>
+</tbody>
+</table>
+</div>
+<figure>
+  <img src="figuras/f7_barrido_delta_ventana.png" alt="Barrido en δ, caso ventana (ε = 0,71): λ/λ_lin y α_eff/α contra δ, dos mallas">
+  <figcaption><b>Caso ventana, ε&nbsp;=&nbsp;0,71.</b> Círculos: tasa medida sobre la
+  lineal; cuadrados: α_eff/α del campo. Las dos mallas coinciden dentro de 1,2&nbsp;%
+  hasta δ&nbsp;=&nbsp;10. La banda gris es la barra del α medido en el experimento.</figcaption>
+</figure>
+<figure>
+  <img src="figuras/f7_barrido_delta_forzado.png" alt="Barrido en δ, caso forzado (ε = 1,78): λ/λ_lin y α_eff/α contra δ, dos mallas">
+  <figcaption><b>Caso forzado, ε&nbsp;=&nbsp;1,78.</b> Hasta δ&nbsp;≈&nbsp;7 las mallas
+  coinciden; la fricción de fondo sube un 15&nbsp;% mientras la tasa total queda dentro
+  de 1,4&nbsp;% de la lineal, porque el término no lineal manda energía a escalas más
+  grandes, que disipan menos horizontalmente. Los dos puntos de más amplitud no convergen
+  entre mallas y no se usan.</figcaption>
+</figure>
+<p><b>Conclusión:</b> el término no lineal <b>sube la fricción de fondo</b>: 2,5&nbsp;% en
+δ&nbsp;=&nbsp;3, 8&nbsp;% en δ&nbsp;=&nbsp;5, 15–18&nbsp;% en δ&nbsp;≈&nbsp;7–8, hasta
+26–28&nbsp;% en δ&nbsp;=&nbsp;10 — un factor ~3 por encima de la estimación de orden de
+la sección anterior. En la ventana donde se ajusta α el experimento va de δ&nbsp;≈&nbsp;10
+a δ&nbsp;≈&nbsp;1,3, así que la corrección es del 10–30&nbsp;% en la primera mitad y
+despreciable en la segunda. La clausura de un modo queda <b>cuantificada, no
+estimada</b>: vale al por ciento para δ&nbsp;≲&nbsp;3 y hay que corregirla por encima.
+Lo que no se probó: un campo de banda ancha como condición inicial, y la meseta como
+estado forzado en vez de decaimiento libre. Detalle y veredicto automático en
+<code>informe/barrido_delta_etapa1_{ventana,forzado}.pdf</code>; entradas [D-42] y [V-16].</p>
 
 <h2 id="decaimiento"><span class="n">5</span>El decaimiento medido</h2>
 <p>Los cuatro registros de decaimiento de la campaña (<code>med_S0003</code>,
@@ -416,17 +465,26 @@ porque el proyecto no afirma más de lo que se chequeó.</p>
   <li><b>El marco espectral de Foucaut et&nbsp;al. no describe del todo el ruido de este
   multipaso</b>: el piso del espectro no muestra el cero que exigiría la ventana de
   16&nbsp;px, como si el ruido estuviera correlacionado sobre el paso de la grilla.</li>
+  <li><b>La comparación cuantitativa con α está abierta ([P-02]).</b> La tasa de u_rms es
+  α&nbsp;+&nbsp;ν⟨k²⟩ más la corrección no lineal de §4.1, ambas positivas; el α medido
+  queda por debajo de esa predicción. Candidatos que quedan: el contenido en k del campo
+  medido (el piso de ruido no es blanco), el espesor, y que el PIV ajusta la velocidad de
+  <i>superficie</i> u(h) y no el promedio vertical — con perfil distorsionado
+  u(h)/⟨u⟩ no es π/2 ni constante en el tiempo. Ese último es medible con el mismo
+  barrido y es el siguiente paso.</li>
 </ul>
 
 <h2 id="sigue"><span class="n">9</span>Qué sigue</h2>
 <p>La herramienta ya existe — SPECTER puede calcular α en vez de ajustarlo. Falta usarla
 en producción y cerrar el capítulo de instrumento:</p>
 <ol class="pendientes">
-  <li><b>Medir α_eff con SPECTER en un barrido en δ</b>, con dos resoluciones
-  horizontales (además es el estudio de convergencia con el tope free-slip pendiente para
-  producción). Cierra los dos flecos que deja [P-01].</li>
+  <li><b>Medir la pendiente de u(h) contra la de ⟨u⟩ en el barrido en δ</b>, escribiendo
+  dos campos en la ventana en vez de uno: es lo que el PIV ajusta, y el candidato que
+  queda para [P-02]. Y una malla más fina para los dos puntos de más amplitud del caso
+  forzado, que no convergieron.</li>
   <li><b>Corrida de producción en el clúster</b> con la geometría real de la celda, y de
-  ahí el α calculado — depende de la resolución del punto anterior.</li>
+  ahí el α calculado. La resolución sale del barrido: 32×32 alcanza hasta δ&nbsp;≈&nbsp;7
+  en ε&nbsp;=&nbsp;1,78 y hasta δ&nbsp;≈&nbsp;10 en ε&nbsp;=&nbsp;0,71.</li>
   <li><b>Cerrar el capítulo de instrumento</b> repitiendo la medición de σ sobre
   <code>med_S0002</code>, la corrida forzada estacionaria.</li>
   <li><b>La entrega final</b>: repositorio público reproducible, página HTML y PDF.</li>
