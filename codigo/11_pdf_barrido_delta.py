@@ -211,7 +211,7 @@ modales. Las amplitudes $u_0$ se eligieron para cubrir $\delta$ objetivo
 
 \paragraph{El criterio, fijado antes de mirar los resultados.} Se declara que
 \emph{hay} apartamiento si alguna corrida estable se aparta más que la barra de error del
-$\alpha$ medido en el experimento, $%(barra).1f\,\%%$~[V-13], \emph{y} ese apartamiento
+$\alpha$ medido en el experimento, %(barra).1f\,\%%~[V-13], \emph{y} ese apartamiento
 converge con la resolución (las dos mallas coinciden dentro de un tercio del efecto). Si
 todas las corridas estables quedan dentro de esa barra, \emph{no hay}. Si hay apartamiento
 pero no converge, el resultado es \emph{no concluyente}. El veredicto de la
@@ -232,8 +232,9 @@ $u_0$ %(cab)s \\
 \bottomrule
 \end{tabular}
 \caption{Tasa de decaimiento medida, normalizada por la de la corrida lineal de
-referencia de la misma malla. $\delta$ está a menos de una constante de forma $O(1)$;
-lo que importa acá es el rango cubierto y la tendencia, no su valor absoluto.}
+referencia de la misma malla, y $\alpha_\text{eff}/\alpha$ medido sobre el campo escrito
+en el medio de la ventana. $\delta$ es el medido ahí, con el $k$ horizontal del propio
+campo; dentro de la ventana cae un 25\,\%%.}
 \end{table}
 
 \begin{figure}[h]
@@ -251,23 +252,21 @@ usan.}
 
 \section{Lo que esto no contesta}
 
-La etapa 1 mide la tasa de decaimiento de la energía \emph{total}, que mezcla tres cosas:
-la fricción de fondo, la disipación viscosa horizontal y la transferencia no lineal entre
-escalas. No aísla el corte en el fondo. La cantidad limpia es
-\begin{equation}
-  \alpha_\text{eff} \equiv \frac{\nu}{h}\,
-  \frac{\partial u/\partial z\big|_{0}}{\langle u\rangle} ,
-\end{equation}
-que es exacta y no supone ninguna clausura, pero pedirle a SPECTER que la escriba requiere
-agregar un diagnóstico en Fortran. Esa es la etapa 2, y sólo hace falta si esta etapa
-muestra algo.
+La tasa $\lambda$ de $\langle v^2\rangle$ mezcla tres cosas: la fricción de fondo, la
+disipación viscosa horizontal y la transferencia no lineal entre escalas. Por eso se mide
+además, sobre el campo, $\alpha_\text{eff}$ de la ecuación de la sección~2, que aísla el
+corte en el fondo sin ninguna clausura. Que las dos medidas se muevan juntas dice que el
+apartamiento está en la fricción y no sólo en la redistribución de energía entre escalas.
 
-Otras salvedades: $\delta$ está a menos de una constante de forma $O(1)$, porque
-$\langle v^2\rangle$ que informa el código está promediado sobre el dominio extendido por
-la continuación FC--Gram y no sobre el físico; la condición inicial no cumple el no
-deslizamiento del fondo, así que hay un transitorio que se descarta ajustando sobre el
-último tercio; y la estructura horizontal es un único modo con dependencia en $x$, que es
-justamente el caso donde la realimentación no lineal está más suprimida.
+Salvedades que quedan: la condición inicial es un campo de dos modos horizontales con el
+perfil vertical fundamental, no un campo de banda ancha como el del experimento, y la
+realimentación no lineal sobre la tasa depende de esa estructura; la simulación decae
+libremente, mientras que la meseta del experimento es un estado forzado; y $\delta$ se
+calibra con el $k$ horizontal pesado por energía del propio campo en el medio de la
+ventana, y dentro de ella $\delta$ cae un 25\,\%%, así que cada punto representa un rango
+y no un valor. El $\langle v^2\rangle$ de \texttt{balance.txt} está promediado sobre el
+dominio físico y coincide con el del campo escrito; el $\langle\omega^2\rangle$ del mismo
+archivo no reproduce el rotor del campo y no se usa ([H-17]).
 
 \begin{thebibliography}{9}
 \bibitem{fontana2020} M.~Fontana, O.~P.~Bruno, P.~D.~Mininni y P.~Dmitruk,

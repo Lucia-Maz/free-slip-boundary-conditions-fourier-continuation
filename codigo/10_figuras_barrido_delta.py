@@ -80,6 +80,7 @@ def fig_apartamiento(d):
                         va="center", fontweight="semibold")
 
     ax.set_xscale("log")
+    ax.set_xlim(left=0.1)
     ax.set_xlabel("δ medido en la ventana de ajuste  (k horizontal del propio campo)")
     ax.set_ylabel("cociente contra la referencia lineal")
     ax.set_title("¿Se aparta la fricción al crecer el término no lineal?  caso %s, ε = %.2f"
