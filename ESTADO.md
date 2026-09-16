@@ -90,7 +90,8 @@ Malla 8×8×128 (Cz=25, 103 puntos físicos en z), ν = 10⁻², Lz = 1, Runge-K
 | | |
 |---|---|
 | λ₀ con fondo rígido y tope free-slip | 2,467401099·10⁻², contra 2,467401100·10⁻² de la referencia — **error 6,8·10⁻¹⁰** |
-| λ₁, λ₂ | error relativo 5,5·10⁻⁸ y 4,4·10⁻⁷ |
+| λ₁ (m=1), primer armónico vertical | 2,220660867·10⁻¹, contra 2,220660990·10⁻¹ — error 5,5·10⁻⁸ |
+| λ₂ (m=2), segundo armónico vertical | 6,168500038·10⁻¹, contra 6,168502750·10⁻¹ — error 4,4·10⁻⁷ |
 | λ(canal) / λ(free-slip) | **4,000000015** |
 | Cara free-slip abajo en vez de arriba | misma λ dentro de 7,7·10⁻¹³ |
 | Residuo de tensión en la cara free-slip | 6,1·10⁻¹² relativo a la cara rígida, **independiente de dt** |

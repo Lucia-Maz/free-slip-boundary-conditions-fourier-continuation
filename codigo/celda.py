@@ -97,8 +97,8 @@ class Celda:
     def alfa(self, bordes: str = "noslip-libre") -> float:
         """Coeficiente de fricción de fondo de la clausura de un modo [1/s].
 
-        Fase 1, verificada numéricamente: con fondo no-deslizante y tope libre de
-        tensiones alfa = pi^2 nu / (4 h^2); con no-deslizamiento en las dos caras,
+        Fase 1, verificada numéricamente: con fondo no-deslizante y tope free-slip
+        alfa = pi^2 nu / (4 h^2); con no-deslizamiento en las dos caras,
         pi^2 nu / h^2. El cociente es exactamente 4.
         """
         base = math.pi ** 2 * self.fluido.nu / self.h ** 2
@@ -117,7 +117,7 @@ class Celda:
         return self.h ** 2 / self.fluido.nu
 
     def t_olvido_modal(self) -> float:
-        """1/(lambda_1 - lambda_0) con tope libre [s].
+        """1/(lambda_1 - lambda_0) con tope free-slip [s].
 
         Cuánto hay que esperar para que el segundo modo vertical pierda memoria y el
         perfil sea el fundamental. lambda_m = nu ((m+1/2) pi / h)^2, así que la brecha
@@ -126,7 +126,7 @@ class Celda:
         return self.h ** 2 / (2.0 * math.pi ** 2 * self.fluido.nu)
 
     def sesgo_piv_superficie(self) -> float:
-        """u(h)/<u> para el modo fundamental con tope libre: pi/2.
+        """u(h)/<u> para el modo fundamental con tope free-slip: pi/2.
 
         Las partículas trazadoras flotan, así que el PIV mide la velocidad de la
         superficie y no el promedio vertical. Para pasar de lo medido al promedio hay
@@ -224,7 +224,7 @@ DECAIMIENTOS = ("med_S0003", "med_S0005", "med_S0006", "med_S0009")
 if __name__ == "__main__":
     c = CAMPANA_02_06_25
     print("celda %s: h = %.1f mm, nu = %.2e m^2/s" % (c.nombre, c.h * 1e3, c.fluido.nu))
-    print("  alfa (tope libre)   = %.6f 1/s   tau = %.2f s" %
+    print("  alfa (free-slip)    = %.6f 1/s   tau = %.2f s" %
           (c.alfa(), c.tau_alfa()))
     print("  alfa (canal)        = %.6f 1/s" % c.alfa("noslip-noslip"))
     print("  h^2/nu              = %.2f s" % c.tau_difusion())

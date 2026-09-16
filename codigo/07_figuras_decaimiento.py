@@ -35,7 +35,12 @@ TABLAS = os.path.join(RAIZ, "salidas", "tablas")
 FIGS = os.path.join(RAIZ, "salidas", "figuras")
 
 SERIES = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100"]
-SERIES_OSC = ["#3987e5", "#d95926", "#199e70", "#c98500"]
+# Paleta más suave para el tema oscuro (pedido de Lucía, 2026-09-16): mismos cuatro
+# tonos categóricos, desaturados hacia un aire "pastel" pero sin salir de la banda
+# L 0.48-0.67 / C >= 0.10 que exige la skill de dataviz para que sigan leyéndose
+# como identidad de serie sobre #1a1a19 — validado con validate_palette.js
+# (los 4 checks pasan; peor par CVD 8.8, peor par visión normal 16.1).
+SERIES_OSC = ["#4a8fd4", "#cf7238", "#3aa47a", "#b8871f"]
 
 TEMAS = {
     "claro": dict(fondo="#fcfcfb", tinta="#0b0b0b", tinta2="#52514e",
@@ -188,7 +193,7 @@ def fig_decaimiento(d, tema, t_corte=10.0):
     xx = np.linspace(t_corte, 45, 20)
     ax.plot(xx, u0 * np.exp(-a * xx), color=t["tinta"], lw=1.6, ls="--", zorder=2)
     ax.annotate("ajuste del ensemble:  α = %.4f ± %.4f s⁻¹\n"
-                "predicho, tope libre:  0,0685 s⁻¹\n"
+                "predicho, free-slip:  0,0685 s⁻¹\n"
                 "predicho, tapa rígida: 0,2742 s⁻¹"
                 % (a, ea), (0.985, 0.97), xycoords="axes fraction",
                 ha="right", va="top", color=t["tinta"], fontsize=9.5)
@@ -407,11 +412,11 @@ def main():
               % (med, r["alfa_1_s"], r["err"], r["n_puntos"]))
     print("k medido: inicio %.1f 1/m, final %.1f 1/m   (forzado: %.1f)"
           % (k_ini, k_fin, resumen["k_forzado_1_m"]))
-    print("alfa predicho tope libre      = %.5f 1/s" % resumen["alfa_predicho_1_s"])
+    print("alfa predicho free-slip       = %.5f 1/s" % resumen["alfa_predicho_1_s"])
     print("lambda con k del forzado      = %.5f 1/s" % resumen["lambda_predicho_con_k_forzado_1_s"])
     print("lambda con k medido           = %.5f 1/s" % resumen["lambda_predicho_con_k_medido_1_s"])
     print("alfa predicho canal (rígido)  = %.5f 1/s" % resumen["alfa_predicho_canal_1_s"])
-    print("cociente medido/predicho (tope libre, alfa solo) = %.3f"
+    print("cociente medido/predicho (free-slip, alfa solo) = %.3f"
           % (a_ens / resumen["alfa_predicho_1_s"]))
     print("cociente medido/canal                            = %.3f"
           % (a_ens / resumen["alfa_predicho_canal_1_s"]))

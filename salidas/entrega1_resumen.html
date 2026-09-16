@@ -252,9 +252,9 @@ referencia analítica independiente, en una malla 8×8×128 (ν = 10⁻², Lz = 
 <table class="num">
 <thead><tr><th>cantidad</th><th>SPECTER</th><th>referencia</th><th>error relativo</th></tr></thead>
 <tbody>
-<tr><td>λ₀, fondo rígido + tope free-slip</td><td>2,467401099·10⁻²</td><td>2,467401100·10⁻²</td><td>6,8·10⁻¹⁰</td></tr>
-<tr><td>λ₁</td><td>—</td><td>—</td><td>5,5·10⁻⁸</td></tr>
-<tr><td>λ₂</td><td>—</td><td>—</td><td>4,4·10⁻⁷</td></tr>
+<tr><td>λ₀ (m=0, el fundamental)</td><td>2,467401099·10⁻²</td><td>2,467401100·10⁻²</td><td>6,8·10⁻¹⁰</td></tr>
+<tr><td>λ₁ (m=1, primer armónico vertical)</td><td>2,220660867·10⁻¹</td><td>2,220660990·10⁻¹</td><td>5,5·10⁻⁸</td></tr>
+<tr><td>λ₂ (m=2, segundo armónico vertical)</td><td>6,168500038·10⁻¹</td><td>6,168502750·10⁻¹</td><td>4,4·10⁻⁷</td></tr>
 <tr><td>λ(canal) / λ(free-slip)</td><td>4,000000015</td><td>4</td><td>3,8·10⁻⁹</td></tr>
 <tr><td>residuo de tensión en la cara free-slip</td><td colspan="2">6,1·10⁻¹² relativo a la cara rígida, independiente de dt</td><td>—</td></tr>
 </tbody>
@@ -292,12 +292,13 @@ fórmula de α de arriba:</p>
   distorsión del perfil vertical, que es lo que realmente hay que acotar, se mantiene en
   pocos por ciento en todo el tramo relevante.</figcaption>
 </figure>
-<p><b>Conclusión:</b> el criterio heredado estaba mal escrito (usaba una longitud sin
-correspondencia física en la celda, y confundía longitud de onda con número de onda —
-una ambigüedad de 2π). Escrito bien, δ resulta <i>peor</i> de lo que decía la pregunta
-original. Pero δ no es lo que tiene que ser chico: la cantidad que sí importa —la
-distorsión del perfil vertical— tiene un prefactor pequeño y queda en pocos por ciento.
-<b>La clausura de un modo no queda invalidada en el régimen medido.</b></p>
+<p><b>Conclusión:</b> escribiendo δ explícitamente a partir de la geometría real de los
+imanes y del número de onda del patrón —no de una longitud aproximada—, resulta más
+grande de lo que sugería una estimación preliminar del proyecto. Pero δ no es la
+cantidad que tiene que ser chica: la que sí importa es la distorsión del perfil
+vertical, que tiene un prefactor pequeño y queda en pocos por ciento en todo el rango
+medido. <b>La clausura de un modo no queda invalidada en el régimen medido</b> — es la
+respuesta a la pregunta que abre esta sección.</p>
 
 <h2 id="decaimiento"><span class="n">5</span>El decaimiento medido</h2>
 <p>Los cuatro registros de decaimiento de la campaña (<code>med_S0003</code>,
@@ -328,8 +329,14 @@ estado forzado previo al corte.</p>
 <p class="nota">Limitado por el espesor de la capa, no por la estadística: medio
 milímetro de error en h mueve α un 17&nbsp;%.</p>
 
-<h2 id="instrumento"><span class="n">6</span>El capítulo de instrumento: el piso de ruido de PIV</h2>
-<p>Es la barra de error de la comparación de arriba. Tres mediciones de σ sobre la misma
+<h2 id="instrumento"><span class="n">6</span>El capítulo de instrumento: parámetros óptimos de PIV</h2>
+<p>Este fue el punto de partida del proyecto: usando agentes para explorar
+sistemáticamente la campaña —rearmando pares de cuadros a distintos Δt y comparando
+esquemas de multipaso sobre las mismas imágenes— se identificó la separación entre
+cuadros y el tamaño de ventana de interrogación que dan el mejor compromiso entre señal
+y ruido para este flujo, con un multipaso propio que sube los vectores válidos del
+30–36&nbsp;% de las series archivadas al 97,5&nbsp;%. Ese trabajo hoy hace de barra de
+error de la comparación de arriba, descompuesta en tres mediciones de σ sobre la misma
 cámara y la misma configuración de PIV, que se diferencian sólo en qué degradación
 física incluyen:</p>
 <div class="scroll">
@@ -358,11 +365,10 @@ física incluyen:</p>
   contra los 88,9 m⁻¹ del armónico diagonal del forzado. Es el k que hay que usar para
   evaluar δ en cada instante, no el del patrón de imanes.</figcaption>
 </figure>
-<p class="salvedad"><b>Pendiente</b>: σ&nbsp;=&nbsp;0,169&nbsp;px se midió sobre
-<code>med_S0008</code>, un registro que resultó no ser estacionario pese a estar
-etiquetado como forzado (cae de 3,10 a 0,335&nbsp;mm/s). El barrido en Δt supone
-estacionariedad. Hay que rehacer la medición sobre <code>med_S0002</code>, que sí lo es,
-antes de dar por definitivo este número — es la barra de error de todo el trabajo.</p>
+<p class="salvedad"><b>Pendiente</b>: el barrido en Δt que da σ&nbsp;=&nbsp;0,169&nbsp;px
+supone un registro estacionario. El próximo paso de este capítulo es repetir esa
+medición sobre <code>med_S0002</code>, la corrida forzada que sí lo es, para dejar
+cerrado este número — es la barra de error de todo el trabajo.</p>
 
 <h2 id="campana"><span class="n">7</span>Parámetros de la campaña</h2>
 <p>Viven en un único lugar del código, <code>codigo/celda.py</code>, porque cambian
@@ -409,8 +415,8 @@ en producción y cerrar el capítulo de instrumento:</p>
   producción). Cierra los dos flecos que deja [P-01].</li>
   <li><b>Corrida de producción en el clúster</b> con la geometría real de la celda, y de
   ahí el α calculado — depende de la resolución del punto anterior.</li>
-  <li><b>Reanalizar el capítulo de instrumento</b> sobre <code>med_S0002</code> en vez de
-  <code>med_S0008</code>, y ver qué le pasa a σ = 0,169 px.</li>
+  <li><b>Cerrar el capítulo de instrumento</b> repitiendo la medición de σ sobre
+  <code>med_S0002</code>, la corrida forzada estacionaria.</li>
   <li><b>La entrega final</b>: repositorio público reproducible, página HTML y PDF.</li>
 </ol>
 
