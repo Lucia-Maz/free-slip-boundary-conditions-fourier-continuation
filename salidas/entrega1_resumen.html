@@ -1,4 +1,4 @@
-<title>Fricción con superficie libre</title>
+<title>Fricción con tope free-slip</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
 <style>
 :root {
@@ -168,15 +168,15 @@ esta página es su resumen para leer de corrido.</p>
     <div class="cifra destacada"><span class="v">0,0669 ± 0,0049</span>
       <span class="k">α medido, PIV (s⁻¹)</span></div>
     <div class="cifra"><span class="v">0,0685</span>
-      <span class="k">α predicho · tope libre (s⁻¹)</span></div>
+      <span class="k">α predicho · free-slip (s⁻¹)</span></div>
     <div class="cifra"><span class="v">0,2742</span>
       <span class="k">α predicho · tapa rígida (s⁻¹)</span></div>
     <div class="cifra"><span class="v">2,4 %</span>
-      <span class="k">diferencia vs. tope libre</span></div>
+      <span class="k">diferencia vs. free-slip</span></div>
   </div>
   <p style="max-width:46rem">El decaimiento de la celda de forzado electromagnético,
   medido por PIV el 02-06-25, es compatible con la predicción de <b>fondo no-deslizante
-  y superficie libre</b> dentro de un 2,4&nbsp;%, y queda <b>4,1 veces por debajo</b> de
+  y tope free-slip</b> dentro de un 2,4&nbsp;%, y queda <b>4,1 veces por debajo</b> de
   lo que predeciría una tapa rígida (el supuesto que usan hoy los códigos del grupo). Es
   la comparación que motiva todo el proyecto: la fricción de fondo se puede
   <b>calcular</b> a partir de la condición de contorno real, en vez de ajustarla.</p>
@@ -204,10 +204,16 @@ la <b>asimetría</b> entre el fondo, no-deslizante, y la superficie de arriba, q
 experimento real es libre (el electrolito está en contacto con aire). Los códigos
 existentes o no tienen bordes verticales, o los tienen no-deslizantes de los dos lados —
 así que la fricción entra como un parámetro <b>ajustado</b>, no calculado.</p>
-<p>Este proyecto implementa la condición de superficie libre en <b>SPECTER</b> (el
-solver espectral del grupo) para calcular esa fricción desde primeros principios, y
-contrasta el resultado contra el decaimiento medido por PIV en la celda de forzado
-electromagnético.</p>
+<p>Este proyecto implementa en <b>SPECTER</b> (el solver espectral del grupo) la
+condición <b>free-slip</b> —plana y sin tensión tangencial, la aproximación de esa
+superficie libre válida cuando su deformación es despreciable (sección&nbsp;8)— para
+calcular esa fricción desde primeros principios, y contrasta el resultado contra el
+decaimiento medido por PIV en la celda de forzado electromagnético.</p>
+<p class="nota">Free-slip y "superficie libre" no son lo mismo: free-slip vs.
+no-deslizante es sobre la tensión tangencial en un borde <i>fijo</i>; superficie libre
+(deformable) vs. tapa rígida es sobre si ese borde se <i>mueve</i>. Lo implementado es
+free-slip y además plano —dos aproximaciones apiladas—, y así lo nombra el propio código
+(<code>freeslip</code>, <code>freeslip_z</code>).</p>
 
 <h2 id="fases"><span class="n">2</span>Estado de las fases</h2>
 <div class="scroll">
@@ -224,11 +230,11 @@ electromagnético.</p>
 </div>
 
 <h2 id="establecido"><span class="n">3</span>Lo ya establecido, verificado numéricamente</h2>
-<p>Con fondo no-deslizante y tope libre de tensiones el espectro de decaimiento vertical
+<p>Con fondo no-deslizante y tope free-slip el espectro de decaimiento vertical
 es λₘ = ν((m+½)π/h)², contra λₙ = ν(nπ/h)² con no-deslizamiento en las dos caras. El
 modo fundamental de cada uno da la fricción de fondo:</p>
 <div class="grid2">
-  <div class="tarjeta"><h4>Fricción · tope libre</h4>
+  <div class="tarjeta"><h4>Fricción · free-slip</h4>
     <div class="val">α = νπ² / (4h²)</div></div>
   <div class="tarjeta"><h4>Fricción · canal (no-slip/no-slip)</h4>
     <div class="val">α = νπ² / h²</div></div>
@@ -246,11 +252,11 @@ referencia analítica independiente, en una malla 8×8×128 (ν = 10⁻², Lz = 
 <table class="num">
 <thead><tr><th>cantidad</th><th>SPECTER</th><th>referencia</th><th>error relativo</th></tr></thead>
 <tbody>
-<tr><td>λ₀, fondo rígido + tope libre</td><td>2,467401099·10⁻²</td><td>2,467401100·10⁻²</td><td>6,8·10⁻¹⁰</td></tr>
+<tr><td>λ₀, fondo rígido + tope free-slip</td><td>2,467401099·10⁻²</td><td>2,467401100·10⁻²</td><td>6,8·10⁻¹⁰</td></tr>
 <tr><td>λ₁</td><td>—</td><td>—</td><td>5,5·10⁻⁸</td></tr>
 <tr><td>λ₂</td><td>—</td><td>—</td><td>4,4·10⁻⁷</td></tr>
-<tr><td>λ(canal) / λ(tope libre)</td><td>4,000000015</td><td>4</td><td>3,8·10⁻⁹</td></tr>
-<tr><td>residuo de tensión en la cara libre</td><td colspan="2">6,1·10⁻¹² relativo a la cara rígida, independiente de dt</td><td>—</td></tr>
+<tr><td>λ(canal) / λ(free-slip)</td><td>4,000000015</td><td>4</td><td>3,8·10⁻⁹</td></tr>
+<tr><td>residuo de tensión en la cara free-slip</td><td colspan="2">6,1·10⁻¹² relativo a la cara rígida, independiente de dt</td><td>—</td></tr>
 </tbody>
 </table>
 </div>
@@ -314,7 +320,7 @@ estado forzado previo al corte.</p>
 <thead><tr><th></th><th>α [s⁻¹]</th><th>τ = 1/α [s]</th></tr></thead>
 <tbody>
 <tr><td><b>ensemble de los 4, t &gt; 10 s</b></td><td><b>0,06687 ± 0,00488</b></td><td><b>15,0</b></td></tr>
-<tr><td>predicho, tope libre</td><td>0,06854</td><td>14,6</td></tr>
+<tr><td>predicho, free-slip</td><td>0,06854</td><td>14,6</td></tr>
 <tr><td>predicho, tapa rígida</td><td>0,27416</td><td>3,6</td></tr>
 </tbody>
 </table>
@@ -383,7 +389,7 @@ porque el proyecto no afirma más de lo que se chequeó.</p>
   <li><b>La viscosidad usada es la del agua, no la del electrolito.</b> Es una decisión
   explícita, no verificada contra el KNO₃ al 16&nbsp;% real. Entra a primer orden en α,
   que va como ν/h².</li>
-  <li><b>La superficie libre real puede no ser libre de tensiones ideal.</b> Un
+  <li><b>La superficie libre real puede no ser free-slip ideal.</b> Un
   electrolito con partículas flotando puede desarrollar una película superficial que la
   vuelva casi rígida — el caso no-deslizante, con α cuatro veces mayor. Es la salvedad
   más fuerte del trabajo.</li>
@@ -399,7 +405,7 @@ porque el proyecto no afirma más de lo que se chequeó.</p>
 en producción y cerrar el capítulo de instrumento:</p>
 <ol class="pendientes">
   <li><b>Medir α_eff con SPECTER en un barrido en δ</b>, con dos resoluciones
-  horizontales (además es el estudio de convergencia con superficie libre pendiente para
+  horizontales (además es el estudio de convergencia con el tope free-slip pendiente para
   producción). Cierra los dos flecos que deja [P-01].</li>
   <li><b>Corrida de producción en el clúster</b> con la geometría real de la celda, y de
   ahí el α calculado — depende de la resolución del punto anterior.</li>

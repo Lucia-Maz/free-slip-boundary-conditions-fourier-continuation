@@ -16,8 +16,17 @@ en `DECISIONES.md`: decisión, hallazgo, verificación, pregunta abierta.
 
 El decaimiento de una capa delgada está dominado por la fricción con el fondo, que nace de
 la asimetría entre el fondo no-deslizante y la superficie libre. Este proyecto implementa
-la condición de superficie libre en SPECTER para **calcular** α en vez de ajustarlo, y lo
-contrasta contra el decaimiento medido por PIV.
+en SPECTER la condición **free-slip** —plana y sin tensión tangencial, la aproximación de
+esa superficie libre válida cuando su deformación es despreciable ([D-28])— para
+**calcular** α en vez de ajustarlo, y lo contrasta contra el decaimiento medido por PIV.
+
+**Free-slip no es sinónimo de "superficie libre".** Son dos ejes distintos: free-slip vs.
+no-deslizante es sobre la tensión tangencial en un borde fijo; superficie libre
+(deformable) vs. tapa rígida es sobre si ese borde se mueve. Lo que está implementado y
+verificado es free-slip **y además plano** — dos aproximaciones apiladas, la segunda
+cuantificada en `teoria/superficie_libre_v_estrella_y_p.md` §4.1. Al escribir sobre esto:
+"free-slip" para la condición de contorno (así la llama el propio código: `freeslip`,
+`freeslip_z`), "superficie libre" para el escenario físico que la motiva.
 
 ## Reglas que no se renegocian sin decisión explícita
 

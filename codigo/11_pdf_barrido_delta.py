@@ -143,7 +143,7 @@ def main():
 \section{Qué está en juego}
 
 El trabajo afirma que el coeficiente de fricción de fondo se puede \emph{calcular} en vez
-de ajustarlo: $\alpha = \pi^2\nu/4h^2$ para fondo no deslizante y superficie libre. Esa
+de ajustarlo: $\alpha = \pi^2\nu/4h^2$ para fondo no deslizante y tope free-slip. Esa
 afirmación descansa en una clausura de un solo modo vertical, y la pregunta abierta
 [P-01] es hasta dónde vale. El parámetro que la gobierna es
 \begin{equation}
@@ -162,8 +162,8 @@ campo de banda ancha no tiene esa protección. Las dos se cierran midiendo.
 \section{El método, y por qué así}
 
 Se integra la ecuación de Navier--Stokes incompresible con el esquema de partición de
-Fontana \emph{et al.}~\cite{fontana2020}, con fondo no deslizante y tope libre de
-tensiones, y se mide la tasa de decaimiento $\lambda$ de $\langle v^2\rangle$ sobre la
+Fontana \emph{et al.}~\cite{fontana2020}, con fondo no deslizante y tope free-slip,
+y se mide la tasa de decaimiento $\lambda$ de $\langle v^2\rangle$ sobre la
 cola del registro, cuando el campo ya relajó al modo vertical más lento.
 
 \paragraph{La referencia lineal se mide, no se escribe.} El punto de comparación sale de
@@ -176,7 +176,7 @@ cualquier apartamiento es no linealidad y nada más. Escribir la fórmula analí
 mezclado el efecto buscado con los errores de discretización.
 
 \paragraph{Dos resoluciones horizontales, y no es opcional.} El hallazgo [H-09] de este
-mismo proyecto mostró que con superficie libre el término no lineal se desestabiliza sobre
+mismo proyecto mostró que con el tope free-slip el término no lineal se desestabiliza sobre
 mallas donde el canal aguanta: a amplitud alta y malla chica la energía \emph{crece} sin
 forzado, que es imposible. Un apartamiento que no converge al refinar es numérico, no
 físico. Por eso todo el barrido se corre a $16\times16$ y a $32\times32$.

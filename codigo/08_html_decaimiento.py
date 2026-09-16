@@ -251,7 +251,7 @@ página no puede decir un número distinto del que produjo el cálculo.</p>
     <div class="cifra destacada"><span class="v">${a_cola4}</span>
       <span class="k">α medido (t &gt; 10 s)</span></div>
     <div class="cifra"><span class="v">${a_libre4}</span>
-      <span class="k">α predicho, tope libre</span></div>
+      <span class="k">α predicho, free-slip</span></div>
     <div class="cifra"><span class="v">${a_canal4}</span>
       <span class="k">α predicho, tapa rígida</span></div>
     <div class="cifra"><span class="v">${rat_canal}</span>
@@ -259,7 +259,7 @@ página no puede decir un número distinto del que produjo el cálculo.</p>
   </div>
   <p style="max-width:46rem">Todo en s⁻¹, sobre las cuatro corridas como ensemble. El
   decaimiento medido es compatible con la predicción de <b>fondo no-deslizante y
-  superficie libre</b> dentro de un ${desv}&nbsp;%, y está <b>${fac} veces por
+  tope free-slip</b> dentro de un ${desv}&nbsp;%, y está <b>${fac} veces por
   debajo</b> de lo que daría una tapa rígida. Es la comparación que motivaba todo el
   proyecto.</p>
 </div>
@@ -408,7 +408,7 @@ ${a_libre4}&nbsp;s⁻¹; para reproducir exactamente el α medido haría falta
 h&nbsp;=&nbsp;${h_equiv}&nbsp;mm. Un error de medio milímetro en h mueve α un
 17&nbsp;%, más que la discrepancia observada.</li>
 <li><b>La película superficial.</b> Una película rígida sube α, no la baja. Que el α
-medido esté en o por debajo del valor de superficie libre limpia acota la película:
+medido esté en o por debajo del valor free-slip limpio acota la película:
 en el modelo de Boussinesq–Scriven, β&nbsp;≲&nbsp;0,15, o sea
 μ_s&nbsp;≲&nbsp;3·10⁻⁶&nbsp;N·s/m. La cota está dominada por la incertidumbre en h, no
 por la estadística.</li>

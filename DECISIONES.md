@@ -1352,3 +1352,39 @@ nodo — no hace falta editar el script.
 porque `g1` tenía 4 de 20 cores libres. El scratch en `/share/data2/$USER/puerta-fase2-8168`
 se limpió solo al terminar, y los cuatro trabajos propios en `a1`, `a2`, `g2` y `c5`
 siguieron corriendo sin interrupción.
+
+### [D-40] Terminología: "free-slip" para la condición de contorno, "superficie libre" para el escenario físico
+
+Pregunta de Lucía: si no se modela la deformación de la superficie, ¿no correspondería
+llamar **free-slip** a lo que la prosa del proyecto viene llamando "superficie libre"?
+
+Sí, y son dos ejes distintos que la prosa venía mezclando —aunque el código nunca lo hizo:
+`v_parsebc` acepta la cadena `freeslip`, la subrutina es `freeslip_z`, el diagnóstico es
+`freeslip_diagnostic.txt` ([D-26]). Free-slip vs. no-deslizante es sobre la tensión
+tangencial en un borde **fijo**, y depende de que el fluido de arriba (aire) tenga
+viscosidad y densidad despreciables frente al agua. Superficie libre (deformable) vs. tapa
+rígida es sobre si ese borde **se mueve**, y depende del balance Froude/capilar que [D-28]
+ya había cuantificado (η/h ~ 10⁻⁵). Lo implementado es free-slip **y además plano**: dos
+aproximaciones apiladas, no la misma cosa.
+
+No es sólo prolijidad de vocabulario. El caso plano tiene una propiedad que el deformable
+pierde: su condición de contorno resulta ser una condición sobre la **vorticidad**
+tangencial (`teoria/superficie_libre_v_estrella_y_p.md` §2.4), y como la proyección de
+presión resta un gradiente, se transfiere al campo proyectado sin error de partición —de
+ahí el residuo independiente de `dt` que mide V3. Con superficie deformable esa propiedad
+no sobrevive (§4.4 del mismo archivo). Llamar "superficie libre" a la condición numérica
+sugiere que se está modelando lo que en realidad se dejó fuera de alcance.
+
+**Convención de acá en adelante:** "free-slip" (o "libre de tensiones tangenciales") para
+la condición de contorno numérica; "superficie libre" acotado al escenario físico —el
+electrolito en contacto con aire— que motiva usar free-slip como aproximación. Se revisó
+la terminología en `CLAUDE.md`, `ESTADO.md`, `salidas/entrega1_resumen.html` y los dos
+generadores que producen prosa (`codigo/08_html_decaimiento.py`,
+`codigo/11_pdf_barrido_delta.py`).
+
+**Qué no se tocó, y por qué:** las entradas anteriores de este log, que quedan como
+constancia de cómo se habló en su momento (no se reescribe el log, [README.md]);
+`teoria/superficie_libre_v_estrella_y_p.md`, que ya distinguía los dos ejes con precisión
+—es la fuente de la que sale esta decisión, no algo que corregirle—; y
+`verificacion/test_aceptacion_fase1.py`/`test_aceptacion_fase2.py`, las puertas fijadas
+por hash, que no se editan aunque usen la frase en un docstring o un mensaje.

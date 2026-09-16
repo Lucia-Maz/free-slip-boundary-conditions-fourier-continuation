@@ -18,9 +18,17 @@ y seguí desde "Lo que sigue"
 El decaimiento de una capa delgada está dominado por la fricción con el fondo, que nace
 de la asimetría entre el fondo no-deslizante y la superficie libre. En las simulaciones
 del grupo esa fricción entra como un parámetro ajustado, porque los códigos usados o no
-tienen bordes o los tienen no-deslizantes de los dos lados. Este proyecto implementa la
-condición de superficie libre en SPECTER para **calcular** α en vez de ajustarlo, y
-contrasta el resultado contra el decaimiento medido por PIV.
+tienen bordes o los tienen no-deslizantes de los dos lados. Este proyecto implementa en
+SPECTER la condición **free-slip** —plana y sin tensión tangencial, la aproximación de esa
+superficie libre válida cuando su deformación es despreciable ([D-28])— para **calcular**
+α en vez de ajustarlo, y contrasta el resultado contra el decaimiento medido por PIV.
+
+**Terminología, para no confundir dos ejes distintos.** Free-slip vs. no-deslizante es
+sobre la tensión tangencial en un borde fijo; superficie libre (deformable) vs. tapa
+rígida es sobre si ese borde se mueve. Lo implementado es free-slip **y además plano**, dos
+aproximaciones apiladas y no la misma cosa. De acá en más: "free-slip" para la condición de
+contorno (como ya la llama el código: `freeslip`, `freeslip_z`), "superficie libre" para el
+escenario físico. Ver [D-40].
 
 ## El proyecto cambió de objeto el 2026-09-04
 
@@ -51,7 +59,7 @@ de instrumento y la barra de error de la comparación con el experimento. Las en
 |---|---|---|
 | **0** | Conseguir SPECTER y leer cómo impone las condiciones de contorno | **hecha** — [V-06], corregida en un punto por [H-08] |
 | **1** | La derivación analítica y un solver de referencia no espectral | **hecha** — [V-07], puerta 6/6 |
-| **2** | Implementar el tope libre de tensiones en Fortran | **hecha** — [V-09], [D-24], [D-26] |
+| **2** | Implementar el tope free-slip (libre de tensiones tangenciales) en Fortran | **hecha** — [V-09], [D-24], [D-26] |
 | **3** | Verificación V1–V6, con un caso que falla a propósito | **hecha** — puerta 6/6, [V-09] |
 | **4** | La física, la comparación con el experimento y la entrega | **en curso** — [P-01] resuelto ([V-11]) y **decaimiento medido ([V-13])**; falta la corrida de producción y la entrega |
 
@@ -62,8 +70,8 @@ de instrumento y la barra de error de la comparación con el experimento. Las en
 | | |
 |---|---|
 | Espectro con no-deslizamiento en las dos paredes | λ_n = ν(nπ/h)², n = 1, 2, … |
-| Espectro con fondo no-deslizante y tope libre | λ_m = ν((m+½)π/h)², m = 0, 1, … |
-| Fricción de fondo, tope libre | **α = νπ²/(4h²)** |
+| Espectro con fondo no-deslizante y tope free-slip | λ_m = ν((m+½)π/h)², m = 0, 1, … |
+| Fricción de fondo, tope free-slip | **α = νπ²/(4h²)** |
 | Fricción de fondo, canal | α = νπ²/h² |
 | Cociente entre ambas | **exactamente 4** — por tres rutas independientes |
 | Sesgo del PIV de superficie | u(h)/⟨u⟩ = **π/2 = 1,5708** (exceso del 57 %) |
@@ -81,11 +89,11 @@ Malla 8×8×128 (Cz=25, 103 puntos físicos en z), ν = 10⁻², Lz = 1, Runge-K
 
 | | |
 |---|---|
-| λ₀ con fondo rígido y tope libre | 2,467401099·10⁻², contra 2,467401100·10⁻² de la referencia — **error 6,8·10⁻¹⁰** |
+| λ₀ con fondo rígido y tope free-slip | 2,467401099·10⁻², contra 2,467401100·10⁻² de la referencia — **error 6,8·10⁻¹⁰** |
 | λ₁, λ₂ | error relativo 5,5·10⁻⁸ y 4,4·10⁻⁷ |
-| λ(canal) / λ(tope libre) | **4,000000015** |
-| Cara libre abajo en vez de arriba | misma λ dentro de 7,7·10⁻¹³ |
-| Residuo de tensión en la cara libre | 6,1·10⁻¹² relativo a la cara rígida, **independiente de dt** |
+| λ(canal) / λ(free-slip) | **4,000000015** |
+| Cara free-slip abajo en vez de arriba | misma λ dentro de 7,7·10⁻¹³ |
+| Residuo de tensión en la cara free-slip | 6,1·10⁻¹² relativo a la cara rígida, **independiente de dt** |
 
 Ese último número es la parte falsable de la derivación: la condición se impone sobre la
 vorticidad tangencial, y como la proyección resta un gradiente, se conserva sin error de
@@ -136,10 +144,10 @@ Página de revisión con figuras: `salidas/decaimiento.html`
 |---|---|---|
 | **ensemble de los 4, t > 10 s** | **0,06687 ± 0,00488** | **15,0** |
 | ensemble, todos los puntos | 0,06189 ± 0,00336 | 16,2 |
-| **predicho, tope libre** | **0,06854** | 14,6 |
+| **predicho, free-slip** | **0,06854** | 14,6 |
 | predicho, tapa rígida | 0,27416 | 3,6 |
 
-**A 2,4 % del valor de superficie libre y 4,1 veces por debajo del de tapa rígida.** Es la
+**A 2,4 % del valor free-slip y 4,1 veces por debajo del de tapa rígida.** Es la
 comparación que motivaba el proyecto. Limitado por `h`, no por la estadística: medio
 milímetro de error en el espesor mueve α un 17 %.
 
@@ -198,7 +206,7 @@ geometría de los imanes quedan declarados en `codigo/celda.py` ([D-27]).
    [P-01]: el promedio vertical da, sin ninguna clausura,
    `α_eff = (ν/h)·∂_z u|₀ / ⟨u⟩`, y la curva de `α_eff/λ(k)` contra δ ≈ 0,3…10 **es** la
    respuesta. Con dos resoluciones horizontales, porque además es el estudio de
-   convergencia con superficie libre que [H-09] dejó pendiente para producción. El diseño
+   convergencia con el tope free-slip puesto que [H-09] dejó pendiente para producción. El diseño
    está escrito en la sección 7 de `teoria/P01_validez_reduccion_2D.md`.
 2. **Una corrida de producción en Sakura** con la geometría real de la celda, y de ahí el
    α calculado. Depende de 1 para la resolución.
@@ -218,17 +226,18 @@ Los puntos 1, 2 y 4 son independientes entre sí; el 1 y el 4 son cómputo local
 - El diagnóstico de tensión se calcula ahora en toda corrida con paredes en z, y pide una
   matriz temporal del tamaño del campo. A resolución de producción son cientos de MB por
   cada `cstep`. Si molesta, hay que condicionarlo ([D-26]).
-- **La resolución horizontal no se hereda de una corrida de canal.** Con superficie libre
+- **La resolución horizontal no se hereda de una corrida de canal.** Con el tope free-slip
   hay menos disipación, y sobre la malla chica de los tests el término no lineal se
   desestabiliza donde el canal aguanta ([H-09]). Antes de producción, estudio de
-  convergencia propio con la superficie libre puesta.
+  convergencia propio con el tope free-slip puesto.
 - **La puerta no verifica el régimen no lineal.** V4, V5 y V6 usan el modo de corte puro,
   donde el término no lineal es exactamente cero; V3 usa un campo 3D pero sólo 400 pasos.
 - Sólo se probó en doble precisión y con `ORD=2`. Con 1, 2 y 4 procesos MPI sí está
   verificado, y coincide en 15 cifras ([V-10]).
-- La superficie libre es **plana**: `w = 0` en el tope. La deformación de la superficie
-  está fuera de alcance, y ese sería el caso que sí necesitaría la rama Neumann–Dirichlet
-  de `laplace_z`, que no está.
+- El borde superior es **free-slip y plano**: `w = 0` en el tope, sin tensión tangencial.
+  La deformación de la superficie libre real está fuera de alcance y cuantificada como
+  despreciable ([D-28], η/h ~ 10⁻⁵); si alguna vez hiciera falta modelarla, ese sería el
+  caso que sí necesitaría la rama Neumann–Dirichlet de `laplace_z`, que no está.
 
 ## Preguntas abiertas
 
@@ -241,7 +250,7 @@ Los puntos 1, 2 y 4 son independientes entre sí; el 1 y el 4 son cómputo local
   autocorrelación de los campos PIV. Necesita el disco montado.
 - **La viscosidad es la del agua, no la del electrolito.** Decisión explícita de usarla y
   declararla ([D-27]); entra a primer orden en α.
-- **La superficie libre real no es libre de tensiones ideal.** Un electrolito con
+- **La superficie libre real no es free-slip ideal.** Un electrolito con
   partículas flotando puede desarrollar una película superficial que la vuelve casi
   rígida — y ese es justo el caso no-deslizante, con α cuatro veces mayor. Es la salvedad
   más fuerte del trabajo. Hay que declararla, y si se puede, acotarla con los datos.
