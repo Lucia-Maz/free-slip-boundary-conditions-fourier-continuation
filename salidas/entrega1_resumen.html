@@ -1,0 +1,418 @@
+<title>Fricción con superficie libre</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+:root {
+  color-scheme: light;
+  --ground:  #f6f7f8;
+  --surface: #ffffff;
+  --ink:     #12161a;
+  --muted:   #5b6570;
+  --rule:    #dde2e6;
+  --accent:  #2a78d6;
+  --accent-soft: #eaf1fb;
+  --warn:    #b45309;
+  --warn-soft: #fdf3e7;
+  --ok: #1baf7a;
+  --serie1:#2a78d6; --serie2:#eb6834; --serie3:#1baf7a; --serie4:#eda100;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --ground:  #14171a;
+    --surface: #1b1f23;
+    --ink:     #eef1f4;
+    --muted:   #a3adb7;
+    --rule:    #2b3137;
+    --accent:  #3987e5;
+    --accent-soft: #17263a;
+    --warn:    #d9922b;
+    --warn-soft: #2a2013;
+    --ok: #199e70;
+    --serie1:#3987e5; --serie2:#d95926; --serie3:#199e70; --serie4:#c98500;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --ground:  #14171a;
+  --surface: #1b1f23;
+  --ink:     #eef1f4;
+  --muted:   #a3adb7;
+  --rule:    #2b3137;
+  --accent:  #3987e5;
+  --accent-soft: #17263a;
+  --warn:    #d9922b;
+  --warn-soft: #2a2013;
+  --ok: #199e70;
+  --serie1:#3987e5; --serie2:#d95926; --serie3:#199e70; --serie4:#c98500;
+}
+
+body { background: var(--ground); color: var(--ink);
+       font-family: "Source Serif 4", Georgia, serif; font-size: 17px;
+       line-height: 1.62; margin: 0; }
+.hoja { max-width: 62rem; margin: 0 auto; padding: 3.2rem 1.5rem 6rem;
+        display: flex; flex-direction: column; gap: 1.1rem; }
+.hoja > * { margin: 0; }
+
+.eyebrow { font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: .74rem;
+           letter-spacing: .13em; text-transform: uppercase; color: var(--muted); }
+h1 { font-size: clamp(1.9rem, 4.4vw, 2.6rem); line-height: 1.16; font-weight: 600;
+     text-wrap: balance; letter-spacing: -.015em; }
+h2 { font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: 1.2rem;
+     font-weight: 600; margin-top: 2.6rem; text-wrap: balance;
+     padding-bottom: .45rem; border-bottom: 1px solid var(--rule);
+     scroll-margin-top: 1.2rem; display: flex; align-items: baseline; gap: .6rem; }
+h2 .n { font-family: "IBM Plex Mono", monospace; font-size: .82rem; color: var(--muted);
+        font-weight: 400; }
+h3 { font-family: "IBM Plex Sans", system-ui, sans-serif; font-size: .98rem;
+     font-weight: 600; margin-top: 1.3rem; }
+p, li { max-width: 42rem; }
+.hoja > p, .hoja > ul, .hoja > ol { color: var(--ink); }
+a { color: var(--accent); }
+code, .num td, .num th { font-family: "IBM Plex Mono", ui-monospace, monospace; }
+code { font-size: .88em; background: var(--accent-soft); padding: .08em .32em;
+       border-radius: 3px; }
+b, strong { font-weight: 600; }
+.nota { color: var(--muted); font-size: .93rem; }
+
+.veredicto { background: var(--surface); border: 1px solid var(--rule);
+             border-left: 3px solid var(--accent);
+             padding: 1.3rem 1.5rem; display: flex; flex-direction: column;
+             gap: .9rem; }
+.cifras { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+          gap: 1.4rem 2rem; }
+.cifra { display: flex; flex-direction: column; gap: .15rem; }
+.cifra .v { font-family: "IBM Plex Mono", monospace; font-size: 1.4rem;
+            font-weight: 600; font-variant-numeric: tabular-nums; }
+.cifra .k { font-family: "IBM Plex Sans", sans-serif; font-size: .76rem;
+            letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.cifra.destacada .v { color: var(--accent); }
+
+nav.indice { background: var(--surface); border: 1px solid var(--rule);
+             padding: 1rem 1.3rem; font-family: "IBM Plex Sans", sans-serif;
+             font-size: .88rem; }
+nav.indice p { font-size: .74rem; letter-spacing: .07em; text-transform: uppercase;
+               color: var(--muted); margin: 0 0 .6rem; max-width: none; }
+nav.indice ol { margin: 0; padding-left: 1.2rem; columns: 2; column-gap: 2rem; }
+nav.indice li { margin-bottom: .35rem; break-inside: avoid; }
+nav.indice a { text-decoration: none; color: var(--ink); }
+nav.indice a:hover { color: var(--accent); }
+@media (max-width: 32rem) { nav.indice ol { columns: 1; } }
+
+figure { background: var(--surface); border: 1px solid var(--rule);
+         padding: 1rem 1rem .35rem; display: flex; flex-direction: column;
+         gap: .55rem; margin: .3rem 0; }
+figure img { display: block; width: 100%; height: auto; max-width: 100%; }
+figcaption { font-family: "IBM Plex Sans", sans-serif; font-size: .85rem;
+             color: var(--muted); line-height: 1.5; padding-bottom: .6rem;
+             max-width: 46rem; }
+figcaption b { color: var(--ink); }
+img.oscura { display: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) img.clara { display: none; }
+  :root:not([data-theme="light"]) img.oscura { display: block; }
+}
+:root[data-theme="dark"] img.clara { display: none; }
+:root[data-theme="dark"] img.oscura { display: block; }
+
+.scroll { overflow-x: auto; border: 1px solid var(--rule); background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: .86rem; }
+th, td { padding: .45rem .75rem; text-align: right; white-space: nowrap;
+         border-bottom: 1px solid var(--rule); }
+th:first-child, td:first-child { text-align: left; white-space: normal; }
+thead th { font-family: "IBM Plex Sans", sans-serif; font-weight: 600;
+           font-size: .74rem; letter-spacing: .04em; text-transform: uppercase;
+           color: var(--muted); }
+tbody tr:last-child td { border-bottom: none; }
+.num td { font-variant-numeric: tabular-nums; }
+tr.hecha td:first-child::before { content: "● "; color: var(--ok); }
+tr.curso td:first-child::before { content: "◐ "; color: var(--accent); }
+
+.grid2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+         gap: 1rem; }
+.tarjeta { background: var(--surface); border: 1px solid var(--rule);
+           padding: 1rem 1.2rem; font-family: "IBM Plex Sans", sans-serif;
+           font-size: .86rem; }
+.tarjeta h4 { margin: 0 0 .3rem; font-size: .74rem; letter-spacing: .05em;
+              text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.tarjeta .val { font-family: "IBM Plex Mono", monospace; font-size: 1.05rem;
+                color: var(--ink); }
+.tarjeta p { font-family: "Source Serif 4", serif; font-size: .95rem; margin-top: .3rem; }
+
+.salvedad { background: var(--warn-soft); border: 1px solid var(--rule);
+            border-left: 3px solid var(--warn); padding: .9rem 1.2rem;
+            font-size: .93rem; }
+.salvedad b { color: var(--warn); }
+ul.pendientes li, ul.salvedades li { margin-bottom: .6rem; }
+
+.etiqueta { font-family: "IBM Plex Mono", monospace; font-size: .78rem;
+            color: var(--muted); }
+
+.pie { color: var(--muted); font-size: .85rem;
+       font-family: "IBM Plex Sans", sans-serif; border-top: 1px solid var(--rule);
+       padding-top: 1rem; margin-top: 2.4rem; max-width: none; }
+.pie a { color: var(--muted); }
+</style>
+
+<main class="hoja">
+
+<p class="eyebrow">Ondas Gravitacionales e Investigación Asistida por IA · Entrega parcial · 2026-09-16</p>
+<h1>¿Cuánto frena una capa delgada de fluido el fondo sobre el que fluye?</h1>
+<p class="nota">Resumen condensado de lo que está <b>terminado y verificado</b> hasta hoy.
+Sólo se reportan versiones finales: dónde una cifra cambió de método a lo largo del
+trabajo, se muestra únicamente la última. El detalle completo —con cada decisión, su
+alternativa descartada y por qué— vive en <code>DECISIONES.md</code> del repositorio;
+esta página es su resumen para leer de corrido.</p>
+
+<div class="veredicto">
+  <div class="cifras">
+    <div class="cifra destacada"><span class="v">0,0669 ± 0,0049</span>
+      <span class="k">α medido, PIV (s⁻¹)</span></div>
+    <div class="cifra"><span class="v">0,0685</span>
+      <span class="k">α predicho · tope libre (s⁻¹)</span></div>
+    <div class="cifra"><span class="v">0,2742</span>
+      <span class="k">α predicho · tapa rígida (s⁻¹)</span></div>
+    <div class="cifra"><span class="v">2,4 %</span>
+      <span class="k">diferencia vs. tope libre</span></div>
+  </div>
+  <p style="max-width:46rem">El decaimiento de la celda de forzado electromagnético,
+  medido por PIV el 02-06-25, es compatible con la predicción de <b>fondo no-deslizante
+  y superficie libre</b> dentro de un 2,4&nbsp;%, y queda <b>4,1 veces por debajo</b> de
+  lo que predeciría una tapa rígida (el supuesto que usan hoy los códigos del grupo). Es
+  la comparación que motiva todo el proyecto: la fricción de fondo se puede
+  <b>calcular</b> a partir de la condición de contorno real, en vez de ajustarla.</p>
+</div>
+
+<nav class="indice">
+  <p>En esta página</p>
+  <ol>
+    <li><a href="#pregunta">1 · La pregunta y por qué importa</a></li>
+    <li><a href="#fases">2 · Estado de las fases</a></li>
+    <li><a href="#establecido">3 · Lo ya establecido (SPECTER)</a></li>
+    <li><a href="#p01">4 · Validez de la reducción 2D</a></li>
+    <li><a href="#decaimiento">5 · El decaimiento medido</a></li>
+    <li><a href="#instrumento">6 · El capítulo de instrumento</a></li>
+    <li><a href="#campana">7 · Parámetros de la campaña</a></li>
+    <li><a href="#salvedades">8 · Salvedades vigentes</a></li>
+    <li><a href="#sigue">9 · Qué sigue</a></li>
+  </ol>
+</nav>
+
+<h2 id="pregunta"><span class="n">1</span>La pregunta y por qué importa</h2>
+<p>En las simulaciones de turbulencia cuasi-2D que usa el grupo, el decaimiento de una
+capa delgada de fluido está dominado por la fricción con el fondo. Esa fricción nace de
+la <b>asimetría</b> entre el fondo, no-deslizante, y la superficie de arriba, que en el
+experimento real es libre (el electrolito está en contacto con aire). Los códigos
+existentes o no tienen bordes verticales, o los tienen no-deslizantes de los dos lados —
+así que la fricción entra como un parámetro <b>ajustado</b>, no calculado.</p>
+<p>Este proyecto implementa la condición de superficie libre en <b>SPECTER</b> (el
+solver espectral del grupo) para calcular esa fricción desde primeros principios, y
+contrasta el resultado contra el decaimiento medido por PIV en la celda de forzado
+electromagnético.</p>
+
+<h2 id="fases"><span class="n">2</span>Estado de las fases</h2>
+<div class="scroll">
+<table class="num">
+<thead><tr><th>fase</th><th>qué es</th><th>estado</th></tr></thead>
+<tbody>
+<tr class="hecha"><td>0 · SPECTER</td><td>Conseguir el solver y leer cómo impone las condiciones de contorno</td><td>hecha</td></tr>
+<tr class="hecha"><td>1 · Teoría</td><td>Derivación analítica y solver de referencia no espectral</td><td>hecha</td></tr>
+<tr class="hecha"><td>2 · Implementación</td><td>Tope libre de tensiones en Fortran, dentro de SPECTER</td><td>hecha</td></tr>
+<tr class="hecha"><td>3 · Verificación</td><td>Seis casos de aceptación, incluido uno que falla a propósito</td><td>hecha — puerta 6/6</td></tr>
+<tr class="curso"><td>4 · Física y entrega</td><td>Validez de la reducción 2D, decaimiento medido, corrida de producción, informe</td><td>en curso</td></tr>
+</tbody>
+</table>
+</div>
+
+<h2 id="establecido"><span class="n">3</span>Lo ya establecido, verificado numéricamente</h2>
+<p>Con fondo no-deslizante y tope libre de tensiones el espectro de decaimiento vertical
+es λₘ = ν((m+½)π/h)², contra λₙ = ν(nπ/h)² con no-deslizamiento en las dos caras. El
+modo fundamental de cada uno da la fricción de fondo:</p>
+<div class="grid2">
+  <div class="tarjeta"><h4>Fricción · tope libre</h4>
+    <div class="val">α = νπ² / (4h²)</div></div>
+  <div class="tarjeta"><h4>Fricción · canal (no-slip/no-slip)</h4>
+    <div class="val">α = νπ² / h²</div></div>
+  <div class="tarjeta"><h4>Cociente entre ambas</h4>
+    <div class="val">exactamente 4</div>
+    <p>Verificado por tres rutas independientes.</p></div>
+  <div class="tarjeta"><h4>Sesgo del PIV de superficie</h4>
+    <div class="val">u(h) / ⟨u⟩ = π/2</div>
+    <p>Las partículas trazadoras flotan: miden la velocidad de superficie, un 57&nbsp;%
+    por encima del promedio vertical del modo fundamental.</p></div>
+</div>
+<p style="margin-top:1rem">SPECTER modificado reproduce estos números contra una
+referencia analítica independiente, en una malla 8×8×128 (ν = 10⁻², Lz = 1):</p>
+<div class="scroll">
+<table class="num">
+<thead><tr><th>cantidad</th><th>SPECTER</th><th>referencia</th><th>error relativo</th></tr></thead>
+<tbody>
+<tr><td>λ₀, fondo rígido + tope libre</td><td>2,467401099·10⁻²</td><td>2,467401100·10⁻²</td><td>6,8·10⁻¹⁰</td></tr>
+<tr><td>λ₁</td><td>—</td><td>—</td><td>5,5·10⁻⁸</td></tr>
+<tr><td>λ₂</td><td>—</td><td>—</td><td>4,4·10⁻⁷</td></tr>
+<tr><td>λ(canal) / λ(tope libre)</td><td>4,000000015</td><td>4</td><td>3,8·10⁻⁹</td></tr>
+<tr><td>residuo de tensión en la cara libre</td><td colspan="2">6,1·10⁻¹² relativo a la cara rígida, independiente de dt</td><td>—</td></tr>
+</tbody>
+</table>
+</div>
+<p class="nota">El último renglón es la parte falsable de la implementación: la
+condición se impone sobre la vorticidad tangencial, y la proyección de presión la
+conserva sin error de partición.</p>
+
+<h2 id="p01"><span class="n">4</span>¿Sigue valiendo reducir el problema a 2D?</h2>
+<p>La reducción a un problema bidimensional promedia la ecuación de Navier–Stokes en la
+vertical. Promediada sobre la capa, sin ninguna clausura, aparece un parámetro
+adimensional que gobierna cuánto se aparta el flujo real del modo fundamental que da la
+fórmula de α de arriba:</p>
+<div class="tarjeta" style="max-width:28rem">
+  <h4>Parámetro que gobierna la clausura</h4>
+  <div class="val">δ = U·k·h² / ν = Re_h · ε</div>
+  <p>con ε = k·h el espesor relativo a la escala horizontal del flujo.</p>
+</div>
+<div class="scroll" style="margin-top:1rem">
+<table class="num">
+<thead><tr><th>régimen</th><th>δ</th><th>distorsión del perfil</th></tr></thead>
+<tbody>
+<tr><td>forzado (2,15 A, ⟨u⟩ = 0,84 mm/s)</td><td>2,69</td><td>≈ 2 %</td></tr>
+<tr><td>inicio del decaimiento (⟨u⟩ = 2,55 mm/s)</td><td>8,15</td><td>≈ 6 %</td></tr>
+</tbody>
+</table>
+</div>
+<figure>
+  <img class="clara" src="figuras/f5_delta_claro.png" alt="δ a lo largo de los cuatro decaimientos, con k medido del campo y k del forzado">
+  <img class="oscura" src="figuras/f5_delta_oscuro.png" alt="δ a lo largo de los cuatro decaimientos, con k medido del campo y k del forzado">
+  <figcaption><b>δ medido a lo largo de los cuatro decaimientos.</b> Con el k medido del
+  campo (puntos) δ arranca por encima de 20 y cruza δ&nbsp;=&nbsp;1 recién cerca del
+  final del registro; con el k del forzado (punteado) el cruce es más temprano. La
+  distorsión del perfil vertical, que es lo que realmente hay que acotar, se mantiene en
+  pocos por ciento en todo el tramo relevante.</figcaption>
+</figure>
+<p><b>Conclusión:</b> el criterio heredado estaba mal escrito (usaba una longitud sin
+correspondencia física en la celda, y confundía longitud de onda con número de onda —
+una ambigüedad de 2π). Escrito bien, δ resulta <i>peor</i> de lo que decía la pregunta
+original. Pero δ no es lo que tiene que ser chico: la cantidad que sí importa —la
+distorsión del perfil vertical— tiene un prefactor pequeño y queda en pocos por ciento.
+<b>La clausura de un modo no queda invalidada en el régimen medido.</b></p>
+
+<h2 id="decaimiento"><span class="n">5</span>El decaimiento medido</h2>
+<p>Los cuatro registros de decaimiento de la campaña (<code>med_S0003</code>,
+<code>S0005</code>, <code>S0006</code>, <code>S0009</code>) forman un <b>ensemble</b>:
+las barras de error de la comparación salen de ahí, no de una sola curva. El ajuste se
+restringe a t&nbsp;&gt;&nbsp;10&nbsp;s, después de la meseta inicial que corresponde al
+estado forzado previo al corte.</p>
+<figure>
+  <img class="clara" src="figuras/f1_decaimiento_claro.png" alt="Velocidad rms de superficie contra tiempo, cuatro decaimientos, antes y después de descontar el ruido de PIV">
+  <img class="oscura" src="figuras/f1_decaimiento_oscuro.png" alt="Velocidad rms de superficie contra tiempo, cuatro decaimientos, antes y después de descontar el ruido de PIV">
+  <figcaption><b>El decaimiento, antes y después de descontar el ruido de PIV.</b> Las
+  series <code>.vec</code> archivadas (trazo tenue) usan pares de cuadros consecutivos,
+  el peor Δt posible en este régimen: el ruido es del orden de la señal y la velocidad
+  aparente no decae. Reprocesando desde los TIF crudos con Δt óptimo y multipaso propio
+  (puntos y trazo grueso) el decaimiento exponencial aparece con claridad, con 97,5&nbsp;%
+  de vectores válidos contra 30–36&nbsp;% de las series archivadas.</figcaption>
+</figure>
+<div class="scroll">
+<table class="num">
+<thead><tr><th></th><th>α [s⁻¹]</th><th>τ = 1/α [s]</th></tr></thead>
+<tbody>
+<tr><td><b>ensemble de los 4, t &gt; 10 s</b></td><td><b>0,06687 ± 0,00488</b></td><td><b>15,0</b></td></tr>
+<tr><td>predicho, tope libre</td><td>0,06854</td><td>14,6</td></tr>
+<tr><td>predicho, tapa rígida</td><td>0,27416</td><td>3,6</td></tr>
+</tbody>
+</table>
+</div>
+<p class="nota">Limitado por el espesor de la capa, no por la estadística: medio
+milímetro de error en h mueve α un 17&nbsp;%.</p>
+
+<h2 id="instrumento"><span class="n">6</span>El capítulo de instrumento: el piso de ruido de PIV</h2>
+<p>Es la barra de error de la comparación de arriba. Tres mediciones de σ sobre la misma
+cámara y la misma configuración de PIV, que se diferencian sólo en qué degradación
+física incluyen:</p>
+<div class="scroll">
+<table class="num">
+<thead><tr><th>medición</th><th>σ por componente</th><th>qué agrega</th></tr></thead>
+<tbody>
+<tr><td>par sintético, corrimiento conocido</td><td>≤ 0,011 px</td><td>correlación y estimador subpíxel solos</td></tr>
+<tr><td>fluido en reposo, par real</td><td>0,030 px</td><td>ruido de lectura, iluminación, movimiento propio</td></tr>
+<tr><td>forzado 2,15 A, ajuste del barrido</td><td>0,169 px</td><td>gradiente de velocidad en la ventana, movimiento fuera del plano</td></tr>
+</tbody>
+</table>
+</div>
+<figure>
+  <img class="clara" src="figuras/f3_ruido_claro.png" alt="σ de PIV a lo largo de los cuatro decaimientos, decreciendo junto con el flujo">
+  <img class="oscura" src="figuras/f3_ruido_oscuro.png" alt="σ de PIV a lo largo de los cuatro decaimientos, decreciendo junto con el flujo">
+  <figcaption><b>El ruido de PIV no es una constante del instrumento: cae junto con el
+  flujo.</b> El término que agrega el flujo es el 98&nbsp;% de la varianza de σ. En un
+  decaimiento, donde U cae un factor ~10, σ tampoco es constante a lo largo del
+  registro.</figcaption>
+</figure>
+<figure>
+  <img class="clara" src="figuras/f4_espectros_claro.png" alt="Espectro de energía al inicio y al final de un decaimiento, mostrando que la escala dominante crece">
+  <img class="oscura" src="figuras/f4_espectros_oscuro.png" alt="Espectro de energía al inicio y al final de un decaimiento, mostrando que la escala dominante crece">
+  <figcaption><b>La escala con energía del flujo no es la del forzado.</b> El número de
+  onda pesado por energía va de 240 m⁻¹ al inicio del decaimiento a 135 m⁻¹ al final,
+  contra los 88,9 m⁻¹ del armónico diagonal del forzado. Es el k que hay que usar para
+  evaluar δ en cada instante, no el del patrón de imanes.</figcaption>
+</figure>
+<p class="salvedad"><b>Pendiente</b>: σ&nbsp;=&nbsp;0,169&nbsp;px se midió sobre
+<code>med_S0008</code>, un registro que resultó no ser estacionario pese a estar
+etiquetado como forzado (cae de 3,10 a 0,335&nbsp;mm/s). El barrido en Δt supone
+estacionariedad. Hay que rehacer la medición sobre <code>med_S0002</code>, que sí lo es,
+antes de dar por definitivo este número — es la barra de error de todo el trabajo.</p>
+
+<h2 id="campana"><span class="n">7</span>Parámetros de la campaña</h2>
+<p>Viven en un único lugar del código, <code>codigo/celda.py</code>, porque cambian
+entre experiencias — nunca se escriben sueltos dentro de una cuenta.</p>
+<div class="grid2">
+  <div class="tarjeta"><h4>Cámara</h4><div class="val">Photron FASTCAM-1024PCI</div>
+    <p>1024×1024, 10 bits, 60 fps, obturador 1/60 s</p></div>
+  <div class="tarjeta"><h4>Escala</h4><div class="val">3800 px/m</div>
+    <p>0,263 mm/px · campo de 26,9 cm</p></div>
+  <div class="tarjeta"><h4>Capa de electrolito</h4><div class="val">h = 6 mm</div>
+    <p>KNO₃ al 16&nbsp;% m/m, partículas trazadoras de 100 µm</p></div>
+  <div class="tarjeta"><h4>Imanes</h4><div class="val">Ø 1 cm, paso 5 cm</div>
+    <p>Red tipo tablero; armónico dominante diagonal, λ = 7,07 cm (k = 88,9 m⁻¹)</p></div>
+  <div class="tarjeta"><h4>Corridas</h4><div class="val">3 forzados · 4 decaimientos · 3 quenchings</div>
+    <p>3072 cuadros por corrida = 51,2 s</p></div>
+  <div class="tarjeta"><h4>Viscosidad usada</h4><div class="val">ν = 10⁻⁶ m²/s</div>
+    <p>La del agua, no la del electrolito real — ver salvedades.</p></div>
+</div>
+
+<h2 id="salvedades"><span class="n">8</span>Salvedades vigentes</h2>
+<p>Limitaciones reales del resultado, no errores a corregir en este resumen — declaradas
+porque el proyecto no afirma más de lo que se chequeó.</p>
+<ul class="salvedades">
+  <li><b>La viscosidad usada es la del agua, no la del electrolito.</b> Es una decisión
+  explícita, no verificada contra el KNO₃ al 16&nbsp;% real. Entra a primer orden en α,
+  que va como ν/h².</li>
+  <li><b>La superficie libre real puede no ser libre de tensiones ideal.</b> Un
+  electrolito con partículas flotando puede desarrollar una película superficial que la
+  vuelva casi rígida — el caso no-deslizante, con α cuatro veces mayor. Es la salvedad
+  más fuerte del trabajo.</li>
+  <li><b>El espesor domina el error.</b> Medio milímetro sobre h&nbsp;=&nbsp;6&nbsp;mm
+  mueve α un 17&nbsp;%; la estadística del ensemble no es el límite.</li>
+  <li><b>El marco espectral de Foucaut et&nbsp;al. no describe del todo el ruido de este
+  multipaso</b>: el piso del espectro no muestra el cero que exigiría la ventana de
+  16&nbsp;px, como si el ruido estuviera correlacionado sobre el paso de la grilla.</li>
+</ul>
+
+<h2 id="sigue"><span class="n">9</span>Qué sigue</h2>
+<p>La herramienta ya existe — SPECTER puede calcular α en vez de ajustarlo. Falta usarla
+en producción y cerrar el capítulo de instrumento:</p>
+<ol class="pendientes">
+  <li><b>Medir α_eff con SPECTER en un barrido en δ</b>, con dos resoluciones
+  horizontales (además es el estudio de convergencia con superficie libre pendiente para
+  producción). Cierra los dos flecos que deja [P-01].</li>
+  <li><b>Corrida de producción en el clúster</b> con la geometría real de la celda, y de
+  ahí el α calculado — depende de la resolución del punto anterior.</li>
+  <li><b>Reanalizar el capítulo de instrumento</b> sobre <code>med_S0002</code> en vez de
+  <code>med_S0008</code>, y ver qué le pasa a σ = 0,169 px.</li>
+  <li><b>La entrega final</b>: repositorio público reproducible, página HTML y PDF.</li>
+</ol>
+
+<p class="pie">Generado a partir de <code>ESTADO.md</code>, <code>DECISIONES.md</code> y
+los JSON de <code>salidas/tablas/</code> del repositorio del proyecto. Esta página es la
+lectura para humanos; el registro completo de decisiones, hallazgos y verificaciones
+—pensado para retomarse con o sin la conversación que lo produjo— vive en
+<code>CLAUDE.md</code>, <code>ESTADO.md</code> y <code>DECISIONES.md</code> en la raíz
+del repositorio.</p>
+
+</main>
