@@ -1292,3 +1292,63 @@ encontrar bien MPI y FFTW. Como el prefijo sintético se antepone al PATH,
 `toolchain_cluster.sh` resuelve ahora `make` —o `gmake`, según la instalación— y deja un
 enlace con el nombre `make` adentro. Si no encontrara ninguno, falla con un mensaje que
 sugiere buscar el módulo que lo provee.
+
+### [H-15] `eval "$(cmd)"` no propaga el fallo de `cmd` bajo `set -e`
+
+El trabajo 6897, corrido después de [D-37], falló con una mezcla rara de dos errores: el
+propio de `toolchain_cluster.sh` (`no encuentro make ni gmake en el PATH`) seguido del de
+`test_aceptacion_fase2.py` señalando el entorno de conda de la laptop
+(`/home/lucia/miniforge3/envs/specter`), que no existe en el clúster. Los dos no pueden
+ser ciertos a la vez si el script hubiera cortado en el primero.
+
+La causa es de shell: `puerta_fase2.sbatch` llamaba `eval "$(bash
+verificacion/toolchain_cluster.sh)"`. Cuando el script interno falla sin escribir nada a
+stdout, `"$(...)"` vale la cadena vacía; `eval ""` no hace nada y **su propio código de
+salida es 0**. `set -e` mira el estado de `eval`, no el del comando adentro de la
+sustitución, así que el trabajo seguía de largo sin `SPECTER_TOOLCHAIN` exportado —hasta
+reventar más abajo, en el fallback de la puerta, con un mensaje que no menciona la causa
+real.
+
+Confirmado además que la resolución de `make` en sí **no** era el problema de fondo: con
+los mismos `module load gnu15 openmpi5 fftw/3.3.11 python/3.13.13` en un trabajo real en
+`g1`, `command -v make` resuelve a `/usr/bin/make` sin inconvenientes — los módulos no
+tocan esa parte del PATH del sistema. El fallo de 6897 fue este bug de propagación, no
+un problema de módulos.
+
+**Arreglado** capturando la sustitución en una variable antes de evaluarla:
+`TOOLCHAIN_ENV="$(bash verificacion/toolchain_cluster.sh)"` sí propaga el fallo bajo
+`set -e`, porque ahí la asignación simple es la excepción que POSIX y bash sí respetan.
+`eval "$TOOLCHAIN_ENV"` corre después, sólo si lo anterior no cortó.
+
+### [D-38] Los logs de la puerta van a `verificacion/logs/`, no a la raíz del repo
+
+Los `puerta-fase2-*.out` de los trabajos 6885 a 6897 quedaron sueltos en la raíz,
+sin trackear. Lo que vale de ellos ya está volcado acá arriba ([D-34]–[D-37], [H-14],
+[H-15]); son logs de intentos fallidos, no resultado final, así que no se comitean
+([D-19] y la regla de no reportar lo que se rehizo). Se borraron, y
+`puerta_fase2.sbatch` ahora escribe a `verificacion/logs/puerta-fase2-%j.out`, que queda
+en `.gitignore`. El directorio hay que crearlo antes de mandar el trabajo: SLURM resuelve
+la ruta de `--output` al momento de encolar, no la crea él.
+
+### [D-39] La puerta y la corrida de producción se mandan con `--nodelist=g1`
+
+Por pedido explícito: Lucía tiene corridas propias en curso en `a1`, `a2`, `g2` y `c5`
+(los `calibF0_00` en cola de SLURM al 2026-09-16), y no quiere que un trabajo de este
+proyecto compita por esos nodos. `g1` es el único de los cuatro habituales sin trabajo
+propio en ese momento —lo ocupan 16 de sus 20 cores con un trabajo de otro usuario
+(`lucianov`, `SWHD_27pulc`)—, así que un trabajo de un core encaja en los cuatro libres
+sin desalojar a nadie, y si no encajara, SLURM lo deja en cola hasta que se libere.
+
+**No se hardcodea en `puerta_fase2.sbatch`**: es una preferencia de esta sesión de
+cómputo, no un requisito técnico de la puerta, que sigue valiendo para `normal` en
+general ([D-36]). Se pasa en la línea de comando:
+
+    sbatch --nodelist=g1 verificacion/puerta_fase2.sbatch
+
+Si en el futuro `g1` no es la mejor opción, alcanza con omitir el flag o apuntarlo a otro
+nodo — no hace falta editar el script.
+
+**Resultado, trabajo 8168:** `RESULTADO: 6/6` (V1–V6), sin encolarse — entró directo
+porque `g1` tenía 4 de 20 cores libres. El scratch en `/share/data2/$USER/puerta-fase2-8168`
+se limpió solo al terminar, y los cuatro trabajos propios en `a1`, `a2`, `g2` y `c5`
+siguieron corriendo sin interrupción.

@@ -21,5 +21,11 @@ informe/*.log
 informe/*.out
 informe/*.toc
 
+# Logs de trabajos de SLURM: se referencian por número en DECISIONES.md, no se comitean
+verificacion/logs/
+
+# Config local de Claude Code, no del proyecto
+.claude/
+
 # Datos crudos: 140 GB en el disco externo, sólo lectura ([D-02])
 datos-derivados/*.npz

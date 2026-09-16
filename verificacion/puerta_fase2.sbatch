@@ -5,7 +5,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
 #SBATCH --time=00:40:00
-#SBATCH --output=puerta-fase2-%j.out
+#SBATCH --output=verificacion/logs/puerta-fase2-%j.out
 #
 # La puerta de aceptación de la Fase 2 en Sakura. Se manda al planificador y no se
 # corre a mano: compila SPECTER y lanza unas quince simulaciones chicas, o sea diez a
@@ -38,7 +38,14 @@ export OMPI_MCA_btl=sm,self,tcp
 
 # Prefijo sintético: la puerta está fijada por hash y espera MPI y FFTW bajo un mismo
 # prefijo; con módulos están separados. Ver [D-34].
-eval "$(bash verificacion/toolchain_cluster.sh)"
+#
+# OJO ([H-15]): 'eval "$(cmd)"' NO propaga el fallo de cmd bajo 'set -e'. Si
+# toolchain_cluster.sh falla, "$(...)" devuelve stdout vacío, 'eval ""' no hace nada y
+# vale 0, y el script seguía de largo sin SPECTER_TOOLCHAIN exportado -- hasta reventar
+# más abajo, en test_aceptacion_fase2.py, con un mensaje que apunta al entorno de conda
+# de la laptop y no dice nada de lo que realmente falló. Por eso se captura aparte.
+TOOLCHAIN_ENV="$(bash verificacion/toolchain_cluster.sh)"
+eval "$TOOLCHAIN_ENV"
 
 # La E/S no va a $HOME: desde los nodos de cómputo la E/S paralela contra $HOME es
 # lenta.
