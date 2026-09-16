@@ -246,6 +246,17 @@ que Lucía notó que el pico del espectro no estaba donde la figura marcaba el f
 barrido en δ rediseñado con esa geometría ([D-42]) y lanzado en la laptop, secuencial,
 con `ulimit -v`; logs en `verificacion/logs/barrido_delta_etapa1_*.log`.
 
+> **En curso al cerrar la sesión del 2026-09-16 (~18:20):** la etapa 1b del barrido
+> —`barrido_delta_etapa1.py --caso {ventana,forzado} --resolucion 16 --superficie`—
+> corre desacoplada en la laptop y escribe
+> `salidas/tablas/barrido_delta_etapa1_<caso>_superficie.json` y
+> `verificacion/logs/barrido_delta_etapa1b_*.log`; el final queda anotado en
+> `verificacion/logs/barrido_delta_etapa1.progreso` ("listo superficie"). Mide la
+> pendiente de log u(h) —lo que ajusta el PIV— contra la de log⟨u⟩ y la del rms 3D, sobre
+> seis campos en la ventana. Pasó la prueba de humo: en la referencia lineal las tres
+> pendientes coinciden y u(h)/⟨u⟩ = π/2. Al retomar: leer los JSON, agregar la entrada al
+> log, actualizar la entrega y republicar (el candidato (v) de [P-02]).
+
 **Lo que sigue, en este orden:**
 
 1. ~~Medir α_eff con SPECTER en un barrido en δ~~ — **hecho** ([D-42], [V-16]):

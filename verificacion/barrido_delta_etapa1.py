@@ -96,6 +96,7 @@ NZ, CZ = 64, 25        # 39 puntos físicos en z: de sobra para sin(pi z / 2h)
 DT = 5.0e-4            # ~1/6 del límite de estabilidad viscosa explícita (dz^2/nu no
                        # cambia entre casos, así que el margen tampoco)
 RESOLUCIONES = (16, 32)
+CAMPOS_EN_VENTANA = 6   # etapa 1b (--superficie): campos escritos dentro de la ventana
 U0_REFERENCIA = 1.0e-4  # referencia lineal: delta ~ 1e-3
 VPARAM1 = 1.0
 
@@ -239,7 +240,51 @@ def diagnostico_campo(dirrun, indice, nx, ny, nzf, lz, nu):
     alfa_clausura = nu * math.pi ** 2 / (4.0 * lz ** 2)
     return {"k_h": float(k_h), "k_3d": float(k_3d),
             "alfa_eff_sobre_alfa": float(alfa_eff / alfa_clausura),
-            "v2_campo": float(e), "w2_sobre_v2": float(np.mean(w ** 2) / e)}
+            "v2_campo": float(e), "w2_sobre_v2": float(np.mean(w ** 2) / e),
+            # lo que ve el PIV: rms de la velocidad horizontal en el plano de arriba,
+            # contra el rms del promedio vertical y el del campo 3D
+            "rms_superficie": float(math.sqrt(np.mean(u[:, :, -1] ** 2 + v[:, :, -1] ** 2))),
+            "rms_promedio": float(math.sqrt(np.mean(Ub ** 2 + Vb ** 2))),
+            "rms_3d": float(math.sqrt(e))}
+
+
+def pendientes_superficie(dirrun, indices_t, nx, ny, nzf, lz, nu, t0, t1):
+    """Pendientes de log(rms) de la superficie, del promedio vertical y del campo 3D,
+    sobre los campos escritos dentro de la ventana [t0, t1] ([V-16], candidato (v)).
+
+    El PIV mide u en la superficie, porque las partículas flotan, y el alfa medido es la
+    pendiente de log u(h). La clausura predice la del promedio vertical. Si el perfil se
+    distorsiona con delta, y delta cae en el tiempo, u(h)/<u> no es pi/2 ni constante, y
+    las dos pendientes difieren. Acá se miden las dos sobre los mismos campos.
+
+    `indices_t` es la lista de (índice de archivo, t) de los campos escritos. Devuelve
+    las tres tasas (definidas como -d log(rms)/dt, comparables con lambda), la
+    dispersión del ajuste de superficie, y u(h)/<u> al principio y al final de la
+    ventana. La de 3D tiene que coincidir con la lambda de balance.txt: es el chequeo.
+    """
+    tt, sup, prom, tot = [], [], [], []
+    for indice, t in indices_t:
+        if t < t0 - 1e-9 or t > t1 + 1e-9:
+            continue
+        dg = diagnostico_campo(dirrun, indice, nx, ny, nzf, lz, nu)
+        tt.append(t)
+        sup.append(dg["rms_superficie"])
+        prom.append(dg["rms_promedio"])
+        tot.append(dg["rms_3d"])
+    if len(tt) < 3:
+        return None
+    tt = np.array(tt)
+    def tasa(serie):
+        coef = np.polyfit(tt, np.log(serie), 1)
+        return -float(coef[0]), float(np.std(np.log(serie) - np.polyval(coef, tt)))
+    l_sup, d_sup = tasa(sup)
+    l_prom, _ = tasa(prom)
+    l_tot, _ = tasa(tot)
+    return {"n_campos": len(tt), "t_campos": tt.tolist(),
+            "lambda_superficie": l_sup, "lambda_promedio": l_prom,
+            "lambda_3d": l_tot, "dispersion_superficie": d_sup,
+            "sup_sobre_prom_inicio": sup[0] / prom[0],
+            "sup_sobre_prom_fin": sup[-1] / prom[-1]}
 
 
 def tasa_en_ventana(t, e, t0, t1):
@@ -283,18 +328,23 @@ def main():
     ap.add_argument("--prueba", action="store_true",
                     help="humo: una malla, dos amplitudes, 1/20 de los pasos; escribe "
                          "a un JSON aparte y no toca el de producción")
+    ap.add_argument("--superficie", action="store_true",
+                    help="etapa 1b: escribe %d campos en la ventana y mide la pendiente "
+                         "de u(h) contra la de <u>; JSON con sufijo _superficie"
+                         % CAMPOS_EN_VENTANA)
     args = ap.parse_args()
     caso = CASOS[args.caso]
     LZ, NU = caso["lz"], caso["nu"]
     U0S = tuple(round(_u0_para_delta(args.caso, d), 4) for d in caso["delta_objetivo"])
     resoluciones = (args.resolucion,) if args.resolucion else RESOLUCIONES
     pasos = PASOS
-    salida = ruta_salida(args.caso)
+    sufijo = "_superficie" if args.superficie else ""
+    salida = ruta_salida(args.caso + sufijo)
     if args.prueba:
         resoluciones = resoluciones[:1]
         U0S = U0S[-2:]
         pasos = max(PASOS // 20, 2 * CSTEP)
-        salida = ruta_salida(args.caso + "_prueba")
+        salida = ruta_salida(args.caso + sufijo + "_prueba")
     _compilar_liviano()
 
     scratch = os.environ.get("SPECTER_SCRATCH")
@@ -309,14 +359,23 @@ def main():
              VENT[1]*T_FINAL, T_MEM), flush=True)
     print("u0 del barrido (para delta objetivo %s): %s"
           % (caso["delta_objetivo"], U0S), flush=True)
-    # un campo en el MEDIO de la ventana: el archivo 0001 es t=0 y el 0002 sale a los
-    # tstep pasos (specter.fpp:859, 1005). Se toca la plantilla en memoria, no la puerta.
+    # Campos escritos: el archivo 0001 es t=0 y el k-ésimo sale a los (k-1)*tstep pasos
+    # (specter.fpp:859, 1005). Se toca la plantilla en memoria, no la puerta.
+    # Etapa 1: un solo campo, en el MEDIO de la ventana. Etapa 1b (--superficie):
+    # CAMPOS_EN_VENTANA campos repartidos en la ventana, para ajustar pendientes.
     paso_medio = int(round(0.5 * (VENT[0] + VENT[1]) * pasos))
+    if args.superficie:
+        tstep = int(round((VENT[1] - VENT[0]) * pasos / (CAMPOS_EN_VENTANA - 1)))
+    else:
+        tstep = paso_medio
     assert "tstep = 1000000" in fase2.PLANTILLA_INP
     fase2.PLANTILLA_INP = fase2.PLANTILLA_INP.replace("tstep = 1000000",
-                                                      "tstep = %d" % paso_medio)
-    print("campo escrito en el paso %d (t = %.3f)" % (paso_medio, paso_medio * DT),
-          flush=True)
+                                                      "tstep = %d" % tstep)
+    # (índice de archivo, t) de cada campo que se escribe, y el más cercano al medio
+    indices_t = [(k + 1, k * tstep * DT) for k in range(pasos // tstep + 1)]
+    indice_medio = min(indices_t, key=lambda it: abs(it[1] - paso_medio * DT))[0]
+    print("campos cada %d pasos (t = %.3f); el del medio de la ventana es el %04d"
+          % (tstep, tstep * DT, indice_medio), flush=True)
 
     # la malla vertical es la misma en todas las corridas
     fase2.NZ, fase2.CZ = NZ, CZ
@@ -327,7 +386,8 @@ def main():
     fase2.IC_SHEAR = IC_CELULAR.replace("BSEG", "%.4f_GP" % B_SEGUNDO_MODO)
 
     res = {"caso": args.caso, "eps": caso["eps"], "Lz": LZ, "nu": NU, "dt": DT,
-           "pasos": pasos, "t_final": pasos * DT, "t_mem": T_MEM,
+           "pasos": pasos, "t_final": pasos * DT, "t_mem": T_MEM, "tstep": tstep,
+           "superficie": bool(args.superficie),
            "ventana": [VENT[0] * pasos * DT, VENT[1] * pasos * DT],
            "delta_objetivo": list(caso["delta_objetivo"]),
            "nz": NZ, "cz": CZ, "ord": fase2.ORD, "u0s": list(U0S),
@@ -342,7 +402,7 @@ def main():
             with open(salida) as fh:
                 previo = json.load(fh)
             if all(previo.get(c) == res[c] for c in
-                   ("Lz", "nu", "dt", "pasos", "nz", "cz", "u0s")):
+                   ("Lz", "nu", "dt", "pasos", "nz", "cz", "u0s", "tstep")):
                 res["corridas"].update(previo.get("corridas", {}))
                 res.setdefault("lambda_referencia", {}).update(
                     previo.get("lambda_referencia", {}))
@@ -391,28 +451,43 @@ def main():
             i0 = int(np.argmin(np.abs(t - t0)))
             i1 = int(np.argmin(np.abs(t - t1)))
             k_bal = float(np.sqrt(w[im] / e[im]))
-            dg = diagnostico_campo(dirrun, 2, nxy, nxy, NZ - CZ, LZ, NU)
+            dg = diagnostico_campo(dirrun, indice_medio, nxy, nxy, NZ - CZ, LZ, NU)
             k_h, k_ef = dg["k_h"], dg["k_3d"]
             # el campo y balance.txt tienen que contar la misma energía a ese instante
-            im_c = int(np.argmin(np.abs(t - paso_medio * DT)))
+            t_medio = (indice_medio - 1) * tstep * DT
+            im_c = int(np.argmin(np.abs(t - t_medio)))
             if abs(dg["v2_campo"] / e[im_c] - 1.0) > 2e-2:
                 print("   [aviso] <v2> del campo %.4e vs balance %.4e en t=%.3f"
                       % (dg["v2_campo"], e[im_c], t[im_c]), flush=True)
-            filas.append({
+            fila = {
                 "u0": u0, "lambda": lam, "dispersion": disp,
                 "k_efectivo": k_h, "k_3d_campo": k_ef, "k_3d_balance": k_bal,
                 "alfa_eff_sobre_alfa": dg["alfa_eff_sobre_alfa"],
                 "w2_sobre_v2": dg["w2_sobre_v2"],
+                "sup_sobre_prom_medio": dg["rms_superficie"] / dg["rms_promedio"],
                 "v2_inicial": float(e[0]), "v2_medio": float(e[im]),
                 "v2_ventana": [float(e[i0]), float(e[i1])],
                 "v2_final": float(e[-1]),
                 "crece": bool(e[-1] > e[0]),
-            })
+            }
+            extra = ""
+            if args.superficie:
+                ps = pendientes_superficie(dirrun, indices_t, nxy, nxy, NZ - CZ, LZ, NU,
+                                           t0, t1)
+                if ps is not None:
+                    fila.update(ps)
+                    extra = ("\n            superficie: lambda_sup=%.6e  lambda_prom=%.6e  "
+                             "lambda_3d=%.6e (balance %.6e)  u(h)/<u>: %.4f -> %.4f  "
+                             "(%d campos)"
+                             % (ps["lambda_superficie"], ps["lambda_promedio"],
+                                ps["lambda_3d"], lam, ps["sup_sobre_prom_inicio"],
+                                ps["sup_sobre_prom_fin"], ps["n_campos"]))
+            filas.append(fila)
             print("   u0=%.1e  lambda=%.6e  disp=%.2e  k_h=%.2f  k_3d=%.2f (bal %.2f)  "
-                  "alfa_eff/alfa=%.4f  <v2>: %.3e -> %.3e%s"
+                  "alfa_eff/alfa=%.4f  <v2>: %.3e -> %.3e%s%s"
                   % (u0, lam, disp, k_h, k_ef, k_bal, dg["alfa_eff_sobre_alfa"],
                      e[0], e[-1],
-                     "   [CRECE: inestable]" if e[-1] > e[0] else ""), flush=True)
+                     "   [CRECE: inestable]" if e[-1] > e[0] else "", extra), flush=True)
             del t, e, w
             res.setdefault("parciales", {})[clave] = filas
             os.makedirs(os.path.dirname(salida), exist_ok=True)
@@ -422,6 +497,14 @@ def main():
         ref = filas[0]["lambda"]
         for f in filas:
             f["lambda_sobre_referencia"] = f["lambda"] / ref
+            if "lambda_superficie" in f:
+                # las dos contra la MISMA referencia lineal (la de balance.txt): en la
+                # corrida lineal lambda_sup = lambda_prom = lambda, así que el cociente
+                # sup/prom es lo que el PIV mediría de más o de menos
+                f["lambda_superficie_sobre_referencia"] = f["lambda_superficie"] / ref
+                f["lambda_promedio_sobre_referencia"] = f["lambda_promedio"] / ref
+                f["lambda_superficie_sobre_promedio"] = (f["lambda_superficie"]
+                                                         / f["lambda_promedio"])
             # delta CALIBRADO, con el k horizontal del propio campo y h = Lz. Para esta condición inicial <v^2> = <F^2>|grad_perp
             # psi|^2_rms = (1/2)|grad_perp psi|^2_rms, y la velocidad que entra en la
             # clausura es el PROMEDIO VERTICAL, U = <F>|grad_perp psi|_rms con
@@ -452,7 +535,9 @@ def main():
         return 0
 
     print("\nRESUMEN  lambda/lambda_lineal  (caso %s, eps=%.2f)" % (args.caso, caso["eps"]))
-    print("  u0        delta    " + "".join("  %dx%d      " % (n, n) for n in resoluciones))
+    print("  u0        delta    " + "".join("  %dx%d      " % (n, n) for n in resoluciones)
+          + ("   | lambda_sup/lin  lambda_prom/lin  sup/prom   u(h)/<u> ini->fin"
+             if args.superficie else ""))
     for i, u0 in enumerate(U0S):
         fila = "  %.2e " % u0
         for j, n in enumerate(resoluciones):
@@ -461,6 +546,12 @@ def main():
                 fila += " %6.2f " % f["delta"]
             fila += "  %9.6f%s" % (f["lambda_sobre_referencia"],
                                    "*" if f["crece"] else " ")
+        if args.superficie and "lambda_superficie_sobre_referencia" in f:
+            fila += "   | %9.5f      %9.5f      %7.4f    %.4f -> %.4f" % (
+                f["lambda_superficie_sobre_referencia"],
+                f["lambda_promedio_sobre_referencia"],
+                f["lambda_superficie_sobre_promedio"],
+                f["sup_sobre_prom_inicio"], f["sup_sobre_prom_fin"])
         print(fila)
     print("  (* = la energía creció: corrida inestable, no usable)")
     print("\nescrito %s" % os.path.relpath(salida, RAIZ))
