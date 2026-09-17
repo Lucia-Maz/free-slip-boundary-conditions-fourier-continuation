@@ -198,8 +198,10 @@ fallan con `FileNotFoundError`, a propósito, en vez de seguir con datos parcial
 
 El desarrollo, los tests 1D y la verificación a resolución chica son en la laptop; el
 cómputo pesado va al clúster (Sakura, SLURM). Las convenciones que valen en las dos están
-en `CLAUDE.md`; la primera vez en el clúster —clave de acceso, módulos, scratch, cómo
-mandar la puerta por SLURM— está en `numerico/CLUSTER.md`. El repositorio es la única
+en `CLAUDE.md`; la primera vez en el clúster —cómo generar una deploy key propia, módulos,
+scratch, cómo mandar la puerta por SLURM— está en `numerico/CLUSTER.md`. **En el
+repositorio no hay ninguna clave ni credencial**: sólo la receta para crearlas en cada
+máquina. El repositorio es la única
 fuente de verdad entre ambas: no se copian archivos por `scp`.
 
 ## Licencia
