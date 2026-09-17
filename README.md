@@ -44,8 +44,8 @@ entradas `[V-16]` y `[V-17]` de `DECISIONES.md` tienen las tablas completas.
 La propuesta habla de *superficie libre*, y lo implementado es free-slip **plano**: es el
 orden cero de esa superficie libre en el número de Froude, y en esta celda el orden
 siguiente es despreciable con número, no con criterio — la presión dinámica ρU² contra la
-restitución ρg deforma la superficie **0,07–0,5 µm sobre 6 mm, η/h ~ 10⁻⁵** ([D-28],
-`numerico/fase4/superficie_libre_escalas.py`). Por eso el α de este proyecto no cambia con
+restitución ρg + σk² deforma la superficie **0,04–0,33 µm sobre 6 mm, η/h ≲ 6·10⁻⁵**
+(`numerico/fase4/superficie_libre_escalas.py` → `salidas/tablas/superficie_libre_escalas.json`; [D-28]). Por eso el α de este proyecto no cambia con
 la superficie deformable, y por eso no se implementó acá.
 
 Es, en cambio, **la continuación del trabajo**, y ya está preparada:

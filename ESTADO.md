@@ -288,11 +288,13 @@ nuevo, receta del clúster en `numerico/CLUSTER.md`, `notas` fuera del árbol, `
 4. ~~Reanalizar el capítulo de instrumento a la luz de [H-12]~~ — **se cae del plan**
    ([D-43]): es instrumento, no objeto. Queda anotado como pregunta abierta de la zona
    exploratoria; si sobra tiempo, es rehacer el barrido en Δt sobre `med_S0002`.
-5. **La entrega**: el repositorio se hace **público** con el README nuevo ([D-43]; la
-   visibilidad la cambia Lucía en GitHub), y a `salidas/entrega1_resumen.html` hay que
-   integrarle [V-17] y reordenarla en las tres zonas del README (numérico / contraste /
-   explorando). Falta el PDF. Plazo: completo unos días antes de las presentaciones, que
-   son en dos semanas (~2026-10-01).
+5. **La entrega**: el repositorio se hace **público** con el README nuevo ([D-43], [D-44];
+   la visibilidad la cambia Lucía en GitHub). `salidas/entrega1_resumen.html` ya está
+   reordenada en las tres zonas, con la sección de superficie libre (no deformable: por
+   qué vale; deformable: el siguiente paso), [V-17] y la figura `f8`; publicada en
+   https://claude.ai/artifact/21j1baf1T54uYqdkF99Xwi. Por decisión de Lucía la película
+   superficial ([D-29]) no se presenta ni en README ni en la entrega. Falta el PDF. Plazo:
+   completo unos días antes de las presentaciones, que son en dos semanas (~2026-10-01).
 
 Los puntos 2 y 5 son independientes; el 2 es el único cómputo pesado que queda.
 
@@ -335,8 +337,9 @@ Los puntos 2 y 5 son independientes; el 2 es el único cómputo pesado que queda
   declararla ([D-27]); entra a primer orden en α.
 - **La superficie libre real no es free-slip ideal.** Un electrolito con
   partículas flotando puede desarrollar una película superficial que la vuelve casi
-  rígida — y ese es justo el caso no-deslizante, con α cuatro veces mayor. Es la salvedad
-  más fuerte del trabajo. Hay que declararla, y si se puede, acotarla con los datos.
+  rígida — y ese es justo el caso no-deslizante, con α cuatro veces mayor ([D-29]). Queda
+  en el log como registro; por decisión de Lucía ([D-44]) no se presenta en el README ni
+  en la entrega.
 - ~~El factor 2,7 entre forzado y decaimiento~~ — **explicado** ([H-12]): el registro
   anómalo era `med_S0008`, que contiene un decaimiento pese a estar etiquetado como
   forzado. El forzado que sí es estacionario (`med_S0002`, con menos corriente) da

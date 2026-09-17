@@ -1806,3 +1806,9 @@ detallado en la §4.4 de la nota de teoría, y el acoplamiento implícito entre 
 sobre `v*` y la presión no es un detalle: es un cambio de estructura del paso de proyección.
 Con dos semanas hasta las presentaciones y la corrida de producción y la entrega
 pendientes, hacerla bien no entra; hacerla a medias es peor que decir dónde está el borde.
+
+*Adenda a [D-44], mismo día.* Los números de deformación que van en el README y en la
+página de entrega son los de `salidas/tablas/superficie_libre_escalas.json` regenerado con
+k = 296 m⁻¹ ([D-41]): η = 0,044 µm (forzado) y 0,33 µm (inicio del decaimiento), η/h =
+7,3·10⁻⁶ y 5,5·10⁻⁵. La tabla de [D-28] (0,07 y 0,51 µm) se calculó con k = 88,9 y no se
+reescribe; con el k correcto la capilaridad restituye más y η baja. La conclusión no cambia.
