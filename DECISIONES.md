@@ -1845,3 +1845,41 @@ en README ("Fuera de alcance, a propósito"), en `ESTADO.md` (pregunta cerrada) 
 la página de entrega, que dice que se consideró, que está modelada, y que no se incluye
 porque no ocurre en el montaje ni es relevante. No como sección, no como resultado, no
 como salvedad principal.
+
+### [D-47] Se reescribe la historia para quitar el usuario del clúster, y el chequeo de higiene corre antes de cada push
+
+Lucía, 2026-09-17, al ver el README público: *"NO pueden estar mis claves etc publicadas!"*
+Se escaneó toda la historia y el árbol: **no había ninguna clave, contraseña, token, IP ni
+dominio** —la frase "clave de acceso" del README describía la receta para generar una
+deploy key, y se reescribió—, pero sí el nombre de usuario del clúster en tres rutas de
+scratch ([D-37], [D-39], el prompt de `CLUSTER.md`) y el correo de GitHub en una versión
+vieja del README. Pedido: *"Sacá el usuario del árbol y de la historia. Y agreguemos este
+chequeo que proponés también"*.
+
+**Lo que se hizo:**
+
+1. **Reescritura de la historia** con `git filter-repo --replace-text`: usuario → `$USER`,
+   correo → `<tu correo>`, en el contenido de todos los blobs de los 33 commits, y *force
+   push*. Es la única excepción a "el log no se reescribe", y queda registrada acá. Los
+   hashes de todos los commits cambiaron; ningún documento del repo citaba uno. Respaldo
+   espejo previo en el scratch de la sesión, no en el repo. **El clon del clúster tiene
+   que resetearse** (`git fetch && git reset --hard origin/main`); el prompt de
+   `CLUSTER.md` lo dice.
+2. **Lo que no se tocó:** el correo en la metadata de autor de cada commit
+   (`Author:`). Es el de la cuenta de GitHub y GitHub ya lo asocia al perfil; cambiarlo es
+   otra reescritura y una decisión aparte (la opción *Keep my email addresses private* de
+   GitHub cubre los commits futuros).
+3. **`verificacion/higiene.py`**, sólo biblioteca estándar: busca claves privadas y
+   públicas SSH, tokens (GitHub, Anthropic, AWS, Slack), contraseñas o passphrases con
+   valor asignado, líneas de `.netrc`, IPv4 no loopback, nombres de archivo de
+   credenciales, y las **palabras prohibidas** de `verificacion/higiene.local` —archivo no
+   trackeado, en `.gitignore`, para que las palabras que no deben aparecer en el repo no
+   aparezcan en el repo—. `--historia` recorre todos los blobs; `--autotest` prueba que
+   cada detector dispara sobre una muestra sintética y que un texto limpio no dispara, en
+   el mismo espíritu que el caso V6 de la puerta. Sale con 1 si encuentra algo, y lo
+   imprime enmascarado.
+4. **`verificacion/hooks/pre-push`** lo corre antes de cada push y lo bloquea si falla. Se
+   activa por clon con `git config core.hooksPath verificacion/hooks` (`CLAUDE.md`).
+
+Resultado al cerrar: autotest OK (10 detectores disparan, el texto limpio no); árbol de
+128 archivos y 232 blobs de la historia, limpios.

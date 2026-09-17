@@ -29,3 +29,6 @@ verificacion/logs/
 
 # Datos crudos: 140 GB en el disco externo, sólo lectura ([D-02])
 datos-derivados/*.npz
+
+# Palabras prohibidas del chequeo de higiene: no se trackean a propósito
+verificacion/higiene.local

@@ -1,0 +1,12 @@
+#!/bin/sh
+# Hook de pre-push: corre el chequeo de higiene sobre el árbol trackeado y bloquea el
+# push si encuentra credenciales o palabras prohibidas. Se activa una vez por clon con
+#
+#     git config core.hooksPath verificacion/hooks
+#
+# (está en CLAUDE.md). Sólo necesita python3 con biblioteca estándar.
+raiz="$(git rev-parse --show-toplevel)"
+"${HIGIENE_PYTHON:-python3}" "$raiz/verificacion/higiene.py" || {
+    echo >&2 "push bloqueado por verificacion/higiene.py; corregí y volvé a intentar"
+    exit 1
+}

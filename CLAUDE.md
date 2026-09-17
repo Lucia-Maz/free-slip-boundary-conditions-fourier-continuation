@@ -147,7 +147,21 @@ físico y el modo fundamental es `k = 1`. `Lz`, en cambio, es la longitud litera
 
 ## Higiene
 
-El repositorio es privado hoy, pero la idea es publicarlo con el proyecto. No deben entrar
-contraseñas ni credenciales del clúster; las de Sakura están en texto plano en las notas de
-Obsidian de la laptop y **no van acá**. Tampoco entran los PDF de la bibliografía, que son
+El repositorio es **público** desde el 2026-09-17. No deben entrar contraseñas, claves ni
+credenciales del clúster, ni el nombre de usuario del clúster: las credenciales de Sakura
+están en texto plano en las notas de Obsidian de la laptop y **no van acá**.
+
+**El chequeo corre solo antes de cada push** ([D-47]). Una vez por clon, en la laptop y en
+el clúster:
+
+```bash
+git config core.hooksPath verificacion/hooks     # activa verificacion/hooks/pre-push
+printf '<usuario del clúster>\n' > verificacion/higiene.local   # palabras prohibidas, NO se trackea
+python3 verificacion/higiene.py --autotest       # prueba que cada detector dispara
+python3 verificacion/higiene.py --historia       # árbol + toda la historia
+```
+
+`verificacion/higiene.py` busca claves privadas y públicas, tokens, contraseñas con valor,
+IPs y las palabras de `higiene.local`; sale con 1 y bloquea el push si encuentra algo. En
+rutas del clúster se escribe `$USER`, nunca el usuario literal. Tampoco entran los PDF de la bibliografía, que son
 de los editores: `bibliografia/REFERENCIAS.md` dice de dónde bajar cada uno.

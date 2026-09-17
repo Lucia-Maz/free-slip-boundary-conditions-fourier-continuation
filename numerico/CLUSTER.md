@@ -104,9 +104,13 @@ los informes se regeneran de un lado o del otro indistintamente.
 producción; se pega tal cual como primer mensaje.
 
 > El repositorio se llama ahora `free-slip-boundary-conditions-fourier-continuation`
-> ([D-45]); si el clon de acá todavía apunta al nombre viejo, primero
-> `git remote set-url origin git@github.com:Lucia-Maz/free-slip-boundary-conditions-fourier-continuation.git`.
-> Después `git pull` antes que nada. Leé `ESTADO.md` (sección "Lo que sigue") y, de
+> ([D-45]) y **su historia se reescribió el 2026-09-17** ([D-47]), así que el clon de acá
+> no se actualiza con `git pull`: primero
+> `git remote set-url origin git@github.com:Lucia-Maz/free-slip-boundary-conditions-fourier-continuation.git`,
+> después `git fetch origin && git reset --hard origin/main` (no hay cambios locales
+> que conservar allá), y activá el chequeo de higiene como dice `CLAUDE.md`
+> (`git config core.hooksPath verificacion/hooks` y `verificacion/higiene.local` con tu
+> usuario del clúster). En todo lo que escribas, el usuario del clúster es `$USER`. Leé `ESTADO.md` (sección "Lo que sigue") y, de
 > `DECISIONES.md`, las entradas [D-42], [V-16], [V-17], [H-09] y [D-34] a [D-39]. Estás en
 > Sakura: aplican las reglas del clúster de `CLAUDE.md` — todo por SLURM, módulos
 > `gnu15 openmpi5 fftw/3.3.11 python/3.13.13`, `OMPI_MCA_pml=ob1 OMPI_MCA_btl=sm,self,tcp`,
