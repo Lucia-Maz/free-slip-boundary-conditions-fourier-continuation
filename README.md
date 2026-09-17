@@ -24,15 +24,60 @@ sinónimos: lo implementado es free-slip *y además plano*.
 
 ## Lo que se estableció
 
-| | |
-|---|---|
-| Fricción de fondo con tope free-slip | **α = νπ²/(4h²)**; con tapa rígida, νπ²/h²: **exactamente 4 veces más** |
-| SPECTER con el parche reproduce la tasa del modo lento | error **6,8·10⁻¹⁰** contra la referencia; residuo de tensión en la cara free-slip 6,1·10⁻¹², independiente de dt |
-| La no linealidad **sube** la fricción de fondo | α_eff/α = 1,025 en δ = 3, 1,08 en δ = 5, 1,15–1,18 en δ ≈ 7–8, 1,26–1,28 en δ = 10 (medido, convergido entre dos mallas) |
-| La velocidad de superficie decae más lento que el promedio vertical | u(h)/⟨u⟩ baja de π/2 a 1,37 en δ ≈ 10 y se recupera en el tiempo; para un PIV de superficie en ε = 0,71 la predicción lineal queda buena al 12 % aunque cada ingrediente no lineal valga 20–30 %; en ε = 1,78 la tasa de u(h) cae 11 % por debajo de la lineal |
+Cada número apunta a lo que lo produce: un chequeo ejecutable, un script y su JSON, y la
+entrada del log donde está discutido.
+
+| | | procedencia |
+|---|---|---|
+| Fricción de fondo con tope free-slip | **α = νπ²/(4h²)**; con tapa rígida, νπ²/h²: **exactamente 4 veces más** | `verificacion/test_aceptacion_fase1.py` (referencia por diferencias finitas y Richardson); derivación en `jobs/…/out/build/notes.pdf` con `out/provenance.json`; [V-07] |
+| SPECTER con el parche reproduce la tasa del modo lento | error **6,8·10⁻¹⁰** contra la referencia; residuo de tensión en la cara free-slip 6,1·10⁻¹², independiente de dt | `verificacion/test_aceptacion_fase2.py`, casos V4 y V3 (compila y corre SPECTER); [V-09], [D-24] |
+| La no linealidad **sube** la fricción de fondo | α_eff/α = 1,025 en δ = 3, 1,08 en δ = 5, 1,15–1,18 en δ ≈ 7–8, 1,26–1,28 en δ = 10 (medido, convergido entre dos mallas) | `verificacion/barrido_delta_etapa1.py --caso {ventana,forzado}` → `salidas/tablas/barrido_delta_etapa1_{ventana,forzado}.json`; informes `informe/barrido_delta_etapa1_*.pdf`; [V-16] |
+| La velocidad de superficie decae más lento que el promedio vertical | u(h)/⟨u⟩ baja de π/2 a 1,37 en δ ≈ 10 y se recupera en el tiempo; para un PIV de superficie en ε = 0,71 la predicción lineal queda buena al 12 % aunque cada ingrediente no lineal valga 20–30 %; en ε = 1,78 la tasa de u(h) cae 11 % por debajo de la lineal | el mismo script con `--superficie` → `salidas/tablas/barrido_delta_etapa1_*_superficie.json`; [V-17] |
 
 Los parámetros que gobiernan: ε = kh (esbeltez del modo) y δ = U k h²/ν = Re_h·ε. Las
 entradas `[V-16]` y `[V-17]` de `DECISIONES.md` tienen las tablas completas.
+
+## Dónde termina el resultado
+
+### El siguiente paso: la superficie deformable
+
+La propuesta habla de *superficie libre*, y lo implementado es free-slip **plano**: es el
+orden cero de esa superficie libre en el número de Froude, y en esta celda el orden
+siguiente es despreciable con número, no con criterio — la presión dinámica ρU² contra la
+restitución ρg deforma la superficie **0,07–0,5 µm sobre 6 mm, η/h ~ 10⁻⁵** ([D-28],
+`numerico/fase4/superficie_libre_escalas.py`). Por eso el α de este proyecto no cambia con
+la superficie deformable, y por eso no se implementó acá.
+
+Es, en cambio, **la continuación del trabajo**, y ya está preparada:
+
+- Las condiciones linealizadas están derivadas: cinemática `w(h) = ∂η/∂t`, tensión
+  tangencial completa, y tensión normal que prescribe `p` en la superficie
+  (`teoria/superficie_libre_v_estrella_y_p.md` §4).
+- La rama de presión que hace falta, Neumann abajo – Dirichlet arriba, está derivada y
+  verificada en Python sobre 20 000 combinaciones de k y Lz, con su criterio de
+  condicionamiento ([V-12]). No está en Fortran.
+- Lo que falta, dicho sin adornos: esa rama en `laplace_z`; un `bctarget` por cara en
+  `sol_project`; la condición sobre `v*` queda **acoplada implícitamente** a `∂p/∂z` en la
+  superficie (iterar dentro del subpaso, o aceptar un error de partición O(dt)); el campo
+  η(x, y, t) avanzado con el mismo Runge-Kutta; y una puerta nueva, porque la propiedad
+  que hace exacto al caso plano —residuo independiente de dt— no sobrevive. La puerta
+  natural es la relación de dispersión de ondas gravito-capilares amortiguadas.
+
+### Fuera de alcance de este proyecto, a propósito
+
+- **La película superficial.** Un electrolito con partículas flotando puede desarrollar
+  una película que vuelve el tope casi rígido, y ese es justo el caso con α cuatro veces
+  mayor: es **la salvedad más fuerte del trabajo**. Está modelada (Boussinesq–Scriven:
+  condición de Robin con un solo parámetro β, y el factor 4 de la Fase 1 son los dos
+  extremos de esa familia, [D-29]) y no implementada. El α medido acota β por arriba.
+- **El régimen forzado como estado estacionario.** El barrido en δ es de decaimiento
+  libre; la meseta forzada del experimento no se simuló como tal.
+- **La puerta no verifica el régimen no lineal.** V4–V6 usan el modo de corte puro, donde
+  el término no lineal es cero; la convergencia en régimen no lineal se estudió aparte
+  ([V-16], [H-09]) y sólo hasta δ ≈ 7–10.
+- **Sólo doble precisión y `ORD=2`.** Con 1, 2 y 4 procesos MPI sí está verificado ([V-10]).
+- **La viscosidad es la del agua**, no la del electrolito al 16 % ([D-27]); entra a primer
+  orden en α.
 
 ## Qué hay acá
 
@@ -90,11 +135,6 @@ contraste de arriba depende de ella y porque documenta lo que se intentó.
   Foucaut no describe el ruido de este multipaso ([V-14]). Código: `codigo/01`–`05`, `09`;
   teoría: `informe/01_marco_teorico.md`; resultados: `salidas/tablas/*med_S0008*`,
   `corrimiento_sintetico`, `desplazamiento_nulo`, `verificacion_filtrado`.
-- **La superficie libre deformable y la película superficial.** Cuantificadas como
-  despreciable la primera ([D-28]) y como la salvedad más fuerte del trabajo la segunda
-  ([D-29]): un electrolito con partículas flotando puede desarrollar una película que
-  vuelve la superficie casi rígida, y ese es justo el caso con α cuatro veces mayor.
-  `teoria/superficie_libre_v_estrella_y_p.md`, `numerico/fase4/superficie_libre_escalas.py`.
 
 ### Los archivos pensados para humanos y los pensados para agentes
 
@@ -160,6 +200,12 @@ cómputo pesado va al clúster (Sakura, SLURM). Las convenciones que valen en la
 en `CLAUDE.md`; la primera vez en el clúster —clave de acceso, módulos, scratch, cómo
 mandar la puerta por SLURM— está en `numerico/CLUSTER.md`. El repositorio es la única
 fuente de verdad entre ambas: no se copian archivos por `scp`.
+
+## Licencia
+
+MIT (`LICENSE`) para todo lo propio: código, derivaciones, texto y figuras. El parche sobre
+SPECTER es obra derivada de un código sin licencia publicada; ver la nota en
+`numerico/specter-parche/README.md`.
 
 ## SPECTER
 

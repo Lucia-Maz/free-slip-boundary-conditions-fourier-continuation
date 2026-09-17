@@ -51,3 +51,11 @@ Tiene que dar **6/6**. La puerta compila SPECTER en un scratch temporal, corre u
 simulaciones chicas y tarda del orden de diez minutos. Está fijada por hash
 (`6f0b4da4ba20617d483dfff0a20f8e2e11e82795b20351c259ffcf740ca4b1cc`): se puede leer, no se
 edita para que pase.
+
+## Licencia del parche
+
+El repositorio está bajo MIT (`LICENSE` en la raíz), y eso cubre las líneas propias de
+este parche y el test unitario. Pero el parche es **obra derivada de SPECTER**, cuyos
+autores no publicaron una licencia (su README pide citar a Fontana, Bruno, Mininni &
+Dmitruk 2020). Se distribuye acá como diff para que este trabajo se pueda reproducir; su
+reutilización en otro contexto queda sujeta a lo que dispongan los autores de SPECTER.

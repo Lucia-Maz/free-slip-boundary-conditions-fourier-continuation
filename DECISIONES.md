@@ -1778,3 +1778,31 @@ inicial curado (pierde el "ver avanzar" que pidieron y no hay nada que esconder)
 experimental del repo (contradice "cuanto más, mejor" y borra la barra de error de la
 comparación); hacer público al final (no hay razón para esperar: con el README nuevo y
 sin `notas` el árbol ya está listo, y cambiar la visibilidad es una acción de Lucía).
+
+### [D-44] Licencia MIT para lo propio; la superficie deformable se presenta como el siguiente paso, no como fuera de alcance
+
+Cierra el punto 7 de [D-43]. Lucía, 2026-09-17: *"MIT para lo mío"*. `LICENSE` en la raíz,
+copyright 2026 Lucía Mazaira; cubre código, derivaciones, texto y figuras. El parche de
+SPECTER es obra derivada de un código sin licencia publicada, y eso se declara en
+`numerico/specter-parche/README.md`: se distribuye como diff para reproducir este trabajo,
+y su reutilización queda sujeta a los autores de SPECTER. Pendiente: preguntarle a Dmitruk.
+El docente usa MIT en su propio repositorio, así que es la convención del curso.
+
+**Sobre la superficie deformable.** Lucía: *"no lo quiero pasar a fuera del scope, sino que
+quiero que sigamos por ese lado"*, y la inquietud de que la propuesta hablaba de "superficie
+libre" y free-slip plano no se lea como lo aceptado. La decisión de alcance de [D-28] no
+cambia —en esta celda η/h ~ 10⁻⁵ y el α de este proyecto no depende de ella—, pero **la
+presentación sí**: el README la lleva como "el siguiente paso", con lo que ya existe (§4 de
+`teoria/superficie_libre_v_estrella_y_p.md`, la rama Neumann–Dirichlet de [V-12]) y lo que
+falta (rama en Fortran, `bctarget` por cara, acoplamiento implícito de la condición sobre
+`v*` con `∂p/∂z`, el campo η, y una puerta nueva sobre la dispersión de ondas
+gravito-capilares), y con la frase explícita de que free-slip plano es el orden cero de la
+superficie libre en Froude. Lo que sí queda como "fuera de alcance, a propósito": la
+película superficial ([D-29]), el estado forzado estacionario, el régimen no lineal en la
+puerta, precisión simple y `ORD≠2`, y la viscosidad del electrolito.
+
+**Por qué "siguiente paso" y no "en este proyecto":** el costo de implementarla está
+detallado en la §4.4 de la nota de teoría, y el acoplamiento implícito entre la condición
+sobre `v*` y la presión no es un detalle: es un cambio de estructura del paso de proyección.
+Con dos semanas hasta las presentaciones y la corrida de producción y la entrega
+pendientes, hacerla bien no entra; hacerla a medias es peor que decir dónde está el borde.
