@@ -1,0 +1,342 @@
+{
+ "caso": "ventana",
+ "eps": 0.7071,
+ "Lz": 0.49999520497700767,
+ "nu": 0.009999808199999996,
+ "dt": 0.0005,
+ "pasos": 11905,
+ "t_final": 5.9525,
+ "t_mem": 1.2665147955292222,
+ "tstep": 633,
+ "superficie": true,
+ "ventana": [
+  3.799468085106383,
+  5.382579787234042
+ ],
+ "delta_objetivo": [
+  0.3,
+  1.0,
+  3.0,
+  6.0,
+  10.0,
+  15.0
+ ],
+ "nz": 64,
+ "cz": 25,
+ "ord": 2,
+ "u0s": [
+  0.0192,
+  0.0642,
+  0.1925,
+  0.3849,
+  0.6416,
+  0.9623
+ ],
+ "u0_referencia": 0.0001,
+ "resoluciones": [
+  16,
+  32
+ ],
+ "corridas": {
+  "n16": [
+   {
+    "u0": 0.0001,
+    "lambda": 0.13087406580646946,
+    "dispersion": 8.02316772992264e-05,
+    "k_efectivo": 1.7919273993834162,
+    "k_3d_campo": 3.6160809855615006,
+    "k_3d_balance": 3.688185507480122,
+    "alfa_eff_sobre_alfa": 1.0007113147549371,
+    "w2_sobre_v2": 2.455610123136903e-10,
+    "sup_sobre_prom_medio": 1.571020088160882,
+    "v2_inicial": 4.750000000000003e-09,
+    "v2_medio": 1.4154501417719054e-09,
+    "v2_ventana": [
+     1.7433560459973566e-09,
+     1.1498503614885955e-09
+    ],
+    "v2_final": 9.94888419226614e-10,
+    "crece": false,
+    "n_campos": 5,
+    "t_campos": [
+     4.1145000000000005,
+     4.431,
+     4.7475000000000005,
+     5.064,
+     5.3805000000000005
+    ],
+    "lambda_superficie": 0.13080574244905244,
+    "lambda_promedio": 0.13080574312934273,
+    "lambda_3d": 0.13080574311071616,
+    "dispersion_superficie": 3.631111605474401e-05,
+    "sup_sobre_prom_inicio": 1.5710200874318132,
+    "sup_sobre_prom_fin": 1.5710200887872197,
+    "lambda_sobre_referencia": 1.0,
+    "lambda_superficie_sobre_referencia": 0.999477945787074,
+    "lambda_promedio_sobre_referencia": 0.9994779509851267,
+    "lambda_superficie_sobre_promedio": 0.9999999947992322,
+    "delta": 0.0015174096012125088,
+    "delta_rango": [
+     0.0016840251984748535,
+     0.0013676538821926073
+    ]
+   },
+   {
+    "u0": 0.0192,
+    "lambda": 0.13093735401171697,
+    "dispersion": 8.25760228983494e-05,
+    "k_efectivo": 1.7917803223274238,
+    "k_3d_campo": 3.616983638138694,
+    "k_3d_balance": 3.6897708833650276,
+    "alfa_eff_sobre_alfa": 1.0009667985130033,
+    "w2_sobre_v2": 9.038083528515629e-06,
+    "sup_sobre_prom_medio": 1.5708717849979301,
+    "v2_inicial": 0.00017510399999999998,
+    "v2_medio": 5.21506711059913e-05,
+    "v2_ventana": [
+     6.423896796379658e-05,
+     4.236102482805435e-05
+    ],
+    "v2_final": 3.665013726695043e-05,
+    "crece": false,
+    "n_campos": 5,
+    "t_campos": [
+     4.1145000000000005,
+     4.431,
+     4.7475000000000005,
+     5.064,
+     5.3805000000000005
+    ],
+    "lambda_superficie": 0.13085522993387572,
+    "lambda_promedio": 0.13086308785793027,
+    "lambda_3d": 0.1308670346046884,
+    "dispersion_superficie": 3.78807809935978e-05,
+    "sup_sobre_prom_inicio": 1.5708663602536486,
+    "sup_sobre_prom_fin": 1.5708818646073817,
+    "lambda_sobre_referencia": 1.000483580951333,
+    "lambda_superficie_sobre_referencia": 0.9998560763549472,
+    "lambda_promedio_sobre_referencia": 0.9999161182280726,
+    "lambda_superficie_sobre_promedio": 0.9999399530900334,
+    "delta": 0.29123920912341666,
+    "delta_rango": [
+     0.3232355876874661,
+     0.26248417271076263
+    ]
+   },
+   {
+    "u0": 0.0642,
+    "lambda": 0.13157368619438425,
+    "dispersion": 0.00010642348787663278,
+    "k_efectivo": 1.790375809774009,
+    "k_3d_campo": 3.6260434796096224,
+    "k_3d_balance": 3.7056426506124396,
+    "alfa_eff_sobre_alfa": 1.0035399014949486,
+    "w2_sobre_v2": 9.94961655333043e-05,
+    "sup_sobre_prom_medio": 1.5693723463987195,
+    "v2_inicial": 0.0019577789999999967,
+    "v2_medio": 0.0005798686742627464,
+    "v2_ventana": [
+     0.0007150603411712555,
+     0.00047057890811094645
+    ],
+    "v2_final": 0.00040691320004530466,
+    "crece": false,
+    "n_campos": 5,
+    "t_campos": [
+     4.1145000000000005,
+     4.431,
+     4.7475000000000005,
+     5.064,
+     5.3805000000000005
+    ],
+    "lambda_superficie": 0.1313493714905065,
+    "lambda_promedio": 0.13143931945025045,
+    "lambda_3d": 0.13148306375370183,
+    "dispersion_superficie": 5.372031889449923e-05,
+    "sup_sobre_prom_inicio": 1.5693094071417357,
+    "sup_sobre_prom_fin": 1.5694867377204003,
+    "lambda_sobre_referencia": 1.0053457526791394,
+    "lambda_superficie_sobre_referencia": 1.0036317790015012,
+    "lambda_promedio_sobre_referencia": 1.0043190653572027,
+    "lambda_superficie_sobre_promedio": 0.9993156693132605,
+    "delta": 0.970385178949971,
+    "delta_rango": [
+     1.0775828645323389,
+     0.8741693186647871
+    ]
+   },
+   {
+    "u0": 0.1925,
+    "lambda": 0.13663961806304284,
+    "dispersion": 0.00031290310834931716,
+    "k_efectivo": 1.7834623739737927,
+    "k_3d_campo": 3.6971763795255814,
+    "k_3d_balance": 3.828113603758102,
+    "alfa_eff_sobre_alfa": 1.0243176884221543,
+    "w2_sobre_v2": 0.0008076881246804142,
+    "sup_sobre_prom_medio": 1.556910435632861,
+    "v2_inicial": 0.017601718750000005,
+    "v2_medio": 0.004979473660705279,
+    "v2_ventana": [
+     0.006194409887130275,
+     0.004011387674119625
+    ],
+    "v2_final": 0.003453706706859955,
+    "crece": false,
+    "n_campos": 5,
+    "t_campos": [
+     4.1145000000000005,
+     4.431,
+     4.7475000000000005,
+     5.064,
+     5.3805000000000005
+    ],
+    "lambda_superficie": 0.13507384672444414,
+    "lambda_promedio": 0.1360113610678855,
+    "lambda_3d": 0.13637364236167293,
+    "dispersion_superficie": 0.0001829778517467235,
+    "sup_sobre_prom_inicio": 1.5562030679450196,
+    "sup_sobre_prom_fin": 1.5580383599372138,
+    "lambda_sobre_referencia": 1.0440541998985438,
+    "lambda_superficie_sobre_referencia": 1.0320902456273127,
+    "lambda_promedio_sobre_referencia": 1.0392537301394216,
+    "lambda_superficie_sobre_promedio": 0.9931070879955871,
+    "delta": 2.8326361975844443,
+    "delta_rango": [
+     3.1593595289424603,
+     2.5424147455892614
+    ]
+   },
+   {
+    "u0": 0.3849,
+    "lambda": 0.14951661231302166,
+    "dispersion": 0.0009842470708786562,
+    "k_efectivo": 1.7897794033135381,
+    "k_3d_campo": 3.8707943191912997,
+    "k_3d_balance": 4.12021322491979,
+    "alfa_eff_sobre_alfa": 1.0805464772703273,
+    "w2_sobre_v2": 0.0027112851127091024,
+    "sup_sobre_prom_medio": 1.5207790599448499,
+    "v2_inicial": 0.07037030475000004,
+    "v2_medio": 0.017430562604157634,
+    "v2_ventana": [
+     0.022183433716078296,
+     0.013788349059467698
+    ],
+    "v2_final": 0.011749503457882535,
+    "crece": false,
+    "n_campos": 5,
+    "t_campos": [
+     4.1145000000000005,
+     4.431,
+     4.7475000000000005,
+     5.064,
+     5.3805000000000005
+    ],
+    "lambda_superficie": 0.14283982132509332,
+    "lambda_promedio": 0.14757546261554091,
+    "lambda_3d": 0.14868351938697538,
+    "dispersion_superficie": 0.0005438996190914208,
+    "sup_sobre_prom_inicio": 1.5169025476119893,
+    "sup_sobre_prom_fin": 1.5259710267893454,
+    "lambda_sobre_referencia": 1.1424464533265126,
+    "lambda_superficie_sobre_referencia": 1.0914295391137177,
+    "lambda_promedio_sobre_referencia": 1.1276142580743898,
+    "lambda_superficie_sobre_promedio": 0.967910374756644,
+    "delta": 5.3185143812954765,
+    "delta_rango": [
+     5.999969194147739,
+     4.730322710556354
+    ]
+   },
+   {
+    "u0": 0.6416,
+    "lambda": 0.16593353262816948,
+    "dispersion": 0.0024639962516662508,
+    "k_efectivo": 1.821940782713479,
+    "k_3d_campo": 4.073716935879238,
+    "k_3d_balance": 4.4953409437730345,
+    "alfa_eff_sobre_alfa": 1.1694253592209265,
+    "w2_sobre_v2": 0.005024311669798306,
+    "sup_sobre_prom_medio": 1.4595923428903603,
+    "v2_inicial": 0.19553401600000006,
+    "v2_medio": 0.03808268034583067,
+    "v2_ventana": [
+     0.0500110795078638,
+     0.029491347751481628
+    ],
+    "v2_final": 0.024868637735413868,
+    "crece": false,
+    "n_campos": 5,
+    "t_campos": [
+     4.1145000000000005,
+     4.431,
+     4.7475000000000005,
+     5.064,
+     5.3805000000000005
+    ],
+    "lambda_superficie": 0.14617871396184134,
+    "lambda_promedio": 0.1623908252899305,
+    "lambda_3d": 0.1638637496745137,
+    "dispersion_superficie": 0.001078754346186057,
+    "sup_sobre_prom_inicio": 1.445565367254056,
+    "sup_sobre_prom_fin": 1.4754051757394773,
+    "lambda_sobre_referencia": 1.2678870455017754,
+    "lambda_superficie_sobre_referencia": 1.1169417948549385,
+    "lambda_promedio_sobre_referencia": 1.2408174552326248,
+    "lambda_superficie_sobre_promedio": 0.9001660882063733,
+    "delta": 8.002637419309071,
+    "delta_rango": [
+     9.170700309130195,
+     7.04233526754771
+    ]
+   },
+   {
+    "u0": 0.9623,
+    "lambda": 0.17336521737161104,
+    "dispersion": 0.003945606385656012,
+    "k_efectivo": 1.8373702621646422,
+    "k_3d_campo": 4.163961376959755,
+    "k_3d_balance": 4.752848185109825,
+    "alfa_eff_sobre_alfa": 1.2462460771633805,
+    "w2_sobre_v2": 0.005381745518692121,
+    "sup_sobre_prom_medio": 1.4047349356864705,
+    "v2_inicial": 0.43986011275,
+    "v2_medio": 0.06352099665978402,
+    "v2_ventana": [
+     0.08487739644901279,
+     0.0488373725192626
+    ],
+    "v2_final": 0.04110692576741196,
+    "crece": false,
+    "n_campos": 5,
+    "t_campos": [
+     4.1145000000000005,
+     4.431,
+     4.7475000000000005,
+     5.064,
+     5.3805000000000005
+    ],
+    "lambda_superficie": 0.13637434067136828,
+    "lambda_promedio": 0.17070876863817563,
+    "lambda_3d": 0.1700742885556029,
+    "dispersion_superficie": 0.001167859456695918,
+    "sup_sobre_prom_inicio": 1.3741063031495677,
+    "sup_sobre_prom_fin": 1.434934403772021,
+    "lambda_sobre_referencia": 1.3246720525056166,
+    "lambda_superficie_sobre_referencia": 1.0420272330580176,
+    "lambda_promedio_sobre_referencia": 1.3043743050713492,
+    "lambda_superficie_sobre_promedio": 0.7988713278133907,
+    "delta": 10.422945438340694,
+    "delta_rango": [
+     12.048357271360025,
+     9.139195294307887
+    ]
+   }
+  ]
+ },
+ "lambda_referencia": {
+  "n16": 0.13087406580646946
+ },
+ "parciales": {}
+}

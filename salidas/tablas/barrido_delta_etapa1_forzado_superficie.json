@@ -1,0 +1,342 @@
+{
+ "caso": "forzado",
+ "eps": 1.7772,
+ "Lz": 1.2566701715247321,
+ "nu": 0.06316879679999998,
+ "dt": 0.0005,
+ "pasos": 11905,
+ "t_final": 5.9525,
+ "t_mem": 1.2665147955292222,
+ "tstep": 633,
+ "superficie": true,
+ "ventana": [
+  3.799468085106383,
+  5.382579787234042
+ ],
+ "delta_objetivo": [
+  0.3,
+  1.0,
+  3.0,
+  10.0,
+  20.0,
+  30.0
+ ],
+ "nz": 64,
+ "cz": 25,
+ "ord": 2,
+ "u0s": [
+  0.0444,
+  0.1479,
+  0.4436,
+  1.4788,
+  2.9576,
+  4.4365
+ ],
+ "u0_referencia": 0.0001,
+ "resoluciones": [
+  16,
+  32
+ ],
+ "corridas": {
+  "n16": [
+   {
+    "u0": 0.0001,
+    "lambda": 0.2510376346314227,
+    "dispersion": 0.0015684752294174377,
+    "k_efectivo": 1.5455498511072263,
+    "k_3d_campo": 1.9875585838561287,
+    "k_3d_balance": 1.5098560127126677,
+    "alfa_eff_sobre_alfa": 1.0007113092683226,
+    "w2_sobre_v2": 1.7663382780951949e-10,
+    "sup_sobre_prom_medio": 1.5710200912517724,
+    "v2_inicial": 4.750000000000003e-09,
+    "v2_medio": 3.668487244768901e-10,
+    "v2_ventana": [
+     5.498363488069563e-10,
+     2.473985164254584e-10
+    ],
+    "v2_final": 1.888884629773222e-10,
+    "crece": false,
+    "n_campos": 5,
+    "t_campos": [
+     4.1145000000000005,
+     4.431,
+     4.7475000000000005,
+     5.064,
+     5.3805000000000005
+    ],
+    "lambda_superficie": 0.24971786917533798,
+    "lambda_promedio": 0.24971786981899044,
+    "lambda_3d": 0.2497178697400188,
+    "dispersion_superficie": 0.0006803963285954779,
+    "sup_sobre_prom_inicio": 1.5710200904936016,
+    "sup_sobre_prom_fin": 1.571020091778401,
+    "lambda_sobre_referencia": 1.0,
+    "lambda_superficie_sobre_referencia": 0.9947427585588017,
+    "lambda_promedio_sobre_referencia": 0.9947427611227696,
+    "lambda_superficie_sobre_promedio": 0.9999999974224814,
+    "delta": 0.0006662874817442778,
+    "delta_rango": [
+     0.0008157082797522386,
+     0.0005471629628771651
+    ]
+   },
+   {
+    "u0": 0.0444,
+    "lambda": 0.2510835799830763,
+    "dispersion": 0.001574351519265761,
+    "k_efectivo": 1.5453528290140426,
+    "k_3d_campo": 1.9877347190861494,
+    "k_3d_balance": 1.5106305266830349,
+    "alfa_eff_sobre_alfa": 1.0009970659286371,
+    "w2_sobre_v2": 3.472624872358932e-05,
+    "sup_sobre_prom_medio": 1.570835876954346,
+    "v2_inicial": 0.0009363959999999999,
+    "v2_medio": 7.225448496276462e-05,
+    "v2_ventana": [
+     0.00010830590299424299,
+     4.8724953015414275e-05
+    ],
+    "v2_final": 3.720064293406335e-05,
+    "crece": false,
+    "n_campos": 5,
+    "t_campos": [
+     4.1145000000000005,
+     4.431,
+     4.7475000000000005,
+     5.064,
+     5.3805000000000005
+    ],
+    "lambda_superficie": 0.24971501695030127,
+    "lambda_promedio": 0.24974973985017324,
+    "lambda_3d": 0.24975891977692447,
+    "dispersion_superficie": 0.0006822468819398017,
+    "sup_sobre_prom_inicio": 1.5708012108414517,
+    "sup_sobre_prom_fin": 1.5708700527507404,
+    "lambda_sobre_referencia": 1.0001830217677163,
+    "lambda_superficie_sobre_referencia": 0.994731396816006,
+    "lambda_promedio_sobre_referencia": 0.9948697143233509,
+    "lambda_superficie_sobre_promedio": 0.9998609692250618,
+    "delta": 0.2956617790787502,
+    "delta_rango": [
+     0.3619835582753254,
+     0.2427943049016842
+    ]
+   },
+   {
+    "u0": 0.1479,
+    "lambda": 0.25153460027273883,
+    "dispersion": 0.0016329364301147374,
+    "k_efectivo": 1.5434095681642443,
+    "k_3d_campo": 1.9894623325662746,
+    "k_3d_balance": 1.5182612994837072,
+    "alfa_eff_sobre_alfa": 1.0038534124676668,
+    "w2_sobre_v2": 0.0003749763681120437,
+    "sup_sobre_prom_medio": 1.5689822989571682,
+    "v2_inicial": 0.01039034475000001,
+    "v2_medio": 0.000794614554727383,
+    "v2_ventana": [
+     0.0011921931743010949,
+     0.0005355673333153843
+    ],
+    "v2_final": 0.00040881171425947765,
+    "crece": false,
+    "n_campos": 5,
+    "t_campos": [
+     4.1145000000000005,
+     4.431,
+     4.7475000000000005,
+     5.064,
+     5.3805000000000005
+    ],
+    "lambda_superficie": 0.24967625507680372,
+    "lambda_promedio": 0.2500646007667958,
+    "lambda_3d": 0.25016114039365017,
+    "dispersion_superficie": 0.0007004441776951433,
+    "sup_sobre_prom_inicio": 1.568594124811979,
+    "sup_sobre_prom_fin": 1.5693631779881823,
+    "lambda_sobre_referencia": 1.0019796459684054,
+    "lambda_superficie_sobre_referencia": 0.9945769901926547,
+    "lambda_promedio_sobre_referencia": 0.9961239522271013,
+    "lambda_superficie_sobre_promedio": 0.9984470185352053,
+    "delta": 0.9792522443188334,
+    "delta_rango": [
+     1.1994706710770844,
+     0.8039394817210572
+    ]
+   },
+   {
+    "u0": 0.4436,
+    "lambda": 0.25463212632205,
+    "dispersion": 0.002089229750781832,
+    "k_efectivo": 1.5290654909528836,
+    "k_3d_campo": 2.0012724261350545,
+    "k_3d_balance": 1.5734370886908544,
+    "alfa_eff_sobre_alfa": 1.0268281174610705,
+    "w2_sobre_v2": 0.0027033184558200116,
+    "sup_sobre_prom_medio": 1.5534082319725468,
+    "v2_inicial": 0.09347095599999997,
+    "v2_medio": 0.006652933317288064,
+    "v2_ventana": [
+     0.010047483120023945,
+     0.004468590966988655
+    ],
+    "v2_final": 0.0034069801282205396,
+    "crece": false,
+    "n_campos": 5,
+    "t_campos": [
+     4.1145000000000005,
+     4.431,
+     4.7475000000000005,
+     5.064,
+     5.3805000000000005
+    ],
+    "lambda_superficie": 0.2487005391233267,
+    "lambda_promedio": 0.2523508697695865,
+    "lambda_3d": 0.25287887564166817,
+    "dispersion_superficie": 0.0008233988676196556,
+    "sup_sobre_prom_inicio": 1.5497241493999472,
+    "sup_sobre_prom_fin": 1.5568835993421712,
+    "lambda_sobre_referencia": 1.0143185371225505,
+    "lambda_superficie_sobre_referencia": 0.9906902584087547,
+    "lambda_promedio_sobre_referencia": 1.0052312281387286,
+    "lambda_superficie_sobre_promedio": 0.985534701546332,
+    "delta": 2.8071641032374135,
+    "delta_rango": [
+     3.449767759180693,
+     2.3006286195663237
+    ]
+   },
+   {
+    "u0": 1.4788,
+    "lambda": 0.2526805307006788,
+    "dispersion": 0.00385743191791748,
+    "k_efectivo": 1.4346248163645416,
+    "k_3d_campo": 1.9938960861205226,
+    "k_3d_balance": 1.7764177475144323,
+    "alfa_eff_sobre_alfa": 1.1450493284212628,
+    "w2_sobre_v2": 0.006755923091836815,
+    "sup_sobre_prom_medio": 1.466058996942217,
+    "v2_inicial": 1.0387534840000006,
+    "v2_medio": 0.04990827868195261,
+    "v2_ventana": [
+     0.07562574876012149,
+     0.033817395421116406
+    ],
+    "v2_final": 0.02607143109765089,
+    "crece": false,
+    "n_campos": 5,
+    "t_campos": [
+     4.1145000000000005,
+     4.431,
+     4.7475000000000005,
+     5.064,
+     5.3805000000000005
+    ],
+    "lambda_superficie": 0.22254653240587466,
+    "lambda_promedio": 0.2529439085976147,
+    "lambda_3d": 0.24945113002320954,
+    "dispersion_superficie": 0.0006819134434186235,
+    "sup_sobre_prom_inicio": 1.4347659020499082,
+    "sup_sobre_prom_fin": 1.4910962298593498,
+    "lambda_sobre_referencia": 1.0065444214038592,
+    "lambda_superficie_sobre_referencia": 0.8865066496209657,
+    "lambda_promedio_sobre_referencia": 1.0075935784249672,
+    "lambda_superficie_sobre_promedio": 0.8798256247392128,
+    "delta": 7.21372802380727,
+    "delta_rango": [
+     8.879904851407312,
+     5.9380458463243695
+    ]
+   },
+   {
+    "u0": 2.9576,
+    "lambda": 0.2158131777829634,
+    "dispersion": 0.003116642387496651,
+    "k_efectivo": 1.2075584048549017,
+    "k_3d_campo": 1.847690973241678,
+    "k_3d_balance": 1.9006802698861607,
+    "alfa_eff_sobre_alfa": 1.1706031152868552,
+    "w2_sobre_v2": 0.004423677950659579,
+    "sup_sobre_prom_medio": 1.4526376705901407,
+    "v2_inicial": 4.155013936000002,
+    "v2_medio": 0.1658780235197836,
+    "v2_ventana": [
+     0.23638732399317602,
+     0.11891588739877286
+    ],
+    "v2_final": 0.09526853860618,
+    "crece": false,
+    "n_campos": 5,
+    "t_campos": [
+     4.1145000000000005,
+     4.431,
+     4.7475000000000005,
+     5.064,
+     5.3805000000000005
+    ],
+    "lambda_superficie": 0.18482878352562926,
+    "lambda_promedio": 0.2213549955197712,
+    "lambda_3d": 0.21318043171472956,
+    "dispersion_superficie": 0.0004258736595611183,
+    "sup_sobre_prom_inicio": 1.4146423320808112,
+    "sup_sobre_prom_fin": 1.4817688122029666,
+    "lambda_sobre_referencia": 0.859684557257017,
+    "lambda_superficie_sobre_referencia": 0.7362592616720505,
+    "lambda_promedio_sobre_referencia": 0.8817602023886498,
+    "lambda_superficie_sobre_promedio": 0.8349880836961755,
+    "delta": 11.069747136690895,
+    "delta_rango": [
+     13.214640922116631,
+     9.372667598938907
+    ]
+   },
+   {
+    "u0": 4.4365,
+    "lambda": 0.20399768469541124,
+    "dispersion": 0.0034194602529142824,
+    "k_efectivo": 1.0642801164858091,
+    "k_3d_campo": 1.7963337781456168,
+    "k_3d_balance": 2.023440332691173,
+    "alfa_eff_sobre_alfa": 1.1761011556340184,
+    "w2_sobre_v2": 0.0053678836554694395,
+    "sup_sobre_prom_medio": 1.4567327671575923,
+    "v2_inicial": 9.349202818750003,
+    "v2_medio": 0.35483177460237103,
+    "v2_ventana": [
+     0.49655788823257024,
+     0.2595343565892489
+    ],
+    "v2_final": 0.21120315103707507,
+    "crece": false,
+    "n_campos": 5,
+    "t_campos": [
+     4.1145000000000005,
+     4.431,
+     4.7475000000000005,
+     5.064,
+     5.3805000000000005
+    ],
+    "lambda_superficie": 0.1740741247105068,
+    "lambda_promedio": 0.2041232134273956,
+    "lambda_3d": 0.2011091047098506,
+    "dispersion_superficie": 0.0015741409184927234,
+    "sup_sobre_prom_inicio": 1.4281189443875693,
+    "sup_sobre_prom_fin": 1.4833831048377495,
+    "lambda_sobre_referencia": 0.8126179367285856,
+    "lambda_superficie_sobre_referencia": 0.693418438896961,
+    "lambda_promedio_sobre_referencia": 0.8131179762233357,
+    "lambda_superficie_sobre_promedio": 0.8527894588158788,
+    "delta": 14.269288856922259,
+    "delta_rango": [
+     16.880139083257603,
+     12.203615235255647
+    ]
+   }
+  ]
+ },
+ "parciales": {},
+ "lambda_referencia": {
+  "n16": 0.2510376346314227
+ }
+}

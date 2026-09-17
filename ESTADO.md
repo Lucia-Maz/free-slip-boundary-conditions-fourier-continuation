@@ -1,6 +1,6 @@
 # Estado — dónde estamos y cómo retomar
 
-**Instantánea del 2026-09-16.** Este archivo existe para que se pueda retomar el trabajo
+**Instantánea del 2026-09-17.** Este archivo existe para que se pueda retomar el trabajo
 sin la conversación que lo produjo: si la sesión se cae, o pasa una semana, alcanza con
 leer esto, `DECISIONES.md` y `bibliografia/REFERENCIAS.md`.
 
@@ -196,7 +196,32 @@ la energía migra a escalas grandes que disipan menos horizontalmente; en ε = 0
 la ventana del ajuste experimental (δ de ~10 a ~1,3) la corrección es del 10–30 % en la
 primera mitad y despreciable en la segunda. **[P-02] no se explica por esto: empeora**;
 el candidato nuevo es que el PIV ajusta u(h) y no ⟨u⟩, y con perfil distorsionado
-u(h)/⟨u⟩ ≠ π/2 y cambia con el tiempo.
+u(h)/⟨u⟩ ≠ π/2 y cambia con el tiempo. Medido en [V-17], abajo.
+
+### De la Fase 4 — la tasa de la velocidad de superficie ([V-17])
+
+`barrido_delta_etapa1.py --superficie`, las mismas corridas de [V-16] escribiendo cinco
+campos en la ventana; 16² solamente. λ_sup es la pendiente de log u(h) —lo que ajusta un
+PIV de superficie—, λ_prom la de log⟨u⟩; cada una dividida por la misma tasa en la
+referencia lineal. JSON en `salidas/tablas/barrido_delta_etapa1_*_superficie.json`.
+
+| δ | ε = 0,71: λ_sup/λ_lin · λ_prom/λ_lin · u(h)/⟨u⟩ | ε = 1,78: λ_sup/λ_lin · λ_prom/λ_lin · u(h)/⟨u⟩ |
+|---|---|---|
+| 1 | 1,004 · 1,005 · 1,57 | 1,000 · 1,001 · 1,57 |
+| 3 | 1,033 · 1,040 · 1,56 | 0,996 · 1,011 · 1,55 |
+| 5 | 1,092 · 1,128 · 1,52 | — |
+| 7–8 | 1,118 · 1,242 · 1,45 | **0,891** · 1,013 · 1,44 |
+| 10 | 1,043 · 1,305 · 1,37 | no convergido |
+
+**Lo que hay que retener:** el perfil distorsionado tiene menos exceso de superficie
+(u(h)/⟨u⟩ baja de π/2 = 1,571 a 1,37 en δ ≈ 10) y, como δ cae en el tiempo, el cociente
+se recupera dentro de la ventana; por eso u(h) decae más lento que ⟨u⟩ (hasta 20 % en
+δ ≈ 10). En ε = 0,71 eso casi cancela la subida no lineal de la fricción: la tasa que ve
+un PIV queda entre +3 % y +12 % de la lineal hasta δ = 10, **nunca por debajo**. En
+ε = 1,78 no hay qué cancelar (la tasa total no sube, [V-16]) y la tasa de u(h) cae **11 %
+por debajo de la lineal** en δ = 7. Para [P-02]: el candidato (v) es real y cambia el
+modelo de comparación (la predicción para el PIV es λ_sup, no λ_prom), pero con el ε de la
+ventana del ajuste no baja la predicción por debajo de λ(k); no alcanza.
 
 ### De la campaña
 
@@ -246,39 +271,30 @@ que Lucía notó que el pico del espectro no estaba donde la figura marcaba el f
 barrido en δ rediseñado con esa geometría ([D-42]) y lanzado en la laptop, secuencial,
 con `ulimit -v`; logs en `verificacion/logs/barrido_delta_etapa1_*.log`.
 
-> **En curso al cerrar la sesión del 2026-09-16 (~18:20):** la etapa 1b del barrido
-> —`barrido_delta_etapa1.py --caso {ventana,forzado} --resolucion 16 --superficie`—
-> corre desacoplada en la laptop y escribe
-> `salidas/tablas/barrido_delta_etapa1_<caso>_superficie.json` y
-> `verificacion/logs/barrido_delta_etapa1b_*.log`; el final queda anotado en
-> `verificacion/logs/barrido_delta_etapa1.progreso` ("listo superficie"). Mide la
-> pendiente de log u(h) —lo que ajusta el PIV— contra la de log⟨u⟩ y la del rms 3D, sobre
-> seis campos en la ventana. Pasó la prueba de humo: en la referencia lineal las tres
-> pendientes coinciden y u(h)/⟨u⟩ = π/2. Al retomar: leer los JSON, agregar la entrada al
-> log, actualizar la entrega y republicar (el candidato (v) de [P-02]).
+**Hechos el 2026-09-17:** la etapa 1b del barrido cerró y está en el log como [V-17]. El
+repositorio se reencuadró para hacerse público centrado en lo numérico ([D-43]): README
+nuevo, receta del clúster en `numerico/CLUSTER.md`, `notas` fuera del árbol, `jobs/README.md`.
 
 **Lo que sigue, en este orden:**
 
-1. ~~Medir α_eff con SPECTER en un barrido en δ~~ — **hecho** ([D-42], [V-16]):
-   `verificacion/barrido_delta_etapa1.py --caso {forzado,ventana}`, dos mallas cada uno,
-   resultados arriba. Lo que dejó: el candidato (iv) de [P-02] descartado, y un candidato
-   nuevo, (v), medible con el mismo script escribiendo dos campos en la ventana en vez de
-   uno: la pendiente de log u(h) —que es lo que ajusta el PIV— contra la de log⟨u⟩.
-   Pendiente también una malla más fina para los dos puntos no convergidos del caso
-   forzado (δ ≥ 11), que es el estudio de convergencia de [H-09] para producción.
+1. ~~Medir α_eff con SPECTER en un barrido en δ~~ — **hecho** ([D-42], [V-16], y la
+   etapa 1b de superficie en [V-17]). Lo que dejó abierto: una malla más fina para los
+   dos puntos no convergidos del caso forzado (δ ≥ 11), que es el estudio de convergencia
+   de [H-09] para producción; y u(h) comparado entre mallas, que sólo se midió en 16².
 2. **Una corrida de producción en Sakura** con la geometría real de la celda, y de ahí el
    α calculado. La resolución sale de 1: 32² alcanza hasta δ ≈ 7 en ε = 1,78 y hasta
    δ ≈ 10 en ε = 0,71.
 3. ~~El decaimiento medido~~ — **hecho** ([V-13], [H-11], [H-12]).
-4. **Reanalizar el capítulo de instrumento a la luz de [H-12].** `med_S0008` no es
-   estacionario, y el barrido en Δt supone que lo es. Hay que rehacerlo sobre
-   `med_S0002`, que sí lo es, y ver qué le pasa a σ = 0,169 px, que es la barra de error
-   de todo el trabajo.
-5. **La entrega**: repositorio de GitHub, página HTML y PDF ([D-19] deja constancia de
-   que hoy ninguno de los dos árboles es un repo git). Ya existe
-   `salidas/decaimiento.html` como página de revisión del decaimiento.
+4. ~~Reanalizar el capítulo de instrumento a la luz de [H-12]~~ — **se cae del plan**
+   ([D-43]): es instrumento, no objeto. Queda anotado como pregunta abierta de la zona
+   exploratoria; si sobra tiempo, es rehacer el barrido en Δt sobre `med_S0002`.
+5. **La entrega**: el repositorio se hace **público** con el README nuevo ([D-43]; la
+   visibilidad la cambia Lucía en GitHub), y a `salidas/entrega1_resumen.html` hay que
+   integrarle [V-17] y reordenarla en las tres zonas del README (numérico / contraste /
+   explorando). Falta el PDF. Plazo: completo unos días antes de las presentaciones, que
+   son en dos semanas (~2026-10-01).
 
-Los puntos 1, 2 y 4 son independientes entre sí; el 1 y el 4 son cómputo local.
+Los puntos 2 y 5 son independientes; el 2 es el único cómputo pesado que queda.
 
 **Lo que la Fase 2 dejó pendiente, y hay que resolver antes de la corrida de producción:**
 
@@ -302,10 +318,12 @@ Los puntos 1, 2 y 4 son independientes entre sí; el 1 y el 4 son cómputo local
 
 - **[P-02] El α medido está por debajo de λ(k) para cualquier k con energía.** Es la
   comparación principal del proyecto y hoy se lee como acuerdo sólo contra α pelado.
-  [V-16] descartó la no linealidad como explicación (empuja para el otro lado). Quedan
-  el contenido en k del campo medido (piso de ruido no blanco, [V-14]), h > 6 mm, y el
-  candidato nuevo: el PIV ajusta u(h), no ⟨u⟩, y con perfil distorsionado u(h)/⟨u⟩ no
-  es π/2 ni constante en el tiempo. Ese es el siguiente paso, y es barato.
+  [V-16] descartó la no linealidad como explicación (empuja para el otro lado) y [V-17]
+  midió el candidato (v): el PIV ajusta u(h), no ⟨u⟩, y con perfil distorsionado u(h)
+  decae más lento; es real y hay que incluirlo en la comparación, pero con el ε de la
+  ventana del ajuste no baja la predicción por debajo de λ(k). Quedan el contenido en k
+  del campo medido (piso de ruido no blanco, [V-14]), h > 6 mm, y cuánta energía en
+  k = 296 m⁻¹ sobrevive al comienzo de la ventana (medible sobre `decaimiento.json`).
 - **[P-01] cerrado en lo cuantitativo ([V-16]).** La clausura de un modo tiene un error
   de pocos por ciento para δ ≲ 3 y de 15–30 % en δ ≈ 7–10, medido con el código y no
   estimado; el sesgo sobre α es hacia arriba. Lo que no se probó: un campo de banda

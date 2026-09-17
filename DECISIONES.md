@@ -1645,3 +1645,136 @@ punto a punto.
 dos modos horizontales); la meseta forzada como estado forzado y no como decaimiento
 libre; una malla más fina para los puntos no convergidos del caso forzado; y el
 candidato (v), que es el siguiente paso barato.
+
+## 2026-09-17
+
+### [V-17] El barrido en δ, etapa 1b: la velocidad de superficie decae más lento que el promedio vertical, y en ε = 1,78 más lento que la tasa lineal
+
+`verificacion/barrido_delta_etapa1.py --superficie`, los dos casos de [D-42] a 16×16×64,
+en la laptop (127 MB de pico; 5 min el caso `ventana`, que retomó cuatro corridas del JSON
+de la etapa 1, y ~13 min de cómputo el caso `forzado`, que quedó suspendido con la laptop
+durante la noche y cerró hoy a las 17:16). JSON en
+`salidas/tablas/barrido_delta_etapa1_{ventana,forzado}_superficie.json`.
+
+**Qué mide.** Son las **mismas simulaciones** de [V-16] —λ de `balance.txt` coincide con
+la etapa 1 en las siete cifras impresas, en las dos mallas—, pero escribiendo cinco campos
+dentro de la ventana de ajuste (t = 4,11 a 5,38, cada 0,32) en vez de uno. Sobre cada
+campo se calcula el rms horizontal de la velocidad en la cara superior, u(h), el del
+promedio vertical, ⟨u⟩, y el 3D, y la tasa es la pendiente de log(rms) contra t. El PIV
+mide u(h), porque las partículas flotan; la clausura predice la tasa de ⟨u⟩. Chequeos: la
+tasa 3D reproduce la de `balance.txt` (dentro de 0,05 % en `ventana` y 0,5 % en `forzado`,
+que es la deriva del segundo modo horizontal ya vista en [H-17]), y en la referencia
+lineal las tres tasas coinciden y u(h)/⟨u⟩ = 1,5710 = π/2 en los cinco campos.
+
+**Normalización.** El script divide λ_sup por la λ de `balance.txt` de la referencia, y
+sobre la propia referencia eso da 0,9995 (`ventana`) y 0,9947 (`forzado`): dos estimadores
+distintos sobre ventanas distintas. Las tablas de abajo dividen cada tasa por **la misma
+tasa en la referencia lineal** (λ_sup/λ_sup,lin, etc.), que quita ese sesgo; el cociente
+sup/prom no lo tiene. Con la normalización del script los números difieren en menos de
+0,5 %, y la conclusión es la misma.
+
+**Caso `ventana` (ε = 0,71: la ventana del ajuste experimental).** Convergencia de
+[V-16] (16² contra 32² dentro de 1,2 % hasta δ = 10) sobre las mismas corridas.
+
+| δ | λ_sup/λ_lin | λ_prom/λ_lin | sup/prom | α_eff/α | u(h)/⟨u⟩, inicio → fin |
+|---|---|---|---|---|---|
+| 0,29 | 1,000 | 1,000 | 1,000 | 1,001 | 1,571 → 1,571 |
+| 0,97 | 1,004 | 1,005 | 0,999 | 1,004 | 1,569 → 1,570 |
+| 2,8 | 1,033 | 1,040 | 0,993 | 1,024 | 1,556 → 1,558 |
+| 5,3 | 1,092 | 1,128 | 0,968 | 1,081 | 1,517 → 1,526 |
+| 8,0 | 1,118 | 1,242 | 0,900 | 1,169 | 1,446 → 1,475 |
+| 10,4 | 1,043 | 1,305 | 0,799 | 1,246 | 1,374 → 1,435 |
+
+**Caso `forzado` (ε = 1,78: el fundamental de la red).** Convergido hasta δ = 7,2; los
+dos puntos siguientes no convergen en [V-16] y se listan sólo por la dirección.
+
+| δ | λ_sup/λ_lin | λ_prom/λ_lin | sup/prom | α_eff/α | u(h)/⟨u⟩, inicio → fin |
+|---|---|---|---|---|---|
+| 0,30 | 1,000 | 1,000 | 1,000 | 1,001 | 1,571 → 1,571 |
+| 0,98 | 1,000 | 1,001 | 0,998 | 1,004 | 1,569 → 1,569 |
+| 2,8 | 0,996 | 1,011 | 0,986 | 1,027 | 1,550 → 1,557 |
+| **7,2** | **0,891** | 1,013 | **0,880** | 1,145 | 1,435 → 1,491 |
+| 11 (no conv.) | 0,740 | 0,886 | 0,835 | 1,171 | 1,415 → 1,482 |
+| 14 (no conv.) | 0,697 | 0,817 | 0,853 | 1,176 | 1,428 → 1,483 |
+
+**Lo que dice.**
+
+1. **El perfil distorsionado tiene menos exceso de superficie.** u(h)/⟨u⟩ baja de π/2 con
+   δ: 1,52 en δ ≈ 5, 1,45 en δ ≈ 8, 1,37–1,43 en δ ≈ 10 y 7 según ε. Es el mismo perfil
+   que en [V-16] tiene más cizallamiento en el fondo por unidad de velocidad media (α_eff
+   sube): la no linealidad aplana el perfil cerca de la superficie y lo empina en el fondo.
+2. **Como δ cae en el tiempo, el cociente se recupera hacia π/2 dentro de la ventana**
+   (1,374 → 1,435 en 1,27 memorias modales, en δ = 10,4), y por eso u(h) decae más lento
+   que ⟨u⟩: λ_sup/λ_prom = 0,97 en δ ≈ 5, 0,90 en δ = 8, 0,80–0,88 en δ ≈ 7–10. Cuenta
+   de control en `ventana`, δ = 10,4: d log(u(h)/⟨u⟩)/dt = ln(1,435/1,374)/1,27 = 0,034
+   contra λ_prom − λ_sup = (1,305 − 1,043)·0,1308 = 0,034. Es exactamente eso.
+3. **En ε = 0,71 los dos efectos casi se cancelan.** La fricción efectiva sube hasta 25 %
+   y la tasa del promedio hasta 31 %, pero la tasa de u(h) queda entre +3 % y +12 % de la
+   lineal en todo el rango hasta δ = 10, y **nunca por debajo de 1**. Para un PIV de
+   superficie, en la ventana del ajuste experimental, la predicción lineal λ(k) = α + νk²
+   es buena al 10 % aunque cada uno de los ingredientes no lineales valga 20–30 %.
+4. **En ε = 1,78 la tasa de u(h) cae por debajo de la lineal:** 0,891 en δ = 7,2, con el
+   promedio vertical en 1,013. Ahí la viscosidad horizontal domina y α_eff subida no mueve
+   la tasa total ([V-16], punto 2), así que queda sólo la recuperación del perfil, sin
+   compensación. Los puntos no convergidos van en la misma dirección (0,74 y 0,70) y no
+   se usan.
+5. **[P-02], candidato (v): es real, hay que incluirlo, y no alcanza.** El α medido
+   (0,0669 ± 0,0049) contra λ(k) para el k de la ventana (0,072–0,085) da 0,78–0,93. Con
+   el ε de la ventana (0,71) el efecto de superficie no baja la predicción por debajo de
+   λ(k) para ningún δ convergido; el −11 % aparece en ε = 1,78, que es el fundamental de
+   la red y tiene la energía **antes** de la ventana (t < 10 s, [H-16]), no dentro. Lo que
+   sí cambia es el modelo de comparación: **la predicción para lo que ve el PIV es λ_sup,
+   no λ_prom**, y la diferencia entre ambas llega al 20 % en δ ≈ 10. Quedan (i) el
+   contenido en k del campo medido, con el piso de ruido no blanco ([V-14]); (ii) h mayor
+   que 6 mm; y la pregunta de cuánta energía en k = 296 m⁻¹ sobrevive al comienzo de la
+   ventana, que es medible sobre `decaimiento.json`.
+
+**Lo que no se chequeó:** las pendientes de superficie se midieron sólo en 16² (las
+corridas son las que convergen en [V-16] para λ y α_eff, pero u(h) no se comparó entre
+mallas); cinco campos por ventana, con dispersión del ajuste de superficie de hasta
+4·10⁻³; un campo de banda ancha como condición inicial; y el régimen forzado como
+estado estacionario, que es donde el experimento tiene su meseta.
+
+### [D-43] El repositorio se hace público centrado en lo numérico; lo experimental queda como contraste y como zona exploratoria
+
+Lucía, 2026-09-17: le pidieron compartir el enlace al repositorio, que pasará a ser
+público, con commits a medida que se avanza y el repo completo unos días antes de las
+presentaciones (en dos semanas). La propuesta que subió al curso *"estaba alineada con lo
+numérico e implementación de superficie libre en SPECTER"*.
+
+**Decisiones:**
+
+1. **La historia de git no se reescribe.** Se revisó el historial completo (24 commits)
+   por credenciales, claves y tokens: no hay ninguna. Las notas del curso piden evidencia
+   del proceso y documentar lo que no se supo hacer; los commits con coautoría del agente,
+   `DECISIONES.md` con sus [H-nn] y `jobs/` con las transcripciones son esa evidencia.
+   Lo que se emprolija es el **árbol en `HEAD`**, que es lo que un lector ve.
+2. **`README.md` se reescribe** con el objeto real del proyecto arriba: el título todavía
+   era el del Δt óptimo ([D-21] cambió el objeto el 04-09 y el README no lo siguió). La
+   receta de acceso al clúster (deploy keys, SSH) se mueve a `numerico/CLUSTER.md`, y sale
+   de ahí la línea con la dirección de correo personal.
+3. **Tres zonas, por audiencia y madurez.** (a) *Lo numérico* es el objeto: derivación,
+   parche, verificación, barrido en δ. (b) *El decaimiento medido* ([V-13]) queda como una
+   sección de **contraste**, breve, siempre con [P-02] al lado y nunca como "acuerdo".
+   (c) *Todo lo demás experimental* —el capítulo de instrumento: Δt óptimo, piso de ruido,
+   Foucaut, la reanálisis pendiente de σ— va en una zona aparte marcada como
+   **exploratoria / en proceso**, con la explicación de que salió de preguntas disparadas
+   por los resultados. Nada se borra del repo: "cuanto más, mejor", pero separado.
+4. **`notas` sale del repositorio**: eran apuntes personales de clase. Se quita del
+   árbol con `git rm`; queda en la historia, que no se reescribe, y no contiene nada
+   sensible.
+5. **`jobs/` recibe un `README.md`** de pocas líneas que diga qué es (el equipo de agentes
+   de la Fase 1, cuyo `out/capa.py` es lo que carga la puerta) y que las correcciones
+   viven en `DECISIONES.md`.
+6. **Del plan de la Fase 4 se cae el punto 4** (rehacer σ = 0,169 px sobre `med_S0002`):
+   es instrumento, no objeto. Quedan la corrida de producción en Sakura y la entrega.
+7. **Licencia: pendiente de decisión de Lucía.** No hay `LICENSE`, y SPECTER upstream
+   tampoco tiene una (su README sólo pide citar a Fontana et al. 2020). Sin licencia, un
+   repo público se puede leer pero no reutilizar legalmente. El parche es obra derivada
+   de SPECTER; lo prudente es preguntar a los autores antes de licenciarlo.
+
+**Alternativas descartadas:** reescribir la historia en un repo nuevo con un commit
+inicial curado (pierde el "ver avanzar" que pidieron y no hay nada que esconder); sacar lo
+experimental del repo (contradice "cuanto más, mejor" y borra la barra de error de la
+comparación); hacer público al final (no hay razón para esperar: con el README nuevo y
+sin `notas` el árbol ya está listo, y cambiar la visibilidad es una acción de Lucía).
