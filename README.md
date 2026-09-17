@@ -1,140 +1,122 @@
-# Δt óptimo en PIV de turbulencia cuasi-2D
+# Fricción de fondo de una capa delgada: la condición free-slip en SPECTER
 
-Proyecto final del curso *Ondas Gravitacionales e Investigación Asistida por IA*,
-sobre datos propios: la campaña de PIV del **2 de junio de 2025** en la celda de
-forzado electromagnético.
+Proyecto final del curso *Ondas Gravitacionales e Investigación Asistida por IA* (2026).
+Lucía Mazaira, INFINA (CONICET-UBA).
 
 ## La pregunta
 
-En esos registros el desplazamiento de las partículas entre cuadros consecutivos es de
-**0,09 a 0,28 píxeles**, y el piso de ruido típico de PIV es de orden 0,1 px. La
-relación señal/ruido en desplazamiento es del orden de 1, y en buena parte de un
-decaimiento es menor que 1.
+Una capa delgada de fluido que fluye sobre un fondo sólido se frena por la fricción con ese
+fondo. En las simulaciones de turbulencia cuasi-2D esa fricción entra como un término
+lineal −α**u** con un α que **se ajusta**, porque los códigos usados o no tienen bordes
+(periódicos) o los tienen no-deslizantes de los dos lados. Pero el α nace de una asimetría
+concreta: fondo no-deslizante abajo, superficie libre arriba. La pregunta del proyecto es
+si α se puede **calcular** en vez de ajustar, y qué le hace la no linealidad.
 
-La pregunta es entonces cuál es el Δt correcto, cómo se lo elige a partir de las
-imágenes, y cuánto cambia lo que ya está medido. El punto de partida es que **no hace
-falta medir de nuevo**: cada corrida tiene 3072 cuadros consecutivos a 60 fps, así que
-los pares se pueden rearmar con cualquier separación Δt = n/60 s.
+Para eso se implementó en [SPECTER](https://github.com/mfontanaar/SPECTER) —pseudoespectral
+con continuación de Fourier, no periódico en z— la condición **free-slip** en la cara
+superior: plana y sin tensión tangencial, que es la aproximación de una superficie libre
+válida cuando su deformación es despreciable (acá, η/h ~ 10⁻⁵). Después se verificó, se
+usó para medir α en régimen no lineal, y se contrastó contra un decaimiento medido.
 
-## Qué hay acá
+**Terminología.** "Free-slip" es la condición de contorno (así la llama el código:
+`freeslip`, `freeslip_z`); "superficie libre" es el escenario físico que la motiva. No son
+sinónimos: lo implementado es free-slip *y además plano*.
+
+## Lo que se estableció
 
 | | |
 |---|---|
-| `DECISIONES.md` | **el log de decisiones.** Qué se decidió, por qué, y qué alternativa se descartó. Se agrega al final, no se reescribe |
-| `bibliografia/` | los papers y sus DOI, **resueltos contra Crossref**, no citados de memoria. `REFERENCIAS.md` dice para qué se usa cada uno y cuáles todavía no fueron leídos en el original |
-| `codigo/` | los scripts. `piv_comun.py` lee la campaña; `02_barrido_dt.py` hace el barrido |
-| `salidas/tablas/` | resultados numéricos en JSON, con la configuración que los produjo adentro del mismo archivo |
-| `salidas/figuras/` | las figuras |
-| `datos-derivados/` | caches intermedios, reconstruibles |
+| Fricción de fondo con tope free-slip | **α = νπ²/(4h²)**; con tapa rígida, νπ²/h²: **exactamente 4 veces más** |
+| SPECTER con el parche reproduce la tasa del modo lento | error **6,8·10⁻¹⁰** contra la referencia; residuo de tensión en la cara free-slip 6,1·10⁻¹², independiente de dt |
+| La no linealidad **sube** la fricción de fondo | α_eff/α = 1,025 en δ = 3, 1,08 en δ = 5, 1,15–1,18 en δ ≈ 7–8, 1,26–1,28 en δ = 10 (medido, convergido entre dos mallas) |
+| La velocidad de superficie decae más lento que el promedio vertical | u(h)/⟨u⟩ baja de π/2 a 1,37 en δ ≈ 10 y se recupera en el tiempo; para un PIV de superficie en ε = 0,71 la predicción lineal queda buena al 12 % aunque cada ingrediente no lineal valga 20–30 %; en ε = 1,78 la tasa de u(h) cae 11 % por debajo de la lineal |
 
-## Los datos
+Los parámetros que gobiernan: ε = kh (esbeltez del modo) y δ = U k h²/ν = Re_h·ε. Las
+entradas `[V-16]` y `[V-17]` de `DECISIONES.md` tienen las tablas completas.
 
-No están en este repositorio: son ~140 GB en un disco externo, y se tratan como sólo
-lectura ([D-02]).
+## Qué hay acá
 
-```
-/mnt/usb-.../Lucía Mazaira/02-06-25/
-```
+El repositorio tiene tres zonas, por madurez:
 
-Once mediciones crudas de 3072 cuadros (salvo `med_S0001`, la grilla de calibración,
-y `med_S0010`, guardada desde el cuadro 500), más seis carpetas con salidas previas de
-OpenPIV. El mapa carpeta → medición está en `piv_comun.MEDICIONES` y sale de la entrada
-del 2 de junio del cuaderno de laboratorio; la verificación es que los timestamps de
-los archivos siguen exactamente ese orden.
+1. **Lo numérico** — el objeto del proyecto, cerrado y verificado.
+2. **El contraste con el experimento** — un número medido, con su salvedad.
+3. **Explorando** — lo que salió de preguntas disparadas por los resultados; en proceso.
 
-**Condiciones**: Photron FASTCAM-1024PCI, 1024×1024, 10 bits, 60 fps, shutter 1/60 s.
-Escala 3800 px/m (0,263 mm/px, campo de 26,9 cm). Capa de 6 mm de KNO₃ al 16 % m/m con
-partículas de 100 µm, sobre imanes de 1 cm en red tipo tablero de 1,5 cm entre centros
-(5 mm de vacío entre imanes, acrílico de 6 mm hasta la capa; [D-41]).
-Corrientes de forzado: 0,9–1,0 A (16 V), 1,9–2,0 A y 2,1–2,2 A (32 V).
+### 1. Lo numérico
 
-Estos valores **cambian entre experiencias** y por eso están declarados una sola vez, con
-su procedencia, en `codigo/celda.py` ([D-27]). Lo de acá es una copia de lectura: el valor
-que vale es el de ese archivo.
+| fase | qué | dónde |
+|---|---|---|
+| 0 | Qué condiciones de contorno tiene SPECTER, leído en la fuente | `DECISIONES.md` [V-06], [H-08] |
+| 1 | La derivación analítica (espectros, α, sesgo π/2 del PIV de superficie) y un solver de referencia **no espectral** | `jobs/2026-09-04_…/out/build/notes.pdf` (la derivación), `out/capa.py` (la referencia, lo que carga la puerta); `teoria/` |
+| 2 | La implementación en Fortran: 237 líneas agregadas y 22 borradas en 5 archivos, más un test unitario | `numerico/specter-parche/` (el parche contra upstream `0ad1edb` y la receta) |
+| 3 | La verificación, seis casos con uno que falla a propósito | `verificacion/test_aceptacion_fase{1,2}.py` |
+| 4 | La física: el barrido en δ (fricción efectiva, tasa del promedio vertical y de la superficie), y la validez de reducir a 2D | `verificacion/barrido_delta_etapa1.py`, `numerico/fase4/`, `informe/barrido_delta_etapa1_*.pdf`, `teoria/P01_validez_reduccion_2D.md` |
+
+Las **puertas de aceptación** (`verificacion/test_aceptacion_fase*.py`) están fijadas por
+hash: se escribieron antes de la implementación, arrancaron en rojo, y **no contienen la
+fórmula analítica** de lo que verifican — construyen su propia referencia por diferencias
+finitas y extrapolación de Richardson, para que el resultado quede comprobado y no
+afirmado.
+
+### 2. El contraste con el experimento
+
+Con los parámetros de la celda (`codigo/celda.py`: h = 6 mm, ν = 10⁻⁶ m²/s) el α
+calculado es **0,0685 s⁻¹** (τ = 14,6 s). El decaimiento medido por PIV en la campaña del
+02-06-25, ensemble de cuatro registros y t > 10 s, da **0,0669 ± 0,0049 s⁻¹** — a 2,4 %
+del valor free-slip y **4,1 veces por debajo** del de tapa rígida (0,274 s⁻¹).
+
+**Salvedad, que va siempre al lado del número ([P-02]):** α pelado es la tasa de un modo con
+k → 0. Para el k que el flujo sí tiene en la ventana del ajuste (59–130 m⁻¹) la tasa
+lineal es 0,072–0,085 s⁻¹, y el medido queda un 7–22 % **por debajo**. El barrido en δ
+descartó la no linealidad como explicación (empuja para el otro lado) y mostró que la
+predicción correcta para lo que ve un PIV de superficie es la tasa de u(h), no la de ⟨u⟩;
+con eso la comparación sigue abierta. El detalle está en `DECISIONES.md` [V-13], [P-02],
+[V-16], [V-17].
+
+Código: `codigo/06_decaimiento.py` (necesita el disco externo) y `07`/`08` (figuras y
+página, desde `salidas/tablas/decaimiento*.json`, sin el disco). Página de revisión:
+`salidas/entrega1_resumen.html`.
+
+### 3. Explorando: preguntas disparadas por los resultados
+
+Esta zona **está en proceso** y no es parte del objeto del proyecto. Se conserva porque el
+contraste de arriba depende de ella y porque documenta lo que se intentó.
+
+- **El capítulo de instrumento: parámetros óptimos de PIV.** Fue el objeto original del
+  proyecto hasta el 04-09 ([D-21]). Dejó medido el piso de ruido del PIV — ≤ 0,011 px
+  (par sintético), 0,030 px (fluido en reposo), 0,169 px (forzado) — y el hallazgo de que
+  el 98 % de la varianza la agrega el flujo, no el instrumento ([H-07]). Abierto: el
+  0,169 px se midió sobre un registro que resultó no estacionario ([H-12]), y el marco de
+  Foucaut no describe el ruido de este multipaso ([V-14]). Código: `codigo/01`–`05`, `09`;
+  teoría: `informe/01_marco_teorico.md`; resultados: `salidas/tablas/*med_S0008*`,
+  `corrimiento_sintetico`, `desplazamiento_nulo`, `verificacion_filtrado`.
+- **La superficie libre deformable y la película superficial.** Cuantificadas como
+  despreciable la primera ([D-28]) y como la salvedad más fuerte del trabajo la segunda
+  ([D-29]): un electrolito con partículas flotando puede desarrollar una película que
+  vuelve la superficie casi rígida, y ese es justo el caso con α cuatro veces mayor.
+  `teoria/superficie_libre_v_estrella_y_p.md`, `numerico/fase4/superficie_libre_escalas.py`.
+
+### Los archivos pensados para humanos y los pensados para agentes
+
+| | |
+|---|---|
+| `ESTADO.md` | dónde estamos y qué sigue: **empezar por acá** |
+| `DECISIONES.md` | el log completo, una entrada por decisión: qué se decidió, por qué, qué alternativa se descartó, qué salió mal. Se agrega al final, no se reescribe. Las etiquetas `[D-nn]` decisión, `[H-nn]` hallazgo, `[V-nn]` verificación, `[P-nn]` pregunta abierta resuelven ahí |
+| `CLAUDE.md` | las convenciones del proyecto, que lee el agente al abrirlo en cualquier máquina |
+| `bibliografia/REFERENCIAS.md` | los papers con DOI resueltos contra Crossref, y cuáles se leyeron en el original |
+| `salidas/tablas/*.json` | todo resultado numérico, con la configuración que lo produjo adentro del mismo archivo |
+| `salidas/figuras/` | las figuras, en versión clara y oscura |
+| `jobs/` | el registro del equipo de agentes que hizo la Fase 1 |
 
 ## Reproducir
 
-```bash
-mamba create -n piv-dt -c conda-forge python=3.11 numpy scipy matplotlib \
-      tifffile imageio scikit-image pip
-conda activate piv-dt && pip install openpiv
-
-python codigo/02_barrido_dt.py --carpeta med_S0008 --pares 12
-```
-
-Con el disco desmontado nada de esto corre: `piv_comun.RAIZ` apunta al punto de
-montaje y los scripts fallan con `FileNotFoundError`, a propósito, en vez de seguir
-con datos parciales.
-
-**Memoria**: la máquina tiene 5,7 GB. Los scripts procesan un par de imágenes por vez
-y no retienen ningún campo completo, sólo escalares. Conviene igual correrlos de a uno
-y con tope duro:
+Todo lo numérico corre en cualquier máquina sin datos externos. Tres cosas quedan fuera
+del repositorio a propósito: el árbol de SPECTER (código de terceros, se reconstruye desde
+upstream con el parche), los PDF de la bibliografía (son de los editores) y los datos
+crudos del PIV (140 GB en un disco externo, sólo lectura).
 
 ```bash
-systemd-run --user --scope --quiet -p MemoryMax=3G -p MemorySwapMax=0 \
-  python codigo/02_barrido_dt.py
-```
-
-## El modelo que se está poniendo a prueba
-
-Para una corrida **forzada**, que es estacionaria, la velocidad verdadera no depende de
-la separación entre cuadros. Si el error de PIV es un error de desplazamiento de
-desviación σ en píxeles, independiente de Δt porque es propiedad de la correlación y no
-del flujo, entonces
-
-$$U_{med}(n)^2 = U_{verdadera}^2 + \left(\frac{\sigma}{\Delta t(n)\, s}\right)^2,
-\qquad \Delta t(n) = n/\text{fps}$$
-
-o sea una **recta** al graficar $U_{med}^2$ contra $n^{-2}$: la ordenada al origen es la
-velocidad verdadera y la pendiente da σ. A n grande la recta se rompe por pérdida de
-correlación, y ahí crecen los vectores inválidos. Los dos extremos del rango útil de Δt
-salen de la misma figura.
-
-El σ obtenido así se contrasta contra **0,087 px**, el valor que Foucaut, Carlier &
-Stanislas miden para ventana de 16×16 px
-([10.1088/0957-0233/15/6/003](https://doi.org/10.1088/0957-0233/15/6/003)).
-Un cálculo preliminar sobre `med_S0009`, usando los dos procesamientos que Lucía ya
-tenía con distinto Δt, dio **0,083 px**.
-
----
-
-## Corrección al modelo (2026-09-02)
-
-La sección anterior dice que σ es "independiente de Δt porque es propiedad de la
-correlación y no del flujo". **Eso resultó falso**, y es el hallazgo principal hasta
-ahora. Tres mediciones de σ sobre la misma cámara y la misma configuración de PIV,
-que se diferencian sólo en qué degradación física incluyen:
-
-| medición | σ | qué agrega respecto de la anterior |
-|---|---|---|
-| par sintético, corrimiento conocido | ≤ 0,011 px | correlación y estimador subpíxel solos |
-| fluido en reposo, par real | 0,030 px | ruido de lectura, iluminación, movimiento de partículas |
-| forzado 2,15 A | 0,169 px | gradiente de velocidad dentro de la ventana, movimiento fuera del plano |
-
-El término que agrega el flujo es √(0,169² − 0,030²) = 0,166 px: el **98 % de la
-varianza**. Es la descomposición de George & Stanislas (arXiv 2010.10768) — ruido de
-pixelización más ruido por no uniformidad de la velocidad dentro del volumen de
-interrogación — y el registro en reposo mide sólo el primer término.
-
-Consecuencia: en un decaimiento, donde U cae un factor ~10, σ tampoco es constante a lo
-largo del registro, y la corrección a la curva no puede usar un solo número. El ajuste
-del barrido sigue siendo válido como descripción de *esta* corrida, pero su σ es un
-valor efectivo, no una constante del instrumento.
-
-Ver `DECISIONES.md`, entradas [V-04], [H-06] y [H-07], con las salvedades — que son
-fuertes: el registro en reposo es de otra campaña, y el 0,169 px sale de un ajuste cuyo
-modelo esta misma corrección declara inválido.
-
----
-
-## Reproducir en otra máquina
-
-El repositorio es autocontenido salvo por tres cosas que, a propósito, no están adentro:
-los datos crudos (140 GB, disco externo), el árbol de SPECTER (código de terceros) y los
-PDF de la bibliografía (son de los editores).
-
-```bash
-git clone git@github.com:Lucia-Maz/proyecto-final-piv.git
+git clone https://github.com/Lucia-Maz/proyecto-final-piv.git
 cd proyecto-final-piv
 
 # 1. entornos
@@ -152,106 +134,37 @@ git apply ../specter-parche/superficie-libre.patch
 cp ../specter-parche/laplace_dirneu.f90 src/tests/ && cd ../..
 
 # 3. que la verificación pase, que es la prueba de que quedó bien
-python verificacion/test_aceptacion_fase1.py   # 6/6
-python verificacion/test_aceptacion_fase2.py   # 6/6
+python verificacion/test_aceptacion_fase1.py   # 6/6, segundos
+python verificacion/test_aceptacion_fase2.py   # 6/6, ~10 min: compila SPECTER en un
+                                               # scratch temporal y corre 15 simulaciones
+
+# 4. la física (opcional: ~13 min por malla de 16², ~1 h por malla de 32²)
+python verificacion/barrido_delta_etapa1.py --caso ventana --resolucion 16
+python verificacion/barrido_delta_etapa1.py --caso ventana --resolucion 16 --superficie
 ```
 
-**Qué corre sin el disco externo:** todo lo numérico y lo teórico —las dos puertas, el
-barrido en δ, el chequeo de la capa límite de divergencia, y todo lo que lee de
-`salidas/tablas/`—. Los scripts `codigo/0[1-9]_*.py` que rearman PIV desde los TIF crudos
-necesitan el disco montado; sus resultados ya están volcados en `salidas/tablas/*.json`,
-así que las figuras y los informes se regeneran sin él.
+`python` es el del entorno `piv-dt`. Con 5,7 GB de RAM alcanza: la puerta de la Fase 2
+no pasa de unos pocos cientos de MB y el barrido de 130 MB de pico; correrlos de a uno y
+con tope duro (`ulimit -v 2500000`).
 
-**Convenciones del proyecto:** están en `CLAUDE.md`, y valen igual en la laptop y en el
-clúster.
+**Qué corre sin el disco externo:** las dos puertas, el barrido en δ, el chequeo de la
+capa límite de divergencia (`verificacion/kio_capa_divergencia.py`), y todo lo que lee de
+`salidas/tablas/`, o sea todas las figuras y los informes. Los scripts `codigo/0[1-9]_*.py`
+que rearman PIV desde los TIF crudos necesitan el disco montado (`piv_comun.RAIZ`); sin él
+fallan con `FileNotFoundError`, a propósito, en vez de seguir con datos parciales.
 
-### La primera vez en el clúster
+## Las dos máquinas
 
-El repositorio es **privado**, así que hay que autenticarse. Se usa una **deploy key**:
-una clave SSH cuyo alcance es este repositorio y nada más. Sakura es una máquina
-compartida, y una clave de cuenta sin passphrase ahí daría acceso a todo el GitHub; la
-deploy key, si se filtra, sólo alcanza a este proyecto.
+El desarrollo, los tests 1D y la verificación a resolución chica son en la laptop; el
+cómputo pesado va al clúster (Sakura, SLURM). Las convenciones que valen en las dos están
+en `CLAUDE.md`; la primera vez en el clúster —clave de acceso, módulos, scratch, cómo
+mandar la puerta por SLURM— está en `numerico/CLUSTER.md`. El repositorio es la única
+fuente de verdad entre ambas: no se copian archivos por `scp`.
 
-```bash
-# 1. ¿Sale tráfico hacia GitHub? Muchos clústeres bloquean el 22 de salida.
-ssh -T git@github.com          # "Permission denied (publickey)" YA ES BUENA SEÑAL:
-                               # significa que llegó. Si queda colgado o da timeout,
-                               # ver el punto 5.
+## SPECTER
 
-# 2. Generar la clave, sin passphrase para no tipearla en cada push
-ssh-keygen -t ed25519 -C "sakura-proyecto-final-piv" -f ~/.ssh/id_ed25519 -N ""
-cat ~/.ssh/id_ed25519.pub
-
-# 3. Cargarla en el REPOSITORIO (no en la cuenta):
-#    github.com/Lucia-Maz/proyecto-final-piv -> Settings -> Deploy keys
-#    -> Add deploy key -> pegar -> MARCAR "Allow write access" -> Add
-#    Sin esa marca queda de sólo lectura y no se puede pushear.
-#    Desde una máquina con gh autenticado es equivalente:
-#      gh repo deploy-key add ~/.ssh/id_ed25519.pub \
-#         --repo Lucia-Maz/proyecto-final-piv --title sakura --allow-write
-
-# 4. Probar. Con deploy key el mensaje nombra al REPO, no al usuario, y eso es correcto:
-ssh -T git@github.com
-#    Hi Lucia-Maz/proyecto-final-piv! You've successfully authenticated, but GitHub
-#    does not provide shell access.
-
-# 5. Si el puerto 22 está bloqueado, GitHub escucha SSH también en el 443:
-cat >> ~/.ssh/config <<'CFG'
-Host github.com
-  Hostname ssh.github.com
-  Port 443
-  User git
-CFG
-```
-
-**No editar `~/.ssh/config` en sakura.** Ese archivo lo genera Warewulf, el sistema de
-aprovisionamiento del clúster, y trae
-
-```
-Host *
-   IdentityFile ~/.ssh/cluster
-   StrictHostKeyChecking=no
-```
-
-Dos motivos para no tocarlo: en cuanto hay un `IdentityFile` explícito, ssh **deja de
-probar las claves por omisión**, que es exactamente por qué la clave nueva no se ofrecía;
-y si reimaginan el nodo, cualquier edición se pierde. La configuración se pone **por
-repositorio**, que vive en `.git/config` y sobrevive.
-
-Clonar **por SSH** —las deploy keys no funcionan por HTTPS— indicando la clave sólo para
-ese comando, y después fijarla en el repo:
-
-```bash
-GIT_SSH_COMMAND="ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes" \
-  git clone git@github.com:Lucia-Maz/proyecto-final-piv.git
-
-cd proyecto-final-piv
-git config core.sshCommand "ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes"
-git config user.name  "Lucia-Maz"       # local al repo: la deploy key autentica la
-git config user.email "<tu correo>"   # máquina, no firma la autoría
-
-module load gnu15 openmpi5 fftw/3.3.11        # ver CLAUDE.md
-# y después la reconstrucción de SPECTER de la sección anterior
-```
-
-Desde ahí `git pull` y `git push` andan solos dentro de ese directorio, sin afectar las
-conexiones a los nodos de cómputo ni a ningún otro repositorio.
-
-Si alguna vez querés clonar **otro** repo tuyo en Sakura, hace falta otra clave distinta
-—GitHub rechaza la misma deploy key en dos repositorios— más un alias por repo en
-`~/.ssh/config`.
-
-### Trabajar en las dos máquinas
-
-El repositorio es la única fuente de verdad; no se copian archivos por `scp`.
-
-```bash
-git pull                       # SIEMPRE antes de empezar
-# ... trabajar ...
-git add -A && git commit -m "..." && git push
-```
-
-Lo que **no** viaja por git y hay que tener en cuenta: los datos crudos (disco externo,
-sólo en la laptop), el árbol de SPECTER (se reconstruye con el parche) y los PDF de la
-bibliografía. Los resultados sí viajan, en `salidas/tablas/*.json`, así que las figuras y
-los informes se regeneran de un lado o del otro indistintamente.
+El código base es SPECTER, de M. Fontana, O. P. Bruno, P. D. Mininni y P. Dmitruk. Sus
+autores piden citar: Fontana, Bruno, Mininni & Dmitruk, *Fourier continuation method for
+incompressible fluids with boundaries*, Comp. Phys. Comm. 256, 107482 (2020),
+[10.1016/j.cpc.2020.107482](https://doi.org/10.1016/j.cpc.2020.107482). Lo que este
+repositorio aporta sobre SPECTER es exactamente el parche de `numerico/specter-parche/`.
