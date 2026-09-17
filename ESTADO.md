@@ -292,8 +292,11 @@ nuevo, receta del clúster en `numerico/CLUSTER.md`, `notas` fuera del árbol, `
    la visibilidad la cambia Lucía en GitHub). `salidas/entrega1_resumen.html` ya está
    reordenada en las tres zonas, con la sección de superficie libre (no deformable: por
    qué vale; deformable: el siguiente paso), [V-17] y la figura `f8`; publicada en
-   https://claude.ai/artifact/21j1baf1T54uYqdkF99Xwi. Falta el PDF. Plazo:
-   completo unos días antes de las presentaciones, que son en dos semanas (~2026-10-01).
+   https://claude.ai/artifact/21j1baf1T54uYqdkF99Xwi. El PDF explicado está en
+   `informe/entrega.pdf` (`codigo/12_pdf_entrega.py`), 12 páginas. **El repositorio es
+   público desde el 2026-09-17 a las 18:19.** Lo que queda de la entrega es integrar la
+   corrida de producción cuando salga. Plazo: completo unos días antes de las
+   presentaciones, que son en dos semanas (~2026-10-01).
 
 Los puntos 2 y 5 son independientes; el 2 es el único cómputo pesado que queda.
 

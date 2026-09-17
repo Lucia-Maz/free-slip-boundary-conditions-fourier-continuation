@@ -139,6 +139,8 @@ contraste de arriba depende de ella y porque documenta lo que se intentó.
 
 | | |
 |---|---|
+| `informe/entrega.pdf` | **la entrega explicada**: derivaciones, implementación, verificación, barrido y contraste, con la procedencia de cada número (fuente `entrega.tex`, se compila con `codigo/12_pdf_entrega.py`) |
+| `salidas/entrega1_resumen.html` | la entrega resumida, para leer de corrido |
 | `ESTADO.md` | dónde estamos y qué sigue: **empezar por acá** |
 | `DECISIONES.md` | el log completo, una entrada por decisión: qué se decidió, por qué, qué alternativa se descartó, qué salió mal. Se agrega al final, no se reescribe. Las etiquetas `[D-nn]` decisión, `[H-nn]` hallazgo, `[V-nn]` verificación, `[P-nn]` pregunta abierta resuelven ahí |
 | `CLAUDE.md` | las convenciones del proyecto, que lee el agente al abrirlo en cualquier máquina |
