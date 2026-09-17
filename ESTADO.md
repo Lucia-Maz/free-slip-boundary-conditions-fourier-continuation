@@ -334,6 +334,10 @@ Los puntos 2 y 5 son independientes; el 2 es el único cómputo pesado que queda
   decaimiento.
 - **La viscosidad es la del agua, no la del electrolito.** Decisión explícita de usarla y
   declararla ([D-27]); entra a primer orden en α.
+- ~~La superficie libre real podría no ser free-slip ideal por una película superficial~~
+  — **no aplica** ([D-46]): no ocurre en este montaje ni es relevante para el caso de
+  estudio (Lucía). Queda modelada en [D-29] y se menciona como salvedad breve en README
+  y entrega, sin presentarla como la salvedad principal.
 - ~~El factor 2,7 entre forzado y decaimiento~~ — **explicado** ([H-12]): el registro
   anómalo era `med_S0008`, que contiene un decaimiento pese a estar etiquetado como
   forzado. El forzado que sí es estacionario (`med_S0002`, con menos corriente) da

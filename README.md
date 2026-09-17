@@ -73,6 +73,10 @@ Es, en cambio, **la continuación del trabajo**, y ya está preparada:
 - **Sólo doble precisión y `ORD=2`.** Con 1, 2 y 4 procesos MPI sí está verificado ([V-10]).
 - **La viscosidad es la del agua**, no la del electrolito al 16 % ([D-27]); entra a primer
   orden en α.
+- **Una película superficial.** Un electrolito con partículas flotando podría formar una
+  película que vuelve el tope casi rígido; está modelada como condición de Robin con un
+  parámetro ([D-29]). No se incluye porque no ocurre en este montaje ni es relevante para
+  el caso de estudio ([D-46]).
 
 ## Qué hay acá
 

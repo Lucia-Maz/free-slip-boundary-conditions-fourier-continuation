@@ -1824,3 +1824,24 @@ del contenido y sí rompería rutas en `CLAUDE.md`, los logs y la memoria de ses
 Las entradas anteriores del log conservan el nombre viejo, como todo lo demás en ellas.
 La deploy key de Sakura sigue valiendo (GitHub las conserva al renombrar), pero el clon de
 allá tiene que cambiar su remoto; el prompt de `numerico/CLUSTER.md` lo dice.
+
+### [D-46] La película superficial se menciona como salvedad breve, encuadrada como "no aplica"; corrige el énfasis de [D-29]
+
+Lucía, 2026-09-17, en dos tiempos. Primero: *"lo de la capa del electrolito sí me suena raro
+y no lo querría agregar"* → se quitó de README, ESTADO y entrega ([D-44]). Después: *"no
+querría igualmente que hayan inconsistencias, si está en el log lo del film puede estar en
+disclaimers, sólo pienso que no es relevante para nuestro caso de estudio ni sucede en el
+setup"*.
+
+**Lo que se registra con procedencia de Lucía:** la película superficial **no ocurre en
+este montaje** y no es relevante para el caso de estudio. [D-29] la había llamado "la
+salvedad más fuerte del trabajo"; esa era una apreciación del agente sin conocimiento del
+montaje, y queda superada por la observación de quien lo opera. El modelo de [D-29]
+(Robin con un parámetro β, el factor 4 como extremos de esa familia) sigue siendo correcto
+como modelo y queda en el log.
+
+**Cómo se presenta, para que el log y la entrega no se contradigan:** una salvedad breve
+en README ("Fuera de alcance, a propósito"), en `ESTADO.md` (pregunta cerrada) y en §7 de
+la página de entrega, que dice que se consideró, que está modelada, y que no se incluye
+porque no ocurre en el montaje ni es relevante. No como sección, no como resultado, no
+como salvedad principal.
