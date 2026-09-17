@@ -65,11 +65,6 @@ Es, en cambio, **la continuación del trabajo**, y ya está preparada:
 
 ### Fuera de alcance de este proyecto, a propósito
 
-- **La película superficial.** Un electrolito con partículas flotando puede desarrollar
-  una película que vuelve el tope casi rígido, y ese es justo el caso con α cuatro veces
-  mayor: es **la salvedad más fuerte del trabajo**. Está modelada (Boussinesq–Scriven:
-  condición de Robin con un solo parámetro β, y el factor 4 de la Fase 1 son los dos
-  extremos de esa familia, [D-29]) y no implementada. El α medido acota β por arriba.
 - **El régimen forzado como estado estacionario.** El barrido en δ es de decaimiento
   libre; la meseta forzada del experimento no se simuló como tal.
 - **La puerta no verifica el régimen no lineal.** V4–V6 usan el modo de corte puro, donde

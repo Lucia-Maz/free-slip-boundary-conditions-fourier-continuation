@@ -97,3 +97,46 @@ Lo que **no** viaja por git y hay que tener en cuenta: los datos crudos (disco e
 sólo en la laptop), el árbol de SPECTER (se reconstruye con el parche) y los PDF de la
 bibliografía. Los resultados sí viajan, en `salidas/tablas/*.json`, así que las figuras y
 los informes se regeneran de un lado o del otro indistintamente.
+
+## Para retomar con un agente en el clúster (2026-09-17)
+
+`CLAUDE.md` se lee solo al abrir el proyecto. Lo que sigue es el pedido de la sesión de
+producción; se pega tal cual como primer mensaje.
+
+> Hacé `git pull` antes que nada. Leé `ESTADO.md` (sección "Lo que sigue") y, de
+> `DECISIONES.md`, las entradas [D-42], [V-16], [V-17], [H-09] y [D-34] a [D-39]. Estás en
+> Sakura: aplican las reglas del clúster de `CLAUDE.md` — todo por SLURM, módulos
+> `gnu15 openmpi5 fftw/3.3.11 python/3.13.13`, `OMPI_MCA_pml=ob1 OMPI_MCA_btl=sm,self,tcp`,
+> scratch en un subdirectorio propio bajo `/share/data2/$USER` que se limpia al terminar.
+> Antes de elegir nodo mirá `squeue -u $USER`: mis trabajos propios no se comparten
+> nodo; en la sesión anterior eso dio `--nodelist=g1` ([D-39]), hoy puede ser otro. La
+> puerta de la Fase 2 ya dio 6/6 acá (trabajo 8168); no hace falta repetirla salvo que el
+> árbol de SPECTER cambie.
+>
+> Objetivo: el punto 2 de "Lo que sigue", la corrida de producción, en tres pasos. No
+> pasás al siguiente sin mi aprobación explícita.
+>
+> 1. **Convergencia del caso forzado a δ ≥ 11** ([H-09], [V-16]): correr
+>    `verificacion/barrido_delta_etapa1.py --caso forzado --resolucion 64` (y 128 si 64 no
+>    cierra) como trabajo de SLURM, con un `sbatch` nuevo calcado de
+>    `verificacion/puerta_fase2.sbatch` — mismo toolchain sintético, mismo scratch, misma
+>    limpieza con `trap`. El script importa los helpers de la puerta, así que hereda
+>    `SPECTER_TOOLCHAIN` y `SPECTER_SCRATCH` y corre con un solo proceso MPI; si hace falta
+>    más de uno, proponelo con el costo, no lo cambies solo. Sólo necesita numpy. Antes de
+>    lanzar en serio, medí el costo con `--prueba` y decime cuánto va a tardar. El JSON va
+>    a `salidas/tablas/` y se commitea; las figuras se hacen en la laptop, acá no hay
+>    matplotlib.
+> 2. **Diseño de la corrida de producción**, con el costo cuantificado y esperando mi OK
+>    porque es una decisión científica: condición inicial (dos modos como el barrido, o
+>    banda ancha), ε y δ de la celda real (ε = 1,78 en el fundamental de la red; δ ≈ 27
+>    al inicio del decaimiento; la ventana del ajuste experimental va de δ ≈ 10 a ≈ 1,3
+>    con ε bajando a ≈ 0,7), la resolución que la convergencia del paso 1 justifique, la
+>    duración en memorias modales, y qué se mide: α_eff, λ_prom y λ_sup como en [V-16] y
+>    [V-17]. El diagnóstico de tensión de `vboundary` pide una matriz del tamaño del campo
+>    por `cstep` ([D-26]); si a esa resolución molesta, proponé condicionarlo antes.
+> 3. **Lanzarla y registrarla**: entrada [V-18] en `DECISIONES.md` con procedencia, JSON en
+>    `salidas/tablas/`, `ESTADO.md` al día, commit y push.
+>
+> Restricciones que no se renegocian: las puertas no se editan; los parámetros de la celda
+> viven sólo en `codigo/celda.py`; no se escribe en `/share/data2/$USER` fuera del
+> subdirectorio del trabajo; no se afirma nada que no se haya chequeado.
