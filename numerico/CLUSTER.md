@@ -21,20 +21,20 @@ ssh -T git@github.com          # "Permission denied (publickey)" YA ES BUENA SE�
                                # ver el punto 5.
 
 # 2. Generar la clave, sin passphrase para no tipearla en cada push
-ssh-keygen -t ed25519 -C "sakura-proyecto-final-piv" -f ~/.ssh/id_ed25519 -N ""
+ssh-keygen -t ed25519 -C "sakura-free-slip-boundary-conditions-fourier-continuation" -f ~/.ssh/id_ed25519 -N ""
 cat ~/.ssh/id_ed25519.pub
 
 # 3. Cargarla en el REPOSITORIO (no en la cuenta):
-#    github.com/Lucia-Maz/proyecto-final-piv -> Settings -> Deploy keys
+#    github.com/Lucia-Maz/free-slip-boundary-conditions-fourier-continuation -> Settings -> Deploy keys
 #    -> Add deploy key -> pegar -> MARCAR "Allow write access" -> Add
 #    Sin esa marca queda de sólo lectura y no se puede pushear.
 #    Desde una máquina con gh autenticado es equivalente:
 #      gh repo deploy-key add ~/.ssh/id_ed25519.pub \
-#         --repo Lucia-Maz/proyecto-final-piv --title sakura --allow-write
+#         --repo Lucia-Maz/free-slip-boundary-conditions-fourier-continuation --title sakura --allow-write
 
 # 4. Probar. Con deploy key el mensaje nombra al REPO, no al usuario, y eso es correcto:
 ssh -T git@github.com
-#    Hi Lucia-Maz/proyecto-final-piv! You've successfully authenticated, but GitHub
+#    Hi Lucia-Maz/free-slip-boundary-conditions-fourier-continuation! You've successfully authenticated, but GitHub
 #    does not provide shell access.
 
 # 5. Si el puerto 22 está bloqueado, GitHub escucha SSH también en el 443:
@@ -65,9 +65,9 @@ ese comando, y después fijarla en el repo:
 
 ```bash
 GIT_SSH_COMMAND="ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes" \
-  git clone git@github.com:Lucia-Maz/proyecto-final-piv.git
+  git clone git@github.com:Lucia-Maz/free-slip-boundary-conditions-fourier-continuation.git
 
-cd proyecto-final-piv
+cd free-slip-boundary-conditions-fourier-continuation
 git config core.sshCommand "ssh -i ~/.ssh/id_ed25519 -o IdentitiesOnly=yes"
 git config user.name  "Lucia-Maz"     # local al repo: la deploy key autentica la
 git config user.email "<tu correo>"   # máquina, no firma la autoría
@@ -103,7 +103,10 @@ los informes se regeneran de un lado o del otro indistintamente.
 `CLAUDE.md` se lee solo al abrir el proyecto. Lo que sigue es el pedido de la sesión de
 producción; se pega tal cual como primer mensaje.
 
-> Hacé `git pull` antes que nada. Leé `ESTADO.md` (sección "Lo que sigue") y, de
+> El repositorio se llama ahora `free-slip-boundary-conditions-fourier-continuation`
+> ([D-45]); si el clon de acá todavía apunta al nombre viejo, primero
+> `git remote set-url origin git@github.com:Lucia-Maz/free-slip-boundary-conditions-fourier-continuation.git`.
+> Después `git pull` antes que nada. Leé `ESTADO.md` (sección "Lo que sigue") y, de
 > `DECISIONES.md`, las entradas [D-42], [V-16], [V-17], [H-09] y [D-34] a [D-39]. Estás en
 > Sakura: aplican las reglas del clúster de `CLAUDE.md` — todo por SLURM, módulos
 > `gnu15 openmpi5 fftw/3.3.11 python/3.13.13`, `OMPI_MCA_pml=ob1 OMPI_MCA_btl=sm,self,tcp`,

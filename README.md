@@ -151,8 +151,8 @@ upstream con el parche), los PDF de la bibliografía (son de los editores) y los
 crudos del PIV (140 GB en un disco externo, sólo lectura).
 
 ```bash
-git clone https://github.com/Lucia-Maz/proyecto-final-piv.git
-cd proyecto-final-piv
+git clone https://github.com/Lucia-Maz/free-slip-boundary-conditions-fourier-continuation.git
+cd free-slip-boundary-conditions-fourier-continuation
 
 # 1. entornos
 mamba create -n piv-dt -c conda-forge python=3.11 numpy scipy matplotlib \

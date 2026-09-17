@@ -1812,3 +1812,15 @@ página de entrega son los de `salidas/tablas/superficie_libre_escalas.json` reg
 k = 296 m⁻¹ ([D-41]): η = 0,044 µm (forzado) y 0,33 µm (inicio del decaimiento), η/h =
 7,3·10⁻⁶ y 5,5·10⁻⁵. La tabla de [D-28] (0,07 y 0,51 µm) se calculó con k = 88,9 y no se
 reescribe; con el k correcto la capilaridad restituye más y η baja. La conclusión no cambia.
+
+### [D-45] El repositorio pasa a llamarse `free-slip-boundary-conditions-fourier-continuation`
+
+Lucía lo renombró en GitHub el 2026-09-17: el nombre viejo, `proyecto-final-piv`, era el
+del objeto anterior al cambio de [D-21]. GitHub redirige el nombre viejo, pero en un repo
+público no conviene depender de eso: se actualizan el remoto local, el README, la receta
+del clúster y la página de entrega. **El directorio local sigue llamándose
+`proyecto-final-piv`** en la laptop y en el clúster; no se renombra porque no cambia nada
+del contenido y sí rompería rutas en `CLAUDE.md`, los logs y la memoria de sesiones.
+Las entradas anteriores del log conservan el nombre viejo, como todo lo demás en ellas.
+La deploy key de Sakura sigue valiendo (GitHub las conserva al renombrar), pero el clon de
+allá tiene que cambiar su remoto; el prompt de `numerico/CLUSTER.md` lo dice.
