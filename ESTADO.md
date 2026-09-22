@@ -1,6 +1,6 @@
 # Estado — dónde estamos y cómo retomar
 
-**Instantánea del 2026-09-17.** Este archivo existe para que se pueda retomar el trabajo
+**Instantánea del 2026-09-22.** Este archivo existe para que se pueda retomar el trabajo
 sin la conversación que lo produjo: si la sesión se cae, o pasa una semana, alcanza con
 leer esto, `DECISIONES.md` y `bibliografia/REFERENCIAS.md`.
 
@@ -61,7 +61,7 @@ de instrumento y la barra de error de la comparación con el experimento. Las en
 | **1** | La derivación analítica y un solver de referencia no espectral | **hecha** — [V-07], puerta 6/6 |
 | **2** | Implementar el tope free-slip (libre de tensiones tangenciales) en Fortran | **hecha** — [V-09], [D-24], [D-26] |
 | **3** | Verificación V1–V6, con un caso que falla a propósito | **hecha** — puerta 6/6, [V-09] |
-| **4** | La física, la comparación con el experimento y la entrega | **en curso** — [P-01] resuelto ([V-11]) y **decaimiento medido ([V-13])**; falta la corrida de producción y la entrega |
+| **4** | La física, la comparación con el experimento y la entrega | **en curso** — decaimiento medido ([V-13]) y puente local 32² ([V-19]); falta convergencia 64², producción y entrega |
 
 ## Números ya establecidos
 
@@ -223,6 +223,38 @@ por debajo de la lineal** en δ = 7. Para [P-02]: el candidato (v) es real y cam
 modelo de comparación (la predicción para el PIV es λ_sup, no λ_prom), pero con el ε de la
 ventana del ajuste no baja la predicción por debajo de λ(k); no alcanza.
 
+### De la Fase 4 — prueba espectral del decaimiento ([V-18])
+
+Los 32 espectros ya calculados permiten una prueba por banda sin volver a los TIF. Después
+de restar el piso de PIV y corregir las distintas separaciones entre cuadros, la amplitud
+espectral total decae a **0,0711 ± 0,0024 s⁻¹**, consistente con la ruta independiente de
+dos Δt ([V-13]). Entre 11 y 40 s la fracción de energía en 59–106 m⁻¹ sube de 20 % a
+58 %, mientras la de 224–342 m⁻¹ baja de 44 % a 17 %: la escala crece durante el ajuste.
+
+En ocho bins entre 83 y 248 m⁻¹ las tasas aparentes siguen
+**λ(k) = (0,0481 ± 0,0038) s⁻¹ + (1,026 ± 0,095)·10⁻⁶ m²/s·k²** (incerteza entre los
+cuatro registros). La pendiente recupera ν sin imponerla; el déficit queda casi entero en
+una ordenada menor que α = 0,0685 s⁻¹. Esto descarta que "poco turbulento" equivalga sin
+más al límite lineal, pero no identifica la ordenada con fricción: cada banda intercambia
+energía, el PIV mide la superficie y el piso es correlacionado. Script y salida:
+`codigo/13_decaimiento_espectral.py`, `salidas/tablas/decaimiento_espectral.json`, figura
+`f9`.
+
+### De la Fase 4 — puente numérico de banda ancha ([V-19])
+
+La prueba SPECTER local usa la forma de los diez anillos medidos a `t ≈ 11,1 s` con
+`delta_0 = 8,887`, y la compara contra la misma condición a amplitud `10^-4`. En 32², el
+control lineal recupera **`alpha = 0,06777 s^-1`, `nu = 0,987·10^-6 m²/s`** (`R² =
+0,99992`). La banda ancha da **`alpha = 0,06544 s^-1`, `nu = 1,171·10^-6 m²/s`**: baja
+la ordenada sólo 0,00233 s⁻¹, contra el déficit PIV de 0,02048 ± 0,00378 s⁻¹. La tasa
+global de superficie baja sólo 1,5 %.
+
+El efecto no lineal existe y redistribuye tasas entre anillos, pero a esta resolución es
+unas nueve veces menor que lo que habría que explicar. La 32² no es el cierre: el anillo
+10 está cerca del corte de dealiasing. El siguiente paso inmediato es el par 64² por SLURM;
+el runner, el `sbatch` y el handoff autocontenido están listos. JSON en
+`salidas/tablas/decaimiento_banda_ancha.json`, figura `f10`.
+
 ### De la campaña
 
 | | |
@@ -275,12 +307,23 @@ con `ulimit -v`; logs en `verificacion/logs/barrido_delta_etapa1_*.log`.
 repositorio se reencuadró para hacerse público centrado en lo numérico ([D-43]): README
 nuevo, receta del clúster en `numerico/CLUSTER.md`, `notas` fuera del árbol, `jobs/README.md`.
 
+**Hecho el 2026-09-21:** la prueba espectral rápida de [V-18] confirma migración hacia k
+bajos y recupera el término νk², pero deja una ordenada común de 0,048 s⁻¹. [P-02] no se
+cierra: ahora el déficit está localizado en la parte casi independiente de k.
+
+**Hecho el 2026-09-22:** la prueba puente [V-19] se corrió localmente en 16² y 32². El
+control lineal recupera `alpha + nu k²`; la banda ancha con `delta_0 = 8,887` reduce la
+ordenada sólo 0,00233 s⁻¹, unas nueve veces menos que el déficit PIV. Falta convergencia
+64² en Sakura; el handoff y el `sbatch` están escritos, pero no se envió ningún trabajo.
+
 **Lo que sigue, en este orden:**
 
 1. ~~Medir α_eff con SPECTER en un barrido en δ~~ — **hecho** ([D-42], [V-16], y la
-   etapa 1b de superficie en [V-17]). Lo que dejó abierto: una malla más fina para los
-   dos puntos no convergidos del caso forzado (δ ≥ 11), que es el estudio de convergencia
-   de [H-09] para producción; y u(h) comparado entre mallas, que sólo se midió en 16².
+   etapa 1b de superficie en [V-17]). La prueba puente de banda ancha de [V-18] ya está
+   hecha localmente hasta 32² ([V-19]); **lo inmediato es convergerla en 64² en Sakura**.
+   Después quedan una malla más fina para los dos puntos no convergidos del caso forzado
+   (δ ≥ 11), estudio de [H-09] para producción, y u(h) comparado entre mallas, que sólo se
+   midió en 16² en aquel barrido.
 2. **Una corrida de producción en Sakura** con la geometría real de la celda, y de ahí el
    α calculado. La resolución sale de 1: 32² alcanza hasta δ ≈ 7 en ε = 1,78 y hasta
    δ ≈ 10 en ε = 0,71.
@@ -298,7 +341,8 @@ nuevo, receta del clúster en `numerico/CLUSTER.md`, `notas` fuera del árbol, `
    corrida de producción cuando salga. Plazo: completo unos días antes de las
    presentaciones, que son en dos semanas (~2026-10-01).
 
-Los puntos 2 y 5 son independientes; el 2 es el único cómputo pesado que queda.
+Los puntos 2 y 5 son independientes. La convergencia 64² del punto 1 y la corrida del
+punto 2 son los cómputos pesados que quedan.
 
 **Lo que la Fase 2 dejó pendiente, y hay que resolver antes de la corrida de producción:**
 
@@ -325,13 +369,15 @@ Los puntos 2 y 5 son independientes; el 2 es el único cómputo pesado que queda
   [V-16] descartó la no linealidad como explicación (empuja para el otro lado) y [V-17]
   midió el candidato (v): el PIV ajusta u(h), no ⟨u⟩, y con perfil distorsionado u(h)
   decae más lento; es real y hay que incluirlo en la comparación, pero con el ε de la
-  ventana del ajuste no baja la predicción por debajo de λ(k). Quedan el contenido en k
-  del campo medido (piso de ruido no blanco, [V-14]), h > 6 mm, y cuánta energía en
-  k = 296 m⁻¹ sobrevive al comienzo de la ventana (medible sobre `decaimiento.json`).
+  ventana del ajuste no baja la predicción por debajo de λ(k). [V-18] localizó el déficit
+  en una ordenada casi independiente de k y [V-19] muestra que, a 32², la transferencia de
+  una banda ancha con la intensidad medida explica sólo alrededor de una décima; falta su
+  convergencia 64². Quedan además h > 6 mm y los sesgos del PIV (piso correlacionado y
+  calibración temporal, [V-14]).
 - **[P-01] cerrado en lo cuantitativo ([V-16]).** La clausura de un modo tiene un error
   de pocos por ciento para δ ≲ 3 y de 15–30 % en δ ≈ 7–10, medido con el código y no
-  estimado; el sesgo sobre α es hacia arriba. Lo que no se probó: un campo de banda
-  ancha como condición inicial, y la meseta como estado forzado.
+  estimado; el sesgo sobre α es hacia arriba. [V-19] ya probó localmente un campo de banda
+  ancha; falta su convergencia 64². La meseta como estado forzado no se probó.
 - ~~La menor escala con energía del flujo medido~~ — **medida** ([H-11], [H-16]): pico
   en 295 m⁻¹ en la meseta, que es el fundamental de la red; migra a 59–130 durante el
   decaimiento.

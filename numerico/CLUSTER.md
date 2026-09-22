@@ -98,7 +98,12 @@ sólo en la laptop), el árbol de SPECTER (se reconstruye con el parche) y los P
 bibliografía. Los resultados sí viajan, en `salidas/tablas/*.json`, así que las figuras y
 los informes se regeneran de un lado o del otro indistintamente.
 
-## Para retomar con un agente en el clúster (2026-09-17)
+## Para retomar con un agente en el clúster (2026-09-17; archivado)
+
+> **No pegar este prompt para la campaña actual.** Conserva el plan anterior como registro.
+> El handoff vigente, autocontenido y listo para copiar, es
+> `numerico/HANDOFF_SAKURA_DECAIMIENTO_BANDA_ANCHA.md`.
+
 
 `CLAUDE.md` se lee solo al abrir el proyecto. Lo que sigue es el pedido de la sesión de
 producción; se pega tal cual como primer mensaje.

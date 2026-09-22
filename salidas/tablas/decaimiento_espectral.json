@@ -1,0 +1,392 @@
+{
+ "fecha": "2026-09-21",
+ "fuente": "salidas/tablas/decaimiento.json",
+ "pregunta": "si la tasa baja se explica por una transición a un flujo poco turbulento",
+ "metodo": {
+  "t_corte_s": 10.0,
+  "normalizacion": "E de desplazamiento dividido por n^2; lambda=-pendiente(log E)/2",
+  "piso_PIV": "mediana por modo entre 0.35 y 0.95 de Nyquist, restada por anillo",
+  "ajuste_temporal": "pendiente común y una ordenada por cada decaimiento",
+  "k_max_migracion_1_m": 600.0,
+  "bandas": [
+   {
+    "nombre": "59–106 m⁻¹",
+    "k_1_m": [
+     0.0,
+     118.0
+    ]
+   },
+   {
+    "nombre": "130–200 m⁻¹",
+    "k_1_m": [
+     118.0,
+     212.0
+    ]
+   },
+   {
+    "nombre": "224–342 m⁻¹",
+    "k_1_m": [
+     212.0,
+     354.0
+    ]
+   },
+   {
+    "nombre": "366–578 m⁻¹",
+    "k_1_m": [
+     354.0,
+     600.0
+    ]
+   }
+  ]
+ },
+ "parametros_nominales": {
+  "alfa_1_s": 0.06853891945200942,
+  "nu_m2_s": 1e-06,
+  "h_m": 0.006
+ },
+ "tasa_total_espectral": {
+  "lambda_1_s": 0.07108084242219004,
+  "error_formal_1_s": 0.0024258868882173867,
+  "n": 20,
+  "dispersion_log": 0.21964822913514734
+ },
+ "tasas_por_banda": [
+  {
+   "nombre": "59–106 m⁻¹",
+   "k_1_m": [
+    0.0,
+    118.0
+   ],
+   "lambda_1_s": 0.050658862383836656,
+   "error_formal_1_s": 0.0017340618613313522,
+   "n": 20,
+   "dispersion_log": 0.15700798701794108
+  },
+  {
+   "nombre": "130–200 m⁻¹",
+   "k_1_m": [
+    118.0,
+    212.0
+   ],
+   "lambda_1_s": 0.07616529872982758,
+   "error_formal_1_s": 0.001981848892045224,
+   "n": 20,
+   "dispersion_log": 0.17944348587129122
+  },
+  {
+   "nombre": "224–342 m⁻¹",
+   "k_1_m": [
+    212.0,
+    354.0
+   ],
+   "lambda_1_s": 0.08913440305522302,
+   "error_formal_1_s": 0.006886486574646167,
+   "n": 20,
+   "dispersion_log": 0.6235264259148965
+  },
+  {
+   "nombre": "366–578 m⁻¹",
+   "k_1_m": [
+    354.0,
+    600.0
+   ],
+   "lambda_1_s": 0.10569192295038032,
+   "error_formal_1_s": 0.006813573352053942,
+   "n": 20,
+   "dispersion_log": 0.6169246093583597
+  }
+ ],
+ "ajuste_modal_k2": {
+  "t_corte_s": 10.0,
+  "rango_k_ajuste_1_m": [
+   80.0,
+   250.0
+  ],
+  "alfa_espectral_1_s": 0.04805415861656098,
+  "alfa_espectral_sem_entre_registros_1_s": 0.0037750925930103534,
+  "nu_espectral_m2_s": 1.0260547042454342e-06,
+  "nu_espectral_sem_entre_registros_m2_s": 9.535794832139826e-08,
+  "R2_k2": 0.9925511212648743,
+  "rms_residuo_1_s": 0.0016032456870351103,
+  "por_registro": {
+   "med_S0003": {
+    "alfa_espectral_1_s": 0.053462338945523595,
+    "nu_espectral_m2_s": 1.0102264167974777e-06
+   },
+   "med_S0005": {
+    "alfa_espectral_1_s": 0.04342794531887627,
+    "nu_espectral_m2_s": 1.0195758338045276e-06
+   },
+   "med_S0006": {
+    "alfa_espectral_1_s": 0.03991527574482651,
+    "nu_espectral_m2_s": 1.2702065070077166e-06
+   },
+   "med_S0009": {
+    "alfa_espectral_1_s": 0.05541107445701708,
+    "nu_espectral_m2_s": 8.042100593720456e-07
+   }
+  },
+  "puntos": [
+   {
+    "k_1_m": 82.57545907656966,
+    "lambda_1_s": 0.05328715224669445,
+    "error_formal_1_s": 0.002991155096033778,
+    "n": 20,
+    "dispersion_log": 0.2708295770521994
+   },
+   {
+    "k_1_m": 106.16844738416098,
+    "lambda_1_s": 0.05822956360488174,
+    "error_formal_1_s": 0.0019090746552942667,
+    "n": 20,
+    "dispersion_log": 0.17285425357581688
+   },
+   {
+    "k_1_m": 129.76143569175233,
+    "lambda_1_s": 0.06729738169816102,
+    "error_formal_1_s": 0.0024206776684311533,
+    "n": 20,
+    "dispersion_log": 0.219176568272978
+   },
+   {
+    "k_1_m": 153.35442399934365,
+    "lambda_1_s": 0.07267722579329483,
+    "error_formal_1_s": 0.0021654613255598465,
+    "n": 20,
+    "dispersion_log": 0.19606839367905696
+   },
+   {
+    "k_1_m": 176.94741230693498,
+    "lambda_1_s": 0.08135288427131293,
+    "error_formal_1_s": 0.002318466929259094,
+    "n": 20,
+    "dispersion_log": 0.20992205275258022
+   },
+   {
+    "k_1_m": 200.5404006145263,
+    "lambda_1_s": 0.08947008446053895,
+    "error_formal_1_s": 0.002047633099143391,
+    "n": 20,
+    "dispersion_log": 0.18539981659072968
+   },
+   {
+    "k_1_m": 224.13338892211763,
+    "lambda_1_s": 0.10149911817359047,
+    "error_formal_1_s": 0.0033864526246299297,
+    "n": 20,
+    "dispersion_log": 0.30662118900218915
+   },
+   {
+    "k_1_m": 247.72637722970896,
+    "lambda_1_s": 0.10849110492723746,
+    "error_formal_1_s": 0.0038608583297033107,
+    "n": 20,
+    "dispersion_log": 0.3495755301617434
+   }
+  ]
+ },
+ "control_solo_n32_t_mayor_17_s": {
+  "t_corte_s": 17.0,
+  "rango_k_ajuste_1_m": [
+   80.0,
+   250.0
+  ],
+  "alfa_espectral_1_s": 0.051736061158952525,
+  "alfa_espectral_sem_entre_registros_1_s": 0.0036622497342925654,
+  "nu_espectral_m2_s": 9.699203878998374e-07,
+  "nu_espectral_sem_entre_registros_m2_s": 1.286540706743558e-07,
+  "R2_k2": 0.9701261484266265,
+  "rms_residuo_1_s": 0.0030699276965441735,
+  "por_registro": {
+   "med_S0003": {
+    "alfa_espectral_1_s": 0.05715912704298333,
+    "nu_espectral_m2_s": 9.179597266630114e-07
+   },
+   "med_S0005": {
+    "alfa_espectral_1_s": 0.04601221664424178,
+    "nu_espectral_m2_s": 1.199157125346317e-06
+   },
+   "med_S0006": {
+    "alfa_espectral_1_s": 0.044860512675946256,
+    "nu_espectral_m2_s": 1.1339279940317203e-06
+   },
+   "med_S0009": {
+    "alfa_espectral_1_s": 0.058912388272638096,
+    "nu_espectral_m2_s": 6.286367055582985e-07
+   }
+  },
+  "puntos": [
+   {
+    "k_1_m": 82.57545907656966,
+    "lambda_1_s": 0.05406606534148217,
+    "error_formal_1_s": 0.002770552559221348,
+    "n": 16,
+    "dispersion_log": 0.18646628327582881
+   },
+   {
+    "k_1_m": 106.16844738416098,
+    "lambda_1_s": 0.06163979697421196,
+    "error_formal_1_s": 0.001621863414447362,
+    "n": 16,
+    "dispersion_log": 0.1091561471615032
+   },
+   {
+    "k_1_m": 129.76143569175233,
+    "lambda_1_s": 0.06963638615372991,
+    "error_formal_1_s": 0.002454594418896229,
+    "n": 16,
+    "dispersion_log": 0.16520137714687755
+   },
+   {
+    "k_1_m": 153.35442399934365,
+    "lambda_1_s": 0.07660806651845276,
+    "error_formal_1_s": 0.0010976211703659809,
+    "n": 16,
+    "dispersion_log": 0.0738731122070939
+   },
+   {
+    "k_1_m": 176.94741230693498,
+    "lambda_1_s": 0.0837721627032213,
+    "error_formal_1_s": 0.0017138364022224273,
+    "n": 16,
+    "dispersion_log": 0.11534619799995746
+   },
+   {
+    "k_1_m": 200.5404006145263,
+    "lambda_1_s": 0.09325825381987451,
+    "error_formal_1_s": 0.0012690793737142598,
+    "n": 16,
+    "dispersion_log": 0.0854127503233584
+   },
+   {
+    "k_1_m": 224.13338892211763,
+    "lambda_1_s": 0.10351374666321567,
+    "error_formal_1_s": 0.002504431173770863,
+    "n": 16,
+    "dispersion_log": 0.16855553638167411
+   },
+   {
+    "k_1_m": 247.72637722970896,
+    "lambda_1_s": 0.10570449601669996,
+    "error_formal_1_s": 0.0048249865680495985,
+    "n": 16,
+    "dispersion_log": 0.3247356954862685
+   }
+  ]
+ },
+ "h_equivalente_si_todo_el_intercepto_fuera_friccion_m": 0.0071656301451726145,
+ "migracion_espectral": [
+  {
+   "t_s": 11.133333333333333,
+   "fraccion_media": [
+    0.1950059664646514,
+    0.3176874360642836,
+    0.44264074289718924,
+    0.044665854573875695
+   ],
+   "fraccion_sd_entre_registros": [
+    0.08652823097190386,
+    0.14503397000956914,
+    0.20866538645192037,
+    0.015038591503671938
+   ],
+   "k_rms_medio_1_m": 231.5338242056574
+  },
+  {
+   "t_s": 17.133333333333333,
+   "fraccion_media": [
+    0.31026064642612006,
+    0.4148307042942751,
+    0.24981042103089018,
+    0.025098228248714757
+   ],
+   "fraccion_sd_entre_registros": [
+    0.10568333988807334,
+    0.09998342050483665,
+    0.1579860885710344,
+    0.013381914335080998
+   ],
+   "k_rms_medio_1_m": 189.73921705859675
+  },
+  {
+   "t_s": 23.95,
+   "fraccion_media": [
+    0.42880753559302526,
+    0.4274050519226479,
+    0.13336565164215114,
+    0.010421760842175588
+   ],
+   "fraccion_sd_entre_registros": [
+    0.08169103114811169,
+    0.067546440985238,
+    0.07759123852169655,
+    0.0054346758948133735
+   ],
+   "k_rms_medio_1_m": 159.06249267599452
+  },
+  {
+   "t_s": 31.483333333333334,
+   "fraccion_media": [
+    0.531466223709945,
+    0.35363777523859996,
+    0.10845631914463068,
+    0.00643968190682427
+   ],
+   "fraccion_sd_entre_registros": [
+    0.0748846229886401,
+    0.07474261387186419,
+    0.054411929687709096,
+    0.001859405546374116
+   ],
+   "k_rms_medio_1_m": 147.14171906129394
+  },
+  {
+   "t_s": 39.68333333333333,
+   "fraccion_media": [
+    0.5837885639265586,
+    0.23824785103486118,
+    0.17077315987834435,
+    0.0071904251602358076
+   ],
+   "fraccion_sd_entre_registros": [
+    0.0989754479403641,
+    0.09003505340936828,
+    0.07567159101062998,
+    0.0031690561241953913
+   ],
+   "k_rms_medio_1_m": 157.67718963543763
+  }
+ ],
+ "pronostico_lineal_sin_transferencia": {
+  "med_S0003": {
+   "dt_s": 28.549999999999997,
+   "cociente_amplitud_observado": 0.12421300994669884,
+   "cociente_amplitud_lineal_sin_transferencia": 0.07122232241052656,
+   "observado_sobre_lineal": 1.7440179671582898
+  },
+  "med_S0005": {
+   "dt_s": 28.549999999999997,
+   "cociente_amplitud_observado": 0.11358220444009637,
+   "cociente_amplitud_lineal_sin_transferencia": 0.04359495909847732,
+   "observado_sobre_lineal": 2.605397660392886
+  },
+  "med_S0006": {
+   "dt_s": 28.549999999999997,
+   "cociente_amplitud_observado": 0.15128839104537403,
+   "cociente_amplitud_lineal_sin_transferencia": 0.06792744323604322,
+   "observado_sobre_lineal": 2.227205733618697
+  },
+  "med_S0009": {
+   "dt_s": 28.549999999999997,
+   "cociente_amplitud_observado": 0.1427806133524132,
+   "cociente_amplitud_lineal_sin_transferencia": 0.07486924329957748,
+   "observado_sobre_lineal": 1.9070663340498726
+  }
+ },
+ "conclusion": [
+  "La energia migra hacia k bajos en los cuatro decaimientos.",
+  "Las tasas aparentes entre 83 y 248 1/m recuperan el coeficiente nu*k^2.",
+  "El deficit restante es aproximadamente independiente de k y no es el limite lineal esperado para h=6 mm.",
+  "Los bins no son modos aislados: transferencia espectral, perfil vertical de superficie y ruido PIV correlacionado impiden identificar el intercepto directamente con alfa."
+ ]
+}

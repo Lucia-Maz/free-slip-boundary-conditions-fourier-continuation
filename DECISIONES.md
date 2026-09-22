@@ -1883,3 +1883,127 @@ chequeo que proponés también"*.
 
 Resultado al cerrar: autotest OK (10 detectores disparan, el texto limpio no); árbol de
 128 archivos y 232 blobs de la historia, limpios.
+
+## 2026-09-21
+
+### [V-18] El decaimiento por banda recupera νk², pero deja una tasa común menor que α
+
+Pregunta de Lucía: si la tasa baja de [P-02] podía deberse a que el flujo no fuera
+"suficientemente turbulento". Se hizo primero una prueba que no vuelve a tocar los TIF:
+`codigo/13_decaimiento_espectral.py` usa los 32 espectros ya guardados en
+`salidas/tablas/decaimiento.json` —ocho instantes por cada uno de los cuatro
+decaimientos— y escribe `salidas/tablas/decaimiento_espectral.json` y la figura `f9`.
+
+**Normalización que hacía falta antes de comparar instantes.** Cada espectro se calculó
+sobre un campo de desplazamientos con separación `n = 8, 16 o 32` cuadros. Se resta el
+piso por modo con el mismo criterio de `07_figuras_decaimiento.py` y se divide la energía
+por `n²`. Después de `t = 10 s`, para cada bin de k se ajusta
+`log E_ij(t) = c_ij - 2 λ_j t`, con una ordenada distinta para cada decaimiento y una
+pendiente común. El factor 2 convierte energía en tasa de amplitud.
+
+**Chequeo independiente de escala.** La amplitud del espectro limpio integrada hasta
+600 m⁻¹ decae a **0,0711 ± 0,0024 s⁻¹**, consistente con el **0,0669 ± 0,0049 s⁻¹** que
+[V-13] obtuvo de los desplazamientos calibrados por dos Δt. O sea: la normalización
+espectral reproduce la tasa global por una ruta distinta.
+
+**Resultado modal.** En los ocho bins entre 82,6 y 247,7 m⁻¹,
+
+`λ_espectral(k) = (0,0481 ± 0,0038) s⁻¹ + (1,026 ± 0,095)·10⁻⁶ m²/s · k²`,
+
+donde las incertezas son el SEM entre los cuatro registros, no el error formal que
+trataría los bins correlacionados como independientes. El ajuste tiene R² = 0,993. Si se
+descarta además el instante con `n = 16` y se usan sólo los cuatro de `t ≥ 17 s`, todos
+con `n = 32`, queda 0,0517 s⁻¹ + 0,970·10⁻⁶ m²/s · k² (R² = 0,970). Por lo tanto, el
+resultado no lo fabrica el cambio de separación temporal del PIV.
+
+La pendiente recupera, sin imponerla, la viscosidad nominal del agua
+`ν = 1,0·10⁻⁶ m²/s`. El déficit respecto de `α + νk²` queda aproximadamente en la
+ordenada: 0,048 frente a `α = 0,0685 s⁻¹`. Si se interpretara **todo** ese intercepto
+como el modo vertical fundamental, correspondería a `h = 7,17 mm`; es sólo una manera de
+dar escala al déficit, no una medición de h.
+
+**La migración de escala sí ocurre y es robusta.** Entre 11,1 y 39,7 s, promediando los
+cuatro registros, la fracción de energía en 59–106 m⁻¹ sube de 0,195 a 0,584, mientras
+la de 224–342 m⁻¹ baja de 0,443 a 0,171. Propagar el primer espectro tardío como modos
+lineales independientes con `α + νk²` deja al final una amplitud entre 1,7 y 2,6 veces
+menor que la observada. La descripción "un modo fijo que decae" no alcanza.
+
+**Qué contesta y qué no.** "Poco turbulento" entendido como límite lineal no explica la
+tasa: ese límite tendría la ordenada α, no 0,048. Sí hay transferencia o selección hacia
+k bajos durante el decaimiento, que enlentece el observable global. Pero un bin del PIV
+no es un modo aislado: recibe y entrega energía por transferencia espectral, mide la
+superficie y conserva un piso correlacionado ([V-14]); por eso su ordenada no se identifica
+todavía con la fricción de fondo. [P-02] sigue abierta, ahora con una restricción más
+fuerte: la dependencia horizontal `νk²` aparece con el coeficiente correcto y lo que
+falta es casi independiente de k.
+
+**Siguiente prueba numérica:** una corrida SPECTER con condición inicial de banda ancha,
+espectro comparable al medido en `t ≈ 11 s`, que escriba campos de superficie en los
+mismos ocho instantes. Pasarle exactamente este estimador separa transferencia espectral,
+perfil vertical y sesgo del PIV sin cambiar de observable. Antes de producción también
+conviene medir h: el ajuste muestra por qué 1 mm importa, pero no autoriza a inferirlo.
+
+## 2026-09-22
+
+### [V-19] La banda ancha no lineal modifica la tasa, pero a 32² el efecto es nueve veces menor que el déficit PIV
+
+Se hizo localmente la prueba numérica propuesta al final de [V-18], sin tocar las puertas
+congeladas. `verificacion/decaimiento_banda_ancha.py` construye un campo horizontal
+solenoidal con fases deterministas y el perfil vertical fundamental del par
+rígido--free-slip,
+
+`u_h(x,y,z) = sin(pi z/2h) grad_perp psi(x,y)`, `w = 0`,
+
+y distribuye la energía entre los diez anillos del PIV en `t = 11,13 s`. Se corre la
+misma forma a la amplitud experimental (`delta_0 = 8,887`) y a `10^-4` de ella. El segundo
+caso mide con el propio discretizado la referencia lineal; no se resta una fórmula
+analítica. Los bordes son periódicos en `x,y`, no-slip en `z=0`, free-slip plano en `z=h`
+y Neumann--Neumann para la presión. Se mantienen 39 puntos físicos en `z`; la pregunta de
+convergencia que queda es horizontal.
+
+**Qué se ajusta.** La corrida dura 16 memorias modales y escribe seis campos separados por
+3,2 memorias. Se descarta el campo inicial para que el perfil vertical pueda relajarse y,
+para cada anillo, se ajusta la amplitud espectral. Los anillos 3--10 usan exactamente los
+mismos centros, 82,6--247,7 m⁻¹, que [V-18]. La malla 16² fue sólo un ensayo de cadena:
+trunca el espectro en el anillo 5 y no se interpreta físicamente. La 32² contiene los diez
+anillos, aunque el 10 queda cerca del corte de dealiasing.
+
+**Controles de la 32².** El par tardó 58 min 28 s en la laptop, secuencial, con 152228 kB
+de memoria máxima. Los pesos iniciales reproducen los prescritos a precisión de máquina;
+la energía de superficie decrece en cada campo; el residuo free-slip es menor que
+`4·10^-37`. En el caso de amplitud experimental, `delta` cae de 8,887 a 0,447, la fracción
+de energía vertical vale `1,00·10^-3` en el primer campo ajustado y después baja, y
+`alpha_eff/alpha` pasa transitoriamente por 1,022 antes de regresar hacia 1. El control
+lineal recupera
+
+`lambda(k) = 0,067767 s^-1 + 0,9868·10^-6 m²/s k²` (`R² = 0,99992`),
+
+frente a `alpha = 0,068539 s^-1` y `nu = 1,0·10^-6 m²/s`. Esto controla simultáneamente
+la conversión de unidades, el estimador y la resolución vertical.
+
+**Resultado no lineal.** A amplitud experimental queda
+
+`lambda(k) = 0,065438 s^-1 + 1,1715·10^-6 m²/s k²` (`R² = 0,97842`).
+
+La transferencia no lineal baja la ordenada sólo `0,002329 s^-1`; el déficit de [V-18]
+respecto del nominal es `0,020485 ± 0,003775 s^-1`, 8,8 veces mayor. La tasa global de
+superficie cambia de 0,085282 a 0,083970 s⁻¹, un cociente 0,9846: sólo 1,5 % más lenta.
+El cambio no es una constante escondida: en los anillos 3 y 4 las tasas bajan 0,00105 y
+0,00236 s⁻¹, mientras en 6--8 suben alrededor de 0,005--0,006 s⁻¹ y en el anillo 10 suben
+0,0126 s⁻¹. Ese último valor es precisamente el más sensible al corte de 32².
+
+**Respuesta provisional a la pregunta de Lucía.** No alcanza con decir que el flujo era
+"poco turbulento": el límite lineal reproduce `alpha + nu k²`, y encender una banda ancha
+con la intensidad medida sí redistribuye energía pero no genera la reducción casi
+independiente de `k` que tiene el PIV. A 32² explica del orden de una décima del déficit,
+no el déficit. Es una conclusión local, todavía no una afirmación convergida: toca repetir
+el par en 64², donde los diez anillos quedan lejos del corte. 128² se reserva sólo si 64²
+cambia `delta_alpha` más de 0,002 s⁻¹.
+
+**Artefactos.** El resultado incremental está en
+`salidas/tablas/decaimiento_banda_ancha.json`; `codigo/14_figura_decaimiento_banda_ancha.py`
+produce `f10` y selecciona automáticamente la resolución completa más fina. El runner
+acepta 64²/128² y dentro de SLURM usa `srun --mpi=pmix`. El trabajo listo para enviar es
+`verificacion/decaimiento_banda_ancha.sbatch`. No se envió nada a Sakura desde esta sesión:
+el prompt autocontenido para retomarlo allá está en
+`numerico/HANDOFF_SAKURA_DECAIMIENTO_BANDA_ANCHA.md`.
