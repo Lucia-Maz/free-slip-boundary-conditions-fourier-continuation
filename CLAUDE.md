@@ -47,6 +47,10 @@ cuantificada en `teoria/superficie_libre_v_estrella_y_p.md` §4.1. Al escribir s
 - **La bibliografía distingue «localizado» de «leído en el original».** Ninguna afirmación
   se apoya en un trabajo que no se haya verificado en su texto. Los DOI se resuelven contra
   la API de Crossref, no se citan de memoria.
+- **Lo derivado o razonado acá sin validar contra bibliografía se marca como tal**, siempre:
+  una derivación de la sesión, una hipótesis física propia, una estimación rápida. Y toda
+  afirmación que se apoye en bibliografía lleva la cita con su **DOI** (o arXiv id), no sólo
+  el nombre del autor (Lucía, 2026-09-23).
 - **Los datos crudos del 02-06-25 son sólo lectura** ([D-02]). Es la única copia de una
   campaña que no se puede repetir.
 - **Todo análisis de los datos experimentales termina en figuras** que se puedan mirar, no
