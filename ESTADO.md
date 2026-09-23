@@ -1,6 +1,6 @@
 # Estado — dónde estamos y cómo retomar
 
-**Instantánea del 2026-09-22.** Este archivo existe para que se pueda retomar el trabajo
+**Instantánea del 2026-09-23.** Este archivo existe para que se pueda retomar el trabajo
 sin la conversación que lo produjo: si la sesión se cae, o pasa una semana, alcanza con
 leer esto, `DECISIONES.md` y `bibliografia/REFERENCIAS.md`.
 
@@ -261,7 +261,7 @@ el runner, el `sbatch` y el handoff autocontenido están listos. JSON en
 |---|---|
 | Cámara | Photron FASTCAM-1024PCI, 1024×1024, 10 bits, 60 fps, shutter 1/60 |
 | Escala | 3800 px/m → 0,263 mm/px, campo de 26,9 cm |
-| Corridas | 3 forzados (0,95 / 1,95 / 2,15 A), **4 decaimientos**, 3 quenchings |
+| Corridas | 3 forzados (0,95 / 1,95 / 2,15 A), **4 decaimientos**, 3 quenchings (pulso breve de forzado, máximo en t = 12–14 s; [H-18]) |
 | Cada corrida | 3072 cuadros = 51,2 s |
 | Capa de electrolito | 6 mm, KNO₃ al 16 % m/m, partículas de 100 µm |
 | Imanes | discos de 1 cm, 5 mm de vacío entre ellos → red tipo tablero de **1,5 cm** entre centros; acrílico de 6 mm hasta la capa ([D-41]) |
@@ -315,6 +315,12 @@ cierra: ahora el déficit está localizado en la parte casi independiente de k.
 control lineal recupera `alpha + nu k²`; la banda ancha con `delta_0 = 8,887` reduce la
 ordenada sólo 0,00233 s⁻¹, unas nueve veces menos que el déficit PIV. Falta convergencia
 64² en Sakura; el handoff y el `sbatch` están escritos, pero no se envió ningún trabajo.
+
+**Hecho el 2026-09-23:** se trajo al log lo que el análisis de los quenching para el póster
+de tesis (fuera del repo, `~/Desktop/PhD/Docs/poster_powerpoint_first_layout/experimental/`)
+tenía de útil acá: un fondo de movimiento en la banda de los imanes, anterior al forzado y
+que decae a 0,5 α ([H-18]). Restado como piso constante sube el α medido 4–5 %: candidato
+parcial para [P-02], no cierre.
 
 **Lo que sigue, en este orden:**
 
@@ -372,8 +378,9 @@ punto 2 son los cómputos pesados que quedan.
   ventana del ajuste no baja la predicción por debajo de λ(k). [V-18] localizó el déficit
   en una ordenada casi independiente de k y [V-19] muestra que, a 32², la transferencia de
   una banda ancha con la intensidad medida explica sólo alrededor de una décima; falta su
-  convergencia 64². Quedan además h > 6 mm y los sesgos del PIV (piso correlacionado y
-  calibración temporal, [V-14]).
+  convergencia 64². Quedan además h > 6 mm, los sesgos del PIV (piso correlacionado y
+  calibración temporal, [V-14]) y el fondo en la banda de los imanes de [H-18], que
+  explicaría 4–5 % de la tasa si se confirma con el estimador de [V-13].
 - **[P-01] cerrado en lo cuantitativo ([V-16]).** La clausura de un modo tiene un error
   de pocos por ciento para δ ≲ 3 y de 15–30 % en δ ≈ 7–10, medido con el código y no
   estimado; el sesgo sobre α es hacia arriba. [V-19] ya probó localmente un campo de banda

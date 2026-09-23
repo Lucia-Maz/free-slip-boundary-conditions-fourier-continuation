@@ -2007,3 +2007,72 @@ acepta 64²/128² y dentro de SLURM usa `srun --mpi=pmix`. El trabajo listo para
 `verificacion/decaimiento_banda_ancha.sbatch`. No se envió nada a Sakura desde esta sesión:
 el prompt autocontenido para retomarlo allá está en
 `numerico/HANDOFF_SAKURA_DECAIMIENTO_BANDA_ANCHA.md`.
+
+## 2026-09-23
+
+### [H-18] Hay un fondo de movimiento con la forma de la red de imanes, anterior al forzado, y es un candidato parcial para [P-02]
+
+**Procedencia.** Esto no se midió en el repositorio. Sale del análisis de los quenching
+hecho el 2026-09-22 para el póster de tesis, que vive fuera del árbol en
+`~/Desktop/PhD/Docs/poster_powerpoint_first_layout/experimental/` (su `ESTADO.md` tiene
+todos los números y cómo rehacerlos). Esos scripts usan `codigo/celda.py` y el PIV de
+`codigo/02_barrido_dt.py` como biblioteca, sin editarlos, y rearman los pares desde los
+TIF crudos como [V-13]. Lo que sigue se trae como dato, no se re-verificó acá, salvo la
+estimación del final.
+
+**Un dato de la campaña que faltaba.** Los tres quenching (`med_S0007`, `med_S0010`,
+`med_S0011`) son registros con un **pulso breve de forzado**: u_rms llega a su máximo en
+t = 12–14 s del registro (1,55 / 2,69 / 1,82 mm/s) y después decae. `med_S0010` arranca
+desde la celda en reposo. En el reposo aparente de antes del pulso ya hay movimiento, que
+es el que [H-07] había encontrado al descartarlo como registro de cero
+(0,07–0,18 px).
+
+**El hallazgo.** Los decaimientos y los quenching tienen, al final, un residuo en la banda
+de la red de imanes (k ≈ 296 m⁻¹) que no decae como debería:
+
+- En el decaimiento 1 (`med_S0003`) esa banda decae a **0,50 α**, cuando λ(296 m⁻¹) =
+  2,28 α: cinco veces más lento.
+- **Es flujo, no sesgo de correlación:** con n = 16 / 32 / 64 / 128 cuadros el
+  desplazamiento de la banda es 0,123 / 0,252 / 0,514 / 1,053 px, proporcional a n.
+- **Es flujo de la capa, no deriva de trazadoras:** la parte potencial (divergente) de la
+  banda es 0,3–3 % de su energía.
+- **Está antes del pulso:** al principio de `med_S0010` hay 0,188 mm/s, el 67 % en la
+  banda de los imanes (0,126 mm/s). El piso tardío es 0,132–0,145 mm/s en el decaimiento 1
+  y 0,169–0,244 mm/s en el quenching 2: el mismo orden.
+
+**Lectura, no conclusión.** Apunta a un fondo permanente de la celda con la geometría de
+la red. La hipótesis que mejor encaja es térmica —el fondo alterna imanes y acrílico, que
+conducen el calor muy distinto, y tras una jornada de pasar corriente guarda un patrón de
+temperatura con el paso de la red— antes que una corriente residual, que necesitaría el
+lazo cerrado con la fuente apagada. No está probado: no se sabe cuánto decantó la celda
+antes de `med_S0010`. **Derivado acá, sin validar con bibliografía:** tanto la hipótesis
+térmica como la de corriente residual son razonamiento de la sesión del póster; no se
+buscó ni se cita trabajo que documente fondos térmicos con la geometría del forzado en
+capas electromagnéticas.
+
+**Por qué toca a [P-02].** (Estimación hecha acá, sin bibliografía de por medio.) Un fondo que no decae aplana la cola de u_rms y el ajuste de
+t > 10 s da una tasa menor que la verdadera; es un sesgo en la dirección del déficit.
+Estimación rápida sobre `salidas/tablas/decaimiento.json`, restando en cuadratura un piso
+constante a los ocho u_rms de cada registro y ajustando log u para t > 10 s (ajuste por
+registro, sin la ponderación del ensemble de [V-13]):
+
+| piso [mm/s] | S0003 | S0005 | S0006 | S0009 | promedio |
+|---|---|---|---|---|---|
+| 0 | 0,0621 | 0,0748 | 0,0664 | 0,0642 | 0,0669 |
+| 0,13 | 0,0647 | 0,0797 | 0,0677 | 0,0660 | 0,0695 |
+| 0,145 | 0,0654 | 0,0811 | 0,0681 | 0,0665 | 0,0703 |
+| 0,20 | 0,0691 | 0,0896 | 0,0698 | 0,0689 | 0,0744 |
+
+Con el piso medido (0,13–0,145 mm/s) la tasa sube **4–5 %**; el déficit de [P-02] contra
+λ(k) en la ventana es 7–22 %. **Explica una parte, no todo**, y es del mismo orden que la
+corrección de superficie de [V-17]. Salvedades de la estimación: el piso se midió con otro
+estimador (el de los scripts del póster, sobre la banda) que el u_rms calibrado por dos Δt;
+se supone constante en el tiempo y no decae a 0,5 α como se midió; y como se concentra en
+k ≈ 296 m⁻¹, por encima de casi todos los bins de [V-18] (83–248 m⁻¹), no explica por sí
+solo que el déficit espectral esté en la ordenada.
+
+**Lo que haría falta para usarlo en la comparación:** medir el piso con el mismo estimador
+de [V-13] (restarlo por banda en `13_decaimiento_espectral.py` antes del ajuste), y las dos
+preguntas al laboratorio del `ESTADO.md` del póster: si el lazo quedó cerrado tras cortar
+el forzado y cuánto decantó la celda antes de `med_S0010`. Comparar la fase del patrón
+tardío entre los decaimientos 1 y 4 (~6 min de PIV) diría si está clavado al aparato.
