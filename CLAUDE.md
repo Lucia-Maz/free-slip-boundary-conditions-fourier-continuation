@@ -102,9 +102,10 @@ si `sm,self,tcp` funciona y `tpc` no, es eso.
 - **Es CPU puro.** SPECTER en este proyecto se compila y corre en CPU, así que la partición
   es `compute` (o `normal` para pruebas cortas en el nodo de login). Los nodos con GPU no
   hacen falta, y si alguna vez se usan sus CPUs hay que dejar cuatro cores libres.
-- **El scratch de las corridas va a `/share/scratch*`, no a `$HOME`.** SPECTER escribe
-  salida binaria y desde los nodos de cómputo la E/S paralela contra `$HOME` es lenta. Usar
-  un directorio con el nombre de usuario adentro.
+- **El scratch de las corridas va a `/share/data2/$USER`, no a `$HOME`** ([D-48]). SPECTER
+  escribe salida binaria y desde los nodos de cómputo la E/S paralela contra `$HOME` es
+  lenta. Ahí están también las simulaciones de GHOST: cada trabajo usa un subdirectorio
+  propio con el número de trabajo y borra sólo ése.
 - **`python/3.13.13` trae numpy pero no scipy ni matplotlib**, y este proyecto los necesita:
   `scipy.optimize` en `numerico/fase4/superficie_libre_escalas.py`, y matplotlib en todos
   los scripts de figuras. Para eso hace falta un venv propio sobre ese módulo, o correr las

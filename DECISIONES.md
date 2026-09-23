@@ -2076,3 +2076,39 @@ de [V-13] (restarlo por banda en `13_decaimiento_espectral.py` antes del ajuste)
 preguntas al laboratorio del `ESTADO.md` del póster: si el lazo quedó cerrado tras cortar
 el forzado y cuánto decantó la celda antes de `med_S0010`. Comparar la fase del patrón
 tardío entre los decaimientos 1 y 4 (~6 min de PIV) diría si está clavado al aparato.
+
+### [D-48] El scratch del clúster es `/share/data2/$USER`; corrige a [D-37], que quedó desactualizada
+
+[D-37] fijaba el scratch en `/share/scratch1/$USER` y sacaba `/share/data*` de los
+candidatos, leyendo el pedido de Lucía como «no escribir en `data2`». Era al revés:
+`data2` es donde ella trabaja en el clúster. El código se corrigió ese mismo día (commit
+`26c80c9`, *«Malinterpreté 'no vayamos a lugares raros' como 'no toques data2' y era lo
+contrario»*), pero la corrección **nunca llegó al log**, y [D-37] siguió diciendo lo
+contrario de lo que hacían `puerta_fase2.sbatch` y `decaimiento_banda_ancha.sbatch`. Los
+trabajos 8168 ([D-39]) y 8552 escribieron en `data2`, como corresponde.
+
+**La elección que el commit dejaba pendiente, medida desde el clúster (`df -h`,
+2026-09-23):** `/share/scratch1` está al **100 %** (93 GB libres de 13 TB) y los otros
+`scratch*` entre 97 y 99 %; `/share/data2` tiene **836 GB libres** y `quota` no informa
+límite de usuario. Una corrida 64² de la prueba puente ocupa bastante menos de 1 GB, y se
+borra al terminar.
+
+**Regla que queda:** base `/share/data2/$USER` (pisable con `SPECTER_SCRATCH_BASE`), con
+`/share/scratch1` sólo como respaldo. Cumple la regla de los administradores (MPI-IO en
+`/share/data*` y `/share/scratch*`). Como ese directorio tiene las simulaciones de GHOST,
+cada trabajo escribe en un subdirectorio propio `<nombre>-<jobid>` y la limpieza verifica
+esa forma antes de borrar; eso no cambia.
+
+### [H-19] Los nodos c2–c5 no tienen `make`: por eso falló el trabajo 8548
+
+El primer envío de la prueba corta de 64² (trabajo 8548) murió con el error de
+`toolchain_cluster.sh` *«no encuentro make ni gmake en el PATH»*; el reenvío (8552) corrió
+bien. La contabilidad de SLURM está deshabilitada, así que no se puede saber en qué nodo
+cayó cada uno, pero sí probarlo: con los mismos `module load`, un `srun` de un core por
+nodo el 2026-09-23 da `NO-MAKE` en **c2, c3, c4 y c5** y `/usr/bin/make` en **a2**. [H-14]
+había visto `make` en `g1`, y la conclusión de que «los módulos no tocan esa parte del
+PATH» vale sólo para los nodos que lo traen instalado.
+
+**Consecuencia:** los trabajos que compilan SPECTER se mandan con `--nodelist` a un nodo
+que tenga `make`: comprobado en a2 hoy y en g1 según [H-14]; a1 y g2 no se probaron. Como en [D-39], va en
+la línea de comando y no dentro del `sbatch`.

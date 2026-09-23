@@ -53,10 +53,9 @@ eval "$TOOLCHAIN_ENV"
 # Destino: /share/data2/$USER, que es donde Lucía trabaja en el clúster (ahí están sus
 # simulaciones de GHOST). Se puede pisar con SPECTER_SCRATCH_BASE.
 #
-# PENDIENTE: la elección definitiva conviene hacerla desde el clúster, mirando espacio
-# libre y cuota de verdad (df -h, quota) en vez de decidirla a ciegas desde la laptop.
-# El trabajo escribe en un subdirectorio propio y lo borra al terminar, así que en
-# cualquier caso no se mezcla con lo que ya haya.
+# Confirmado desde el clúster el 2026-09-23 ([D-48]): scratch1 está al 100 % y data2
+# tiene cientos de GB libres, sin cuota de usuario. El trabajo escribe en un
+# subdirectorio propio y lo borra al terminar, así que no se mezcla con lo que ya haya.
 elegir_base() {
     local d
     for base in ${SPECTER_SCRATCH_BASE:-} /share/data2 /share/scratch1; do

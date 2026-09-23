@@ -4,7 +4,6 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=1
-#SBATCH --mem=8G
 #SBATCH --time=08:00:00
 #SBATCH --output=verificacion/logs/banda-ancha-%j.out
 #
@@ -17,6 +16,11 @@
 # Cada caso se guarda inmediatamente en salidas/tablas/decaimiento_banda_ancha.json, de
 # modo que una segunda invocación reanuda lo que falte. Para una eventual 128² hay que
 # estimar y pedir el walltime a partir de 64², no lanzarla a ciegas.
+#
+# OJO: no pedir --mem. `scontrol show node` da RealMemory=1 en todos los nodos de
+# cómputo salvo sakura, así que cualquier --mem explícito rechaza el trabajo con
+# "Requested node configuration is not available" aunque DefMemPerNode sea UNLIMITED.
+# puerta_fase2.sbatch tampoco lo pide, por lo mismo.
 
 set -euo pipefail
 cd "${SLURM_SUBMIT_DIR:-$PWD}"
