@@ -3,6 +3,10 @@
 Proyecto final del curso *Ondas Gravitacionales e Investigación Asistida por IA* (2026).
 Lucía Mazaira, INFINA (CONICET-UBA).
 
+**Hay dos informes:**
+- **`informe/entrega_breve.pdf`**, el informe de la entrega final (≤ 5 páginas, 28-09-2026);
+- `informe/entrega.pdf`, la versión extendida del 17-09, con las derivaciones.
+
 ## La pregunta
 
 Una capa delgada de fluido que fluye sobre un fondo sólido se frena por la fricción con ese
@@ -39,29 +43,40 @@ entradas `[V-16]` y `[V-17]` de `DECISIONES.md` tienen las tablas completas.
 
 ## Dónde termina el resultado
 
-### El siguiente paso: la superficie deformable
+### La superficie deformable: implementada, lineal y de orden N
 
-La propuesta habla de *superficie libre*, y lo implementado es free-slip **plano**: es el
-orden cero de esa superficie libre en el número de Froude, y en esta celda el orden
-siguiente es despreciable con número, no con criterio — la presión dinámica ρU² contra la
-restitución ρg + σk² deforma la superficie **0,04–0,33 µm sobre 6 mm, η/h ≲ 6·10⁻⁵**
-(`numerico/fase4/superficie_libre_escalas.py` → `salidas/tablas/superficie_libre_escalas.json`; [D-28]). Por eso el α de este proyecto no cambia con
-la superficie deformable, y por eso no se implementó acá.
+La propuesta habla de *superficie libre*. Lo que sostiene el α de este proyecto es free-slip
+**plano**, el orden cero de esa superficie libre en el número de Froude. En esta celda el
+orden siguiente es despreciable con número, no con criterio: la presión dinámica ρU² contra
+la restitución ρg + σk² deforma la superficie **0,04–0,33 µm sobre 6 mm, η/h ≲ 6·10⁻⁵**
+(`numerico/fase4/superficie_libre_escalas.py` → `salidas/tablas/superficie_libre_escalas.json`;
+[D-28]). Después de la entrega extendida, la superficie deformable **se implementó**, en dos
+niveles.
 
-Es, en cambio, **la continuación del trabajo**, y ya está preparada:
+**Lineal** (Fase 5, [D-49], puerta 8/8 en [V-20]):
+- presión Dirichlet arriba, con una rama nueva de `laplace_z` y `sol_project_fs`;
+- η(x,y,t) como campo propio;
+- la tensión tangencial acoplada a w, resuelta exacta.
 
-- Las condiciones linealizadas están derivadas: cinemática `w(h) = ∂η/∂t`, tensión
-  tangencial completa, y tensión normal que prescribe `p` en la superficie
-  (`teoria/superficie_libre_v_estrella_y_p.md` §4).
-- La rama de presión que hace falta, Neumann abajo – Dirichlet arriba, está derivada y
-  verificada en Python sobre 20 000 combinaciones de k y Lz, con su criterio de
-  condicionamiento ([V-12]). No está en Fortran.
-- Lo que falta, dicho sin adornos: esa rama en `laplace_z`; un `bctarget` por cara en
-  `sol_project`; la condición sobre `v*` queda **acoplada implícitamente** a `∂p/∂z` en la
-  superficie (iterar dentro del subpaso, o aceptar un error de partición O(dt)); el campo
-  η(x, y, t) avanzado con el mismo Runge-Kutta; y una puerta nueva, porque la propiedad
-  que hace exacto al caso plano —residuo independiente de dt— no sobrevive. La puerta
-  natural es la relación de dispersión de ondas gravito-capilares amortiguadas.
+El resultado para la pregunta: a orden lineal, **el modo vortical no siente la deformación**,
+y su efecto sobre α es O(Fr²) ([H-21]). De paso, la puerta encontró y corrigió un defecto del
+camino free-slip plano ([H-20], [D-50]); las tasas de la Fase 4 no se movieron.
+
+**Orden N** (Fase 6, [D-51], [D-52]). Las condiciones exactas se transfieren a z = h por
+Taylor en η, a orden N = 2 o 3, con `fsorder`. El modelo está verificado exacto, y en una
+onda no lineal N = 3 tiene orden 3. La puerta da 4/10, con cada fallo explicado ([V-21]):
+- N = 2 está mal planteado donde η < 0 ([H-24]);
+- la escalera de profundidad es degenerada ([H-25]);
+- la tercera derivada espectral limita a N = 3 ([H-26]).
+
+En la celda (η/Δz ~ 10⁻³) no aplica ningún límite. Hubo una revisión independiente en dos
+rondas ([V-22]), y el registro para reproducir es `numerico/fase6/REGISTRO_fase6.md`. Los
+campos de superficie a escala real están en `numerico/fase6/campos_superficie.py` y en la
+figura 3 del informe breve.
+
+**Lo que sigue:** medir el efecto O(Fr²) sobre α con `fsorder = 2` contra free-slip, en el
+clúster. Instrucciones para una corrida más larga de los campos de superficie:
+`numerico/fase6/HANDOFF_SAKURA_CAMPOS_SUPERFICIE.md`.
 
 ### Fuera de alcance de este proyecto, a propósito
 
@@ -95,6 +110,8 @@ El repositorio tiene tres zonas, por madurez:
 | 2 | La implementación en Fortran: 237 líneas agregadas y 22 borradas en 5 archivos, más un test unitario | `numerico/specter-parche/` (el parche contra upstream `0ad1edb` y la receta) |
 | 3 | La verificación, seis casos con uno que falla a propósito | `verificacion/test_aceptacion_fase{1,2}.py` |
 | 4 | La física: el barrido en δ (fricción efectiva, tasa del promedio vertical y de la superficie), y la validez de reducir a 2D | `verificacion/barrido_delta_etapa1.py`, `numerico/fase4/`, `informe/barrido_delta_etapa1_*.pdf`, `teoria/P01_validez_reduccion_2D.md` |
+| 5 | La superficie **deformable** lineal en SPECTER; puerta 8/8 | `verificacion/test_aceptacion_fase5.py`, `numerico/fase5/`, `informe/superficie_deformable.pdf`; [D-49], [V-20] |
+| 6 | La superficie deformable **de orden N** (N = 2, 3); puerta 4/10 con los fallos explicados | `verificacion/test_aceptacion_fase6.py`, `numerico/fase6/` (con `REGISTRO_fase6.md` y el verificador), `informe/superficie_orden_N.pdf`; [D-51]–[V-22] |
 
 Las **puertas de aceptación** (`verificacion/test_aceptacion_fase*.py`) están fijadas por
 hash: se escribieron antes de la implementación, arrancaron en rojo, y **no contienen la
@@ -172,12 +189,16 @@ cd numerico/SPECTER-upstream && git checkout 0ad1edb && cd ../..
 cp -r numerico/SPECTER-upstream numerico/SPECTER-trabajo
 cd numerico/SPECTER-trabajo
 git apply ../specter-parche/superficie-libre.patch
-cp ../specter-parche/laplace_dirneu.f90 src/tests/ && cd ../..
+cp ../specter-parche/laplace_dirneu.f90 ../specter-parche/laplace_neudir.f90 \
+   ../specter-parche/fs_orden.f90 src/tests/
+cp ../specter-parche/fsorder.f90 src/boundary/ && cd ../..
 
 # 3. que la verificación pase, que es la prueba de que quedó bien
 python verificacion/test_aceptacion_fase1.py   # 6/6, segundos
 python verificacion/test_aceptacion_fase2.py   # 6/6, ~10 min: compila SPECTER en un
                                                # scratch temporal y corre 15 simulaciones
+python verificacion/test_aceptacion_fase5.py   # 8/8, ~10 min (superficie deformable lineal)
+python verificacion/test_aceptacion_fase6.py   # 4/10 esperado, ~9 min: ver [V-21]
 
 # 4. la física (opcional: ~13 min por malla de 16², ~1 h por malla de 32²)
 python verificacion/barrido_delta_etapa1.py --caso ventana --resolucion 16

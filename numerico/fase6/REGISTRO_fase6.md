@@ -330,6 +330,27 @@ Encontró, y se hizo:
   pasadas no coincidía, se afirmaba una corrida de la puerta antes de terminarla y había
   referencias de línea viejas. **Corregido.**
 
+**P15 — la condición inicial de banda ancha de [V-19] sólo es correcta con un proceso MPI.**
+- Lo encontró la primera comparación np = 1 contra np = 2 de los campos de superficie: η
+  difería un 300 %.
+- `condicion_inicial` de `verificacion/decaimiento_banda_ancha.py` escribe todos los modos
+  dentro de `IF (ista .eq. 1)`, con índices globales de kx. Con más de un proceso, los modos
+  de las columnas de otros procesos se pierden o pisan memoria.
+- [V-19] corrió siempre con un proceso, así que sus números no se ven afectados, y su
+  `sbatch` pide `--ntasks=1`.
+- El camino general, en cambio, está bien en paralelo. Con la condición inicial de la puerta,
+  que sí respeta la partición, np = 1 y np = 2 dan diferencia 0 a N = 2 y 7·10⁻¹⁸ a N = 3.
+- `numerico/fase6/campos_superficie.py` usa una versión que escribe cada modo en el proceso
+  que tiene su columna. Con ella np = 1 y np = 2 dan η idéntico (`--comparar-np`).
+
+**P16 — las transformadas de superficie del orden N son O(nxy³) y no escalan con MPI.**
+- `fs_to_phys` y `fs_to_spec` son DFT explícitas sobre la grilla acolchada (2nx × 2ny), y cada
+  proceso hace la transformada completa después de juntar los modos.
+- Medido: 16² tarda 33 ms por paso con un proceso, y 64² ~1,2 s por paso con tres. A 64²
+  dominan.
+- Antes de una producción a 128² hay que pasarlas a FFT (FFTW 2D sobre la grilla acolchada) y
+  repartirlas. No se hizo: queda anotado en ESTADO.
+
 **P12 — antes de congelar la puerta** (sesión anterior, resumido en su registro):
 - el Newton de la referencia no convergía con tol = 10⁻¹³, por debajo del piso de redondeo;
   se pasó a 10⁻¹¹ con detección de estancamiento;
