@@ -38,7 +38,7 @@ reemplaza a la plana en la producción, porque a orden lineal no toca al modo vo
   `codigo/celda.py`, con su procedencia. Las derivaciones se escriben en forma simbólica y
   los números aparecen sólo como evaluación al final ([D-27]).
 - **Las puertas de aceptación están fijadas por hash.** `verificacion/test_aceptacion_fase1.py`,
-  `..._fase2.py` y `..._fase5.py` se pueden leer e importar, **no se editan para que pasen**. Una puerta se
+  `..._fase2.py`, `..._fase5.py` y `..._fase6.py` se pueden leer e importar, **no se editan para que pasen**. Una puerta se
   escribe antes de la implementación y arranca en rojo.
 - **Ninguna puerta contiene la fórmula analítica del resultado que verifica.** Construye su
   propia referencia numérica —diferencias finitas, extrapolación de Richardson— para que el
@@ -147,7 +147,9 @@ entorno, no del directorio del proceso. Lanzarlo con `subprocess.run(cwd=...)` s
 
 El árbol no está en el repositorio. Se reconstruye desde upstream con el parche:
 ver `numerico/specter-parche/README.md`. Después, `verificacion/test_aceptacion_fase2.py`
-tiene que dar 6/6 y `verificacion/test_aceptacion_fase5.py`, 8/8.
+tiene que dar 6/6 y `verificacion/test_aceptacion_fase5.py`, 8/8. La de la Fase 6 da **4/10**, y eso es
+lo esperado: los seis fallos están explicados en [V-21] (límites del modelo de orden 2 y criterios fijados
+mal a priori), así que sólo es regresión si cambian los números de su log.
 
 Convención que costó una iteración: **los números de onda de SPECTER son enteros**
 (`specter.fpp:777-780`), así que el `Lx = 1` del archivo de parámetros son 2π de largo

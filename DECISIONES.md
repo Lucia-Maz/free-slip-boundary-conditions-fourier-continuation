@@ -2304,3 +2304,278 @@ Es lo que anticipaba el argumento de [H-20]: esas corridas arrancan con w = 0, y
 actúa a través del vz en la cara. **Los resultados registrados de la Fase 4 quedan como están.**
 Salvedad: se volvió a correr sólo el 16² de [V-19]; [V-16], [V-17] y el 32² de [V-19] son de la
 misma clase (condición inicial con w = 0) y no se volvieron a correr.
+
+## 2026-09-28 — Fase 6: superficie deformable de orden N
+
+El registro completo, con los problemas en orden, la bibliografía y cómo reproducir, está en
+`numerico/fase6/REGISTRO_fase6.md`. El resumen para leer, en `informe/superficie_orden_N.pdf`.
+
+### [D-51] La superficie deformable se lleva a orden N en η, con el volumen completo
+
+Pedido de Lucía el 2026-09-28: *«Try to design a further implementation of the deformable
+surface on SPECTER, allowing for higher order deformations, to the best of your abilities»*.
+
+**El modelo.** Las condiciones exactas de una superficie gráfica z = h + η se transfieren a
+z = Lz por serie de Taylor en η, hasta orden N = 1, 2 o 3:
+- cinemática, tangencial y normal, con la curvatura κ_N y la tensión viscosa normal B_N
+  truncadas;
+- las fórmulas están en `verificacion/intent_fase6.txt` y en la cabecera de `fsorder.f90`;
+- son los polinomios de Taylor de Wang, Tice & Kim, ARMA 212 (2014),
+  DOI 10.1007/s00205-013-0700-2, §1.1, ecs. (1.4)–(1.8), leídas en el original;
+- el desarrollo es derivación de esta sesión.
+
+**Verificado a redondeo** contra los coeficientes de Taylor de las condiciones exactas, con
+integrales de Cauchy (`numerico/fase6/chequeo_expansion.py`):
+- peor error relativo entre 3,4·10⁻¹⁵ y 1,05·10⁻¹⁴ para N = 1..5;
+- control negativo con el signo de la pendiente cambiado: 1,8.
+
+**Qué es y qué no.** Es un desarrollo en la **deformación** con el campo de velocidad
+completo: no es un desarrollo en la amplitud del flujo. N = 2 agrega exactamente los términos
+η∂z(·) y de pendiente que faltaban para el efecto O(Fr²) sobre α ([H-21]). Su validez pide
+η chico frente a las escalas verticales del flujo. [H-24] agrega una condición que no se
+conocía al congelar: a N = 2, η > −0,67 Δz en todas partes con ν dt/Δz² = 0,1; el umbral
+depende de ese número ([H-24]).
+
+**Qué quiere decir «orden N»** (lo precisó el verificador, [V-22]): el truncamiento es a orden N
+en la amplitud, contando la velocidad como de orden de la amplitud. Los términos de velocidad
+llevan hasta η^(N−1).
+
+### [D-52] El esquema de orden N: trazas espectrales implícitas con un precondicionador exacto; cambia el cierre que congelaba el intent
+
+`src/boundary/fsorder.f90` (nuevo), `fs_general_imposebc`. Por subpaso RK:
+
+**Parte explícita, del subpaso anterior, como en la Fase 5:**
+- la cinemática;
+- la tensión normal sin presión, E = gη − γκ_N + νB_N, que da el dato Dirichlet del
+  potencial.
+
+**Parte implícita, iterada:**
+- la condición tangencial completa sobre el estado nuevo;
+- la transferencia de presión Σ_{m≥1} η^m/m! ∂z^m d;
+- incógnitas de superficie x = (W, Dx, Dy, P), con W exacto con B_k (Fase 5).
+
+**Trazas:**
+- ∂z^m u, ∂z^m v por sumas espectrales sobre la columna reconstruida;
+- ∂z^m w por continuidad;
+- las del potencial, exactas;
+- el término de Nyquist en kz se omite en las derivadas impares (convención del
+  interpolante real).
+
+**Precondicionador.** Las trazas de orden m responden al dato de Neumann como β_m, medidos al
+arrancar con una sonda: β Δz^(m−1) = (0,4800; 1,0052; 1,3967; 1,1515). Así Dx se acopla
+consigo mismo con σ = β₂η + β₃η²/2 (el segundo término si N ≥ 3). La iteración usa
+G = (F − 2σ∂ₓδW + σDx)/(1 + σ) y Anderson tipo II con **coeficientes reales**.
+
+**Criterio de parada:**
+- bloques medidos contra el dato que corrigen: W, el dato de Neumann completo y el Dirichlet
+  sin la media;
+- se para en `fstol`, o por estancamiento: desde la sexta pasada, el mejor residuo de las
+  últimas cuatro no llega a la mitad del mejor anterior, con umbral 10²·fstol.
+
+**Guardias.** Aborta con un mensaje en tres casos:
+- si 1 + σ ≤ 0,05 + ν dt/Δz² en algún punto a N = 2;
+- si 1 + σ ≤ 0,05 a N = 3, que nunca se alcanza ([H-24]);
+- si ν dt/Δz² > 0,19 a N = 3: el límite explícito es 0,205, y cerca de él los modos cerca de
+  η = −1,2 Δz son inestables ([V-22]).
+
+El primer umbral de N = 2, 0,05 a secas, dejaba una ventana inestable sin aviso ([V-22]).
+
+**Qué cambió respecto de `intent_fase6.txt`,** que está congelado y no se editó: el intent
+fijaba derivadas de orden ≥ 2 extrapoladas desde nodos interiores, y resultaron inestables
+([H-23]). Namelist, diagnóstico y tests quedan como el intent los congela.
+
+### [H-23] El cierre por extrapolación desde nodos interiores es inestable en el tiempo
+
+El intent lo había elegido para que la iteración convergiera para η > 0,7 Δz, porque la traza
+espectral de ∂zz u responde al dato como 1,40/Δz. La iteración converge, pero el paso en el
+tiempo explota: la primera corrida N = 2 con η0 = 4,1 Δz dio NaN, con trazas creciendo ×3–10
+por subpaso.
+
+**Réplica 1D del paso RK2 de SPECTER** (difusión FC-Gram, `neumann_reconstruct`,
+ν = 0,01, dt = 10⁻³, nz = 128; `numerico/fase6/estabilidad_cierre.py`,
+`salidas/figuras/f_fs6_estabilidad.png`):
+- con q = 8, el radio espectral del paso vale 2,8 en η = Δz y 39 en η = 4 Δz;
+- es inestable para |η| > 0,5 Δz;
+- la traza espectral resuelta implícitamente es estable a N = 2 para η > −0,667 Δz con
+  ν dt/Δz² = 0,104 (el umbral depende de ese número, [H-24]), y a N = 3 para todo η probado,
+  salvo a ≥ 0,97–0,99 del límite explícito ([V-22]).
+
+Mecanismo, hipótesis de esta sesión: con la extrapolación explícita el nodo de borde queda
+como una combinación del interior con pesos ~(η/Δz)·324/2.
+
+### [H-24] El modelo de orden 2 está mal planteado donde η < 0
+
+**Análisis local de modos**, derivación de esta sesión no validada contra bibliografía:
+- ∂z u + η∂zz u = 0 admite u ~ e^{λt} e^{(z−Lz)/|η|} con λ = ν/η² > 0 si η < 0: una capa
+  espuria de espesor |η| que crece.
+- Es el cero del polinomio de Taylor truncado de e^{κη}.
+- A N = 3 los modos análogos tienen ηκ = −1 ± i y son neutros.
+- El verificador ([V-22]) lo confirmó en el problema 2D linealizado completo: a N = 2 la raíz
+  es exactamente λ = ν(1/η0² − k²).
+- También encontró que la neutralidad de N = 3 vale sólo para η uniforme. Con pendiente
+  congelada s crece débilmente, Re λ ≈ ν(2s²/η² − k²). No se reprodujo aparte ni se vio en las
+  corridas, y su relevancia práctica es incierta.
+- N = 4 vuelve a ser inestable, como todo N par.
+
+**Réplica.** Reproduce la tasa del continuo cuando la capa está resuelta: en η/Δz = −4, −3 y
+−2, ρ = 1,00668, 1,01220 y 1,03014, contra exp(ν dt/η²) = 1,00652, 1,01163 y 1,02635.
+
+**El umbral en la malla depende de D = ν dt/Δz²**, medido por bisección en la réplica: el paso
+se vuelve inestable donde 1 + σ ≈ 0,7 D. Por ejemplo, η = −0,707, −0,667, −0,651 y −0,622 Δz
+para D = 0,021, 0,104 (la puerta), 0,132 y 0,177. El cero de 1 + σ, −0,716 Δz, es sólo el
+límite dt → 0.
+
+**En SPECTER:**
+- N = 2 con η0 = −0,005 es estable;
+- con η0 = −0,01 y la guardia desactivada (sólo en el scratch) da NaN antes de t = 0,3;
+- N = 3 con −0,01 y −0,04 es estable.
+
+**Consecuencia.** La guardia de [D-52], y que los chequeos de la puerta que corren N = 2 con
+η hasta −ε (H7, H8, H10) no pueden pasar con este modelo. No se cambió el modelo congelado:
+queda [P-04].
+
+### [H-25] Con elevación media uniforme, el orden 2 ya tiene error O(η³)
+
+Derivación de esta sesión. Para φ ∝ cosh kz, la relación transferida a orden 2 es
+(s + cε)/(c + sε), con ε = kη0. Los términos O(ε²) de su diferencia con tanh(kh + ε) se
+cancelan: el numerador exacto es ε cosh ε − sinh ε = ε³/3 + ε⁵/30, así que queda
++(ε³/3)/(…). La primera versión de esta entrada decía −(ε³/2); la corrigió el verificador
+([V-22]).
+
+El truncamiento no viscoso esperado explica lo medido:
+- N = 1: 3,05·10⁻² a T = 4, contra 3,2·10⁻² de SPECTER;
+- N = 2 a T = 2: 1,2·10⁻⁵ en η0 = 0,04, contra 1,48·10⁻⁵ a nz = 256;
+- N = 3 es también O(η0³), con la mitad del error de N = 2.
+
+**Consecuencia:** el criterio de H5 de la puerta (orden 2 a N = 2, orden 3 a N = 3) estaba mal
+a priori. A nz = 128 se agrega el piso de malla, 2,2·10⁻⁶, que tapa los errores de η0 = 0,01.
+
+### [H-26] La traza espectral de ∂z³u limita al orden 3
+
+**Precisión.** El error FC-Gram de la tercera derivada en el borde **no** es O(Δz²) como decía la
+primera versión de esta entrada. Tiene un mínimo cerca de nz = 128 y después crece como Δz⁻³,
+por un piso determinista de la continuación de ~2·10⁻¹¹·|f|/Δz³. Lo encontró el verificador y
+se reprodujo:
+- sin(1,2z): 1,8·10⁻⁴, 2,4·10⁻⁴, 2,0·10⁻³ y 1,7·10⁻² a nz = 128, 256, 512 y 1024;
+- 1 + 0,3z², cuya ∂z³ exacta es 0: crece ×10 por duplicación.
+
+H2 mide 2,9·10⁻⁴ a nz = 128, y entra multiplicado por η²/2. **Con estas tablas N = 3 no mejora
+refinando en z.**
+
+En la escalera de profundidad, N = 3 con η0 = 0,04 pasa de 4,1·10⁻⁵ (nz = 128) a 1,2·10⁻⁵
+(nz = 256), pero ese ×3,4 no lo explica la traza, cuyo error para perfiles suaves es parecido
+en las dos. El origen del exceso de N = 3 sobre su truncamiento no está establecido. A nz = 128,
+N = 3 es peor que N = 2 en ese ensayo.
+
+**Redondeo.** La iteración tiene un piso de 10⁻⁹–10⁻⁸ relativo a η = 4 Δz. Lo muestran las
+segundas diferencias de F, que valen 8·10⁻¹⁶ para pasos ≥ 10⁻⁶ y 2·10⁻²⁰ por debajo: es redondeo
+que se descorrelaciona, no un error. Nace en la traza m = 3, cuya segunda diferencia vale
+1,1·10⁻¹² en SPECTER. Que escala como η² es una inferencia del factor η²/2; no se midió con un
+segundo η.
+
+**Su origen cuantitativo no está establecido.** Mi estimación (ε·max|û|·kz³) omitía el 1/nz de
+`fs_ph` ([V-22]). En la réplica de la cadena en z el ruido de la traza es 2,5–9·10⁻¹⁴, dominado
+por la cancelación de la continuación FC: 10–40 veces menos que lo medido. De ahí el criterio
+de estancamiento.
+
+**Donde no hay degeneración** (la onda estacionaria no lineal 2D de H7, corrida fuera de la
+puerta porque ésta aborta en su primer caso N = 2), N = 3 tiene orden 2,33 y 3,02, y N = 1
+orden 1,00 y 1,00.
+
+### [P-04] Pregunta abierta: ¿un orden 2 bien planteado para η < 0?
+
+Si hiciera falta N = 2 con |η| ≳ Δz, una opción es llevar sólo la transferencia tangencial a
+orden 3. Sigue siendo consistente a orden 2, y 1 + σ ya no se anula. Otra es una forma de
+Padé.
+
+Las dos cambian el modelo congelado de [D-51] y necesitan decisión de Lucía. **Para la celda
+no hace falta:** η/Δz ~ 10⁻³.
+
+### [V-21] Puerta de la Fase 6: 4/10, y por qué fallan las otras seis
+
+`verificacion/test_aceptacion_fase6.py`, `referencia_fase6.py` e `intent_fase6.txt` se
+escribieron antes del Fortran, se corrieron en rojo contra el árbol sin la implementación
+(1/10, sólo H6, que verifica la referencia; `verificacion/logs/fase6_rojo_2026-09-28.log`) y se
+congelaron:
+
+- `test_aceptacion_fase6.py`: `e9724eb1b21f92a7064d224a597234df3fa9721c14c16c34b2903148a10017b2`
+- `referencia_fase6.py`: `9b3574099287957e2cdfc1576c3eb38f6f195216ed1d442689e4ea5c5123cc23`
+- `intent_fase6.txt`: `f34e0ae028b0407d4d1a9b0d41a20db8f22ffecbe93e2e980bcd4cc5c6746022`
+
+**Corridas.** Cuatro corridas completas, con el código en cuatro estados, todas 4/10 con los
+mismos chequeos, en `verificacion/logs/`:
+- el primer criterio de estancamiento: `fase6_primera_4de10_2026-09-28.log`;
+- el definitivo (P13): `fase6_segunda_4de10_2026-09-28.log`;
+- la guardia de N = 2 que depende de ν dt/Δz² y el aviso de `fsmaxit`:
+  `fase6_tercera_4de10_2026-09-28.log`, 9 min 18 s, pico 294 MB;
+- **final**, con la guardia de N = 3 sobre ν dt/Δz²: `fase6_2026-09-28.log`, 9 min 16 s, pico
+  294 MB, 4/10. Después de ésta sólo cambió un comentario.
+
+**Pasan H1, H3, H4 y H6:**
+- el parser;
+- la escalera algebraica: órdenes 1, 2 y 3 contra la geometría exacta, y 2, 2 y 4 para κ;
+- el camino general a N = 1 contra el de la Fase 5: 2,5·10⁻¹⁵;
+- la referencia.
+
+**Fallan H2, H5, H7, H8, H9 y H10**, y ninguno por un error de programación encontrado:
+- **H2:** m = 1 da 3,5·10⁻⁹ con umbral 10⁻⁹, y m = 3 da 2,9·10⁻⁴ con umbral 10⁻⁴. Los umbrales
+  se fijaron para el cierre descartado ([H-23]); son el piso FC-Gram ([H-26]).
+- **H5:** su criterio estaba mal a priori ([H-25]).
+- **H7, H8 y H10:** corren N = 2 con η hasta −ε y abortan en la guardia ([H-24]).
+- **H9:** sólo por el residuo, 1,8·10⁻⁹ con umbral 10⁻⁹, que es el piso de redondeo de N = 3
+  con η = 4 Δz. Pasadas ≤ 12 de 30, deriva de la media 9,5·10⁻¹⁷.
+
+**Lo que H7 no llegó a medir,** medido fuera de la puerta con sus mismas funciones
+(`numerico/fase6/escaleras.py no_lineal`): la onda estacionaria no lineal 2D contra la
+geometría exacta da orden 1,00 y 1,00 para N = 1, y 2,33 y 3,02 para N = 3. Números
+definitivos en `salidas/tablas/fase6_escalera_no_lineal.json`.
+
+**Regresión:**
+- la Fase 2 da 6/6 (`logs/fase2_regresion_fase6_2026-09-28.log`, 5 min 49 s);
+- la Fase 5 da 8/8 con los números de [V-20] (`logs/fase5_regresion_fase6_2026-09-28.log`,
+  10 min).
+
+Las dos se corrieron antes de las correcciones de [V-22], que sólo tocan el camino general
+(`fsorder ≥ 2` o `fsgen = 1`). Ninguna de las dos pasa por él.
+
+**Nota sobre los logs.** Los de la puerta tienen dos bytes NUL justo después del cartel de
+`prterun` de las corridas abortadas. Vienen del lanzador de MPI, en el mismo lugar en los dos
+logs: no es corrupción del disco.
+
+### [V-22] Revisión independiente de la Fase 6 (rol verificador): dos rondas, ocho correcciones y una pregunta abierta
+
+Hecha como pidió Lucía para las implementaciones, con el rol `~/GW_AI/agent-team/roles/verifier.md`,
+por un agente separado. Sólo Python liviano, sin SPECTER ni puertas, pico de 155 MB, sin tocar el
+repositorio. Informe y código en `numerico/fase6/verificador/`.
+
+**Verificado por su cuenta:**
+- el modelo, exacto hasta grado N para N = 1–4 en 2D y 3D, con control negativo;
+- la réplica, contra una transliteración literal del Fortran, y β_m;
+- la degeneración de la profundidad, con viscosidad: pendientes 2,99–2,93;
+- el precondicionador (signos y puntos fijos), Anderson real y la convención de Nyquist;
+- la aritmética de la guardia;
+- una lectura del código sin errores: estado entre pasadas, estado aceptado, reducciones MPI e
+  índices del criterio nuevo.
+
+**Refutado o corregido, y qué se hizo:**
+- **B1:** la guardia dejaba una ventana inestable sin aviso. Reproducido: el umbral depende de
+  ν dt/Δz² ([H-24]). Umbral nuevo 0,05 + ν dt/Δz² a N = 2.
+- **B2:** el residuo de [H-25] es +(ε³/3), no −(ε³/2). Corregido.
+- **B3:** la cabecera de `fsorder.f90` no tenía el término de W de G, y daba mal el umbral.
+  Corregida.
+- **B4:** agotar `fsmaxit` era silencioso. Ahora avisa por salida estándar.
+- **N = 3 con pendiente:** débilmente inestable; registrado en [H-24] como hallazgo suyo, no
+  reproducido aparte.
+- **El piso de redondeo:** mi estimación omitía un 1/nz. Corregido en [H-26]; el origen
+  cuantitativo queda abierto.
+
+**Segunda ronda, sobre las correcciones** (`informe_verificador_fase6_ronda2.md`). Verificó la
+guardia nueva de N = 2 (cubre la ventana inestable con cualquier D estable), sus cantidades, la
+cabecera y el contador de `fsmaxit`. Encontró tres cosas, y se hizo con cada una:
+- **N1:** N = 3 es inestable a ≥ 0,97–0,99 del límite explícito, cerca de η = −1,2 Δz.
+  Reproducido; guardia nueva ν dt/Δz² ≤ 0,19.
+- **N2:** el error de ∂z³u crece como Δz⁻³ más allá de nz ≈ 128. Reproducido; corregido [H-26].
+- Afirmaciones viejas que quedaban en los documentos (umbrales, conteo de pasadas, una corrida
+  de la puerta afirmada antes de terminar): corregidas.
+
+El código final se volvió a pasar por la puerta: ver [V-21].

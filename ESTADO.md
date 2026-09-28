@@ -63,6 +63,7 @@ de instrumento y la barra de error de la comparación con el experimento. Las en
 | **3** | Verificación V1–V6, con un caso que falla a propósito | **hecha** — puerta 6/6, [V-09] |
 | **4** | La física, la comparación con el experimento y la entrega | **en curso** — decaimiento medido ([V-13]) y puente local 32² ([V-19]); falta convergencia 64², producción y entrega |
 | **5** | Superficie libre **deformable**, lineal, en SPECTER ([D-49]) | **hecha** — puerta 8/8 ([V-20]), regresión de la Fase 2 6/6; encontró [H-20] |
+| **6** | Superficie deformable de **orden N en η** (N = 2, 3) en SPECTER ([D-51], [D-52]) | **hecha, con límites** — puerta 4/10 ([V-21]), regresiones 6/6 y 8/8; encontró [H-23]–[H-26]: N = 2 mal planteado donde η < 0 (en la malla, inestable desde η ≈ −0,67 Δz); revisión independiente [V-22] |
 
 ## Números ya establecidos
 
@@ -338,6 +339,34 @@ lineal no lo calcula completo** (faltan los términos η∂_z del orden cuadrát
 independiente encontró además [H-22]: la enstrofía de `balance.txt` omite ω_z (bug de upstream),
 que es la causa de [H-17]. Informe explicado en `informe/superficie_deformable.pdf`.
 
+**Hecho el 2026-09-28, Fase 6:** la superficie deformable se llevó a **orden N en η**
+([D-51]): las condiciones exactas de la superficie gráfica, desarrolladas en Taylor hasta
+N = 2 o 3 con el volumen completo, en `src/boundary/fsorder.f90` (`fsorder = 2` o `3`). El
+modelo está verificado a redondeo contra la expansión exacta.
+
+El esquema final ([D-52]):
+- trazas espectrales implícitas;
+- un precondicionador exacto del auto-acople con el dato de Neumann, σ = β₂η + β₃η²/2, con los
+  β medidos por una sonda;
+- Anderson con coeficientes reales;
+- una guardia.
+
+La puerta se escribió antes, en rojo, y se congeló. Da **4/10** ([V-21]). Las seis que fallan lo
+hacen por límites que encontró la implementación, o por criterios que se fijaron mal a priori:
+- **[H-23]** el cierre del intent (extrapolación interior) es inestable en el tiempo; se
+  reemplazó;
+- **[H-24]** **N = 2 está mal planteado donde η < 0**: una capa espuria de espesor |η| crece
+  como ν/η², y en la malla el paso se vuelve inestable desde η ≈ −0,67 Δz (H7, H8 y H10
+  corren N = 2 con η hasta −4 Δz);
+- **[H-25]** con elevación uniforme N = 2 ya es O(η³), así que H5 pedía el orden equivocado;
+- **[H-26]** ∂z³u espectral limita a N = 3 a nz = 128 (H2), y su redondeo deja un piso de
+  10⁻⁹ en la iteración (H9).
+
+Fuera de la puerta, en la onda no lineal donde no hay degeneración, N = 1 da orden 1,00 y N = 3
+da 2,33 y 3,02. Una revisión independiente en dos rondas, con el rol verificador,
+confirmó lo central y encontró nueve cosas: ocho corregidas y una abierta ([V-22]). **Para la celda no aplica ningún límite** (η/Δz ~ 10⁻³). Registro completo:
+`numerico/fase6/REGISTRO_fase6.md`; resumen para leer: `informe/superficie_orden_N.pdf`.
+
 **Lo que sigue, en este orden:**
 
 0. ~~Decidir [P-03]~~ — **hecho** ([D-50]): `freeslip_z` corregido; Fase 2 6/6 y Fase 5 8/8
@@ -345,6 +374,12 @@ que es la causa de [H-17]. Informe explicado en `informe/superficie_deformable.p
    los resultados de la Fase 4 quedan. La superficie deformable ([D-49]) no hace falta para la
    producción ([H-21]); si se usa, ver el costo en paso de tiempo en
    `salidas/tablas/superficie_deformable_escalas.json`.
+
+0b. **Fase 6, si se usa:** `fsorder = 2` es lo que falta para el efecto O(Fr²) de la
+   deformación sobre α ([H-21]). En la celda (η/Δz ~ 10⁻³) funciona sin límites, pero con 4–17
+   pasadas por subpaso: el puente de banda ancha de [V-19] con `fsorder = 2` y g, γ físicos,
+   contra `freeslip`, es trabajo de Sakura. [P-04] sólo hace falta si se quiere N = 2 con
+   |η| ≳ Δz.
 
 1. ~~Medir α_eff con SPECTER en un barrido en δ~~ — **hecho** ([D-42], [V-16], y la
    etapa 1b de superficie en [V-17]). La prueba puente de banda ancha de [V-18] ya está
@@ -447,12 +482,15 @@ punto 2 son los cómputos pesados que quedan.
   única copia de una campaña de un día que no se puede repetir.
 - `numerico/SPECTER-upstream/`: copia intacta de upstream. Todo el trabajo va en
   `numerico/SPECTER-trabajo/`.
-- `verificacion/test_aceptacion_fase1.py` y `verificacion/test_aceptacion_fase2.py`: las
+- `verificacion/test_aceptacion_fase1.py`, `..._fase2.py`, `..._fase5.py` y `..._fase6.py`: las
   puertas están fijadas por hash. Se pueden leer, no se editan para que pasen.
   Fase 1: `0c3ebd62f6c42d08f0fa9a64a0f57b9cfdaf1144ee8a84e968a148d9d66b18bf`.
   Fase 2: `6f0b4da4ba20617d483dfff0a20f8e2e11e82795b20351c259ffcf740ca4b1cc`.
   Fase 5: `4505944863b5a524e7bec58748c489ffa488125cda8badba3ff48779f89a7bbd`
   (`intent_fase5.txt`: `9ecf858b106a2b0c7882e298215e88a5d4ae31cdb60937337f8c975e84af3991`).
+  Fase 6: `e9724eb1b21f92a7064d224a597234df3fa9721c14c16c34b2903148a10017b2`
+  (`referencia_fase6.py`: `9b3574099287957e2cdfc1576c3eb38f6f195216ed1d442689e4ea5c5123cc23`;
+  `intent_fase6.txt`: `f34e0ae028b0407d4d1a9b0d41a20db8f22ffecbe93e2e980bcd4cc5c6746022`).
 - `jobs/2026-09-04_205253_derive-fase1-capa-delgada/out/`: es el registro de lo que
   produjo el equipo de agentes. Las correcciones van en `DECISIONES.md`, no ahí adentro.
 - El otro árbol, `~/GW-AI-course/piv-s0008-forzado`, tampoco se toca ([D-19]).

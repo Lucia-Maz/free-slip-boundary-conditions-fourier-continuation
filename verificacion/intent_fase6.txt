@@ -1,0 +1,98 @@
+OBJETIVO
+========
+Llevar la superficie libre deformable de SPECTER más allá del orden lineal: las condiciones
+exactas de una superficie gráfica z = h + eta(x,y,t) (cinemática, tensión tangencial y
+tensión normal) se transfieren a la frontera fija z = Lz por series de Taylor en eta, a
+orden N en la amplitud (N = 1, 2, 3), con el volumen de Navier-Stokes completo. N = 1 es la
+superficie lineal de la Fase 5 ([D-49]). Pedido de Lucía el 2026-09-28 («design a further
+implementation of the deformable surface on SPECTER, allowing for higher order
+deformations»).
+
+Este archivo se escribe ANTES de la implementación, junto con la puerta
+verificacion/test_aceptacion_fase6.py y su referencia verificacion/referencia_fase6.py,
+que en este momento están en rojo contra el árbol.
+
+EL MODELO (derivación de esta sesión, [D-51]; chequeada contra la expansión exacta de las
+condiciones de Wang, Tice & Kim, ARMA 212 (2014), DOI 10.1007/s00205-013-0700-2, §1.1, a
+redondeo para N = 1..5 en numerico/fase6/chequeo_expansion.py)
+============================================================================
+Con Tr_M[f] = sum_{m=0}^{M} eta^m/m! d^m f/dz^m (en z = Lz; 0 si M < 0), s = grad_h eta,
+S = grad v + grad v^T y p la presión cinemática menos la hidrostática del reposo:
+  cinemática   d(eta)/dt = Tr_{N-1}[w] - s.Tr_{N-2}[u_h]
+  tangencial   Tr_{N-1}[S_az] - s_b Tr_{N-2}[S_ab] + s_a Tr_{N-2}[S_zz]
+               - s_a s_b Tr_{N-3}[S_zb] = 0
+  normal       Tr_{N-1}[p] = g eta - gam kappa_N + nu B_N
+               kappa_N = div( s sum_{2j+1<=N} binom(-1/2,j) |s|^{2j} )
+               B_N = sum_{2j<=N-1} (-|s|^2)^j ( Tr_{N-1-2j}[S_zz]
+                     - 2 s_a Tr_{N-2-2j}[S_az] + s_a s_b Tr_{N-3-2j}[S_ab] )
+Es un desarrollo en la DEFORMACIÓN con el campo de velocidad completo: en la celda,
+eta/h ~ 1e-5 y la velocidad es turbulenta, así que no es un desarrollo en la amplitud del
+flujo. N = 2 agrega exactamente los términos eta d_z(.) y de pendiente que faltaban para el
+efecto O(Fr^2) de la deformación sobre alfa ([H-21]).
+
+EL ESQUEMA (decisión de esta sesión, [D-52])
+===========================================
+En cada subpaso o del Runge-Kutta:
+  - la cinemática y la parte explícita de la tensión normal (g eta - gam kappa + nu B) se
+    evalúan en el estado del subpaso anterior, como en la Fase 5;
+  - la tensión tangencial se impone sobre el estado nuevo: el término principal S_az
+    (acoplado a W = w(Lz) exactamente, con B_k como en la Fase 5) y las correcciones de
+    orden >= 2 como dato, iterado hasta converger;
+  - la transferencia de la presión, sum_{m>=1} eta^m/m! d^m p/dz^m, usa la presión que se
+    está resolviendo (Dirichlet con corrección, iterado).
+La iteración por subpaso es un punto fijo afín, acelerado (Anderson), con tolerancia
+relativa fstol y a lo sumo fsmaxit pasadas.
+Las derivadas normales de la velocidad de orden m >= 2 en la superficie se calculan por
+extrapolación polinomial desde nodos INTERIORES (sin el nodo de borde); las de orden 0 y 1,
+por trazas espectrales; las de w, por continuidad. Motivo, medido con las tablas FC-Gram
+reales antes de escribir código: la traza espectral de d^2u/dz^2 responde al dato de
+Neumann como 1,40/dz (y d^3u/dz^3 como 1,15/dz^2), así que con trazas espectrales la
+iteración sólo converge para eta < ~0,7 dz. Con nodos interiores esa sensibilidad es nula.
+
+CONVENCIONES CONGELADAS
+=======================
+- Namelist &freesurface, además de lo de la Fase 5:
+      fsorder = N    ! 1 (default), 2 o 3; otro valor aborta con un mensaje que contiene
+                     ! "fsorder"
+      fsmean  = eta0 ! elevación media inicial (default 0)
+      fstol   = 1e-10! tolerancia relativa de la iteración por subpaso
+      fsmaxit = 30   ! máximo de pasadas por subpaso
+      fsgen   = 0    ! 1: usa el camino general también con fsorder = 1 (verificación)
+  Con fsorder = 1 y fsgen = 0 el código sigue EXACTAMENTE el camino de la Fase 5.
+- Diagnóstico nuevo 'freesurface_order_diagnostic.txt', sólo en el camino general, cada
+  cstep, formato 1P 13E23.15:
+      1 t
+      2,3 Re, Im de eta en el modo k0 = (fskx, fsky)     } normalizados como la columna 2
+      4,5 Re, Im de eta en el modo 2 k0                  } de freesurface_diagnostic.txt:
+      6,7 Re, Im de eta en el modo 3 k0                  } eta = A cos(k.x) da A
+      8 media de eta
+      9 rms de eta
+      10 <|T_t|^2> en z = Lz (la condición tangencial COMPLETA de orden N) sobre
+         <|d(v_t)/dz|^2> en z = 0
+      11 pasadas de la iteración en el último subpaso
+      12 residuo relativo final de esa iteración
+      13 max|eta| / dz (dz el paso de la malla física en z)
+  freesurface_diagnostic.txt se sigue escribiendo como en la Fase 5.
+- Tests unitarios nuevos (binario TESTS), con los campos analíticos solenoidales
+      A1 = 0,5 cos(x-y) e^(0,6 z), A2 = 0,4 sin(x+y) cos(1,2 z), A3 = 0,3 cos(2x+y)(1+0,3 z^2)
+      (u,v,w) = rot(A):
+        u = -0,3 sin(2x+y)(1+0,3 z^2) + 0,48 sin(x+y) sin(1,2 z)
+        v =  0,3 cos(x-y) e^(0,6 z)  + 0,6 sin(2x+y)(1+0,3 z^2)
+        w =  0,4 cos(x+y) cos(1,2 z) - 0,5 sin(x-y) e^(0,6 z)
+      p = 0,6 cos(x) cosh(1,1 z) + 0,3 sin(y-x) e^(0,4 z)
+      eta = eps [cos(x) + 0,5 sin(x+2y)],  eps en {0,2; 0,1; 0,05; 0,025}
+      g = 1,3, gam = 0,7, nu = 0,11, Lz = Lx = Ly = 1
+  escriben:
+      'fs_trazas.txt'  : m, i, j, Re, Im de d^m u/dz^m en z = Lz (m = 0..3, como las
+                         calcula el código), modos i <= 3, j <= 3
+      'fs_jet.txt'     : N, eps, id, i, j, Re, Im, para id = 1 K, 2 T_x, 3 T_y, 4 Phi
+                         (= Tr_{N-1}[p] - g eta + gam kappa_N - nu B_N), 5 kappa_N, en
+                         todos los modos retenidos (sin Nyquist)
+  con la normalización de un campo en el dominio (z,ky,kx) (factor nx*ny).
+
+LO QUE LA PUERTA NO PUEDE VERIFICAR
+===================================
+- Deformaciones grandes: el desarrollo exige eta chico frente a las escalas verticales del
+  flujo (incluida la capa de vorticidad de la superficie). Más allá hace falta una
+  coordenada que siga la superficie; se describe, no se implementa.
+- La estabilidad a resolución de producción con N > 1.

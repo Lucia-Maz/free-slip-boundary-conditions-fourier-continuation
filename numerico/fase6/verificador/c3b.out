@@ -1,0 +1,32 @@
+=== (1) replica main() (outputs -> verifier scratch) ===
+nz  64  beta_m dz^(m-1) = 0.4800 1.0052 1.3967 1.1517
+nz 128  beta_m dz^(m-1) = 0.4800 1.0052 1.3967 1.1515
+nz 256  beta_m dz^(m-1) = 0.4800 1.0052 1.3967 1.1515
+N=2: 1 + sigma = 0 en eta/dz = -0.716;  N=3: min(1 + sigma) = 0.153
+N2_espectral           inestable en eta/dz = -4.00..-0.70 (16 de 45)
+N2_interior_q8         inestable en eta/dz = -4.00..4.00 (35 de 45)
+N2_interior_q5         inestable en eta/dz = -4.00..4.00 (15 de 45)
+N2_interior_q3         inestable en eta/dz = -4.00..-4.00 (1 de 45)
+N3_espectral           inestable en eta/dz = ninguno
+N3_interior_q8         inestable en eta/dz = -4.00..4.00 (28 de 45)
+N3_interior_q5         inestable en eta/dz = 2.00..4.00 (9 de 45)
+N3_interior_q3         inestable en eta/dz = -4.00..-4.00 (1 de 45)
+N=2, eta/dz = -1: rho = 1.25660, exp(nu dt/eta^2) = 1.10964
+N=2, eta/dz = -2: rho = 1.03014, exp(nu dt/eta^2) = 1.02635
+N=2, eta/dz = -3: rho = 1.01220, exp(nu dt/eta^2) = 1.01163
+N=2, eta/dz = -4: rho = 1.00668, exp(nu dt/eta^2) = 1.00652
+-> /tmp/claude-1000/-home-lucia-GW-AI-proyecto-final-piv/cfa53625-6433-4683-95b6-41a034e9a63e/scratchpad/verificador/replica_f_fs6_estabilidad.png
+-> /tmp/claude-1000/-home-lucia-GW-AI-proyecto-final-piv/cfa53625-6433-4683-95b6-41a034e9a63e/scratchpad/verificador/replica_fase6_estabilidad_cierre.json
+=== (2) N=2 onset vs D = nu dt/dz^2 (nz=128, nu=0.01, my step) ===
+  dt=1.00e-04 D=0.010: rho(0)=0.99999753 ; N=2 unstable for r <= -0.7114 (1+sigma there = 0.0064) ; guard fires r <= -0.6802 -> covered
+  dt=2.50e-04 D=0.026: rho(0)=0.99999383 ; N=2 unstable for r <= -0.7045 (1+sigma there = 0.0161) ; guard fires r <= -0.6802 -> covered
+  dt=5.00e-04 D=0.052: rho(0)=0.99998766 ; N=2 unstable for r <= -0.6925 (1+sigma there = 0.0328) ; guard fires r <= -0.6802 -> covered
+  dt=1.00e-03 D=0.104: rho(0)=0.99997533 ; N=2 unstable for r <= -0.6665 (1+sigma there = 0.0691) ; guard fires r <= -0.6802 -> window (-0.6802, -0.6665] UNGUARDED
+  dt=1.25e-03 D=0.130: rho(0)=0.99996916 ; N=2 unstable for r <= -0.6521 (1+sigma there = 0.0892) ; guard fires r <= -0.6802 -> window (-0.6802, -0.6521] UNGUARDED
+  dt=1.50e-03 D=0.156: rho(0)=0.99996299 ; N=2 unstable for r <= -0.6363 (1+sigma there = 0.1113) ; guard fires r <= -0.6802 -> window (-0.6802, -0.6363] UNGUARDED
+  dt=1.70e-03 D=0.177: rho(0)=0.99995806 ; N=2 unstable for r <= -0.6219 (1+sigma there = 0.1314) ; guard fires r <= -0.6802 -> window (-0.6802, -0.6219] UNGUARDED
+=== (3) nz=256 with dt=2.5e-4 (valid), and nz=64 ===
+  nz=256 dt=2.5e-04 D=0.132 rho(0)=0.99999383: N=2 onset r=-0.6509 ; N=3 max rho over [-8,9] = 0.99999429 (stable)
+  nz=256 dt=1.0e-04 D=0.053 rho(0)=0.99999753: N=2 onset r=-0.6921 ; N=3 max rho over [-8,9] = 0.99999772 (stable)
+  nz=64 dt=1.0e-03 D=0.014 rho(0)=0.99997533: N=2 onset r=-0.7096 ; N=3 max rho over [-8,9] = 0.99998396 (stable)
+maxRSS 154348 kB, 50.35 s

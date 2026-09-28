@@ -1,8 +1,8 @@
 diff --git a/bin/parameter.inp b/bin/parameter.inp
-index dbf0adc..68b0ed7 100644
+index dbf0adc..070faeb 100644
 --- a/bin/parameter.inp
 +++ b/bin/parameter.inp
-@@ -40,14 +40,24 @@ vparam0 = 1.0        ! idem for the initial velocity field
+@@ -40,14 +40,29 @@ vparam0 = 1.0        ! idem for the initial velocity field
  
  ! Parameters for the velocity boundary conditions
  &velbound
@@ -24,16 +24,21 @@ index dbf0adc..68b0ed7 100644
 +fskx   = 1           ! integer x wavenumber of the initial elevation
 +fsky   = 0           ! integer y wavenumber of the initial elevation
 +fscoup = 2           ! 2: exact tangential-stress coupling; 1: lagged (verification only)
++fsorder = 1          ! order N of the surface conditions in eta: 1 (linear), 2 or 3
++fsmean = 0.0         ! mean initial elevation (the surface sits at z = Lz + fsmean)
++fstol  = 1e-10       ! relative tolerance of the surface iteration (fsorder >= 2)
++fsmaxit = 30         ! maximum passes of that iteration per substage
++fsgen  = 0           ! 1: general path also for fsorder = 1 (verification only)
 +/
 +
  ! Parameters for Bousinessq equation's
  &boussinesq
  gama = 1.0           ! amplitude of bouyancy term
 diff --git a/src/SOLVERS_AND_BOUNDARY_CONDITIONS.md b/src/SOLVERS_AND_BOUNDARY_CONDITIONS.md
-index 47937cd..747e48b 100644
+index 47937cd..91b5e49 100644
 --- a/src/SOLVERS_AND_BOUNDARY_CONDITIONS.md
 +++ b/src/SOLVERS_AND_BOUNDARY_CONDITIONS.md
-@@ -13,6 +13,19 @@ Boundary conditions supported
+@@ -13,6 +13,28 @@ Boundary conditions supported
  =============================
  - Velocity field: 
      * `noslip`      No slip boundary conditions.
@@ -50,14 +55,23 @@ index 47937cd..747e48b 100644
 +      `freesurface_diagnostic.txt` and `fs_eta.NNNN.dat` (read back on
 +      restart). Gravity-capillary waves are integrated explicitly: with
 +      ORD=2 the scheme is only stabilized by viscosity, check dt.
++      With `fsorder` = 2 or 3 the exact conditions at z = Lz + eta are
++      transferred to z = Lz by Taylor series in eta to that order, with the
++      full bulk (src/boundary/fsorder.f90, which documents the model and
++      the scheme); `freesurface_order_diagnostic.txt` reports the harmonics
++      of eta, the full tangential condition, the passes and residual of the
++      surface iteration, and max|eta|/dz. fsorder = 2 is ill-posed where
++      eta < -0.7 dz (a spurious boundary layer of thickness |eta| grows as
++      nu/eta^2); the run then stops with an error. fsorder = 3 has no such
++      limit.
  
  - Magnetic field:
      * `conducting`  Perfectly conducting boundary conditions (requires
 diff --git a/src/boundary/boundary_mod.fpp b/src/boundary/boundary_mod.fpp
-index d75c808..d06850c 100644
+index d75c808..38c2dfd 100644
 --- a/src/boundary/boundary_mod.fpp
 +++ b/src/boundary/boundary_mod.fpp
-@@ -16,6 +16,25 @@ MODULE boundary
+@@ -16,9 +16,49 @@ MODULE boundary
           INTEGER  :: bcxsta,bcxend,bcysta,bcyend,bczsta,bczend
        ENDTYPE BCPLAN
  
@@ -80,15 +94,39 @@ index d75c808..d06850c 100644
 +      INTEGER       :: fs_kx0 = 1, fs_ky0 = 0, fs_coup = 2
 +      LOGICAL       :: fs_ready = .FALSE.
 +
++      ! Order-N surface (fsorder.f90). fs_tr are the normal derivatives at
++      ! z = Lz of the last projected state (u, v, w; m = 0..order), fs_trn
++      ! those of the latest pass, fs_etap the elevation of the previous
++      ! substage, fs_ptr_guess the pressure transfer of the previous
++      ! substage (units of p). fs_ex, fs_ey: surface DFT matrices on the
++      ! padded grid (fs_mx, fs_my); fs_ph: trace phases at z = Lz; fs_beta:
++      ! response of the trace d^m u/dz^m to a unit Neumann datum; fs_ahx,
++      ! fs_ahr: Anderson history.
++      INTEGER, PARAMETER :: FS_NMAX = 3
++      INTEGER       :: fs_order = 1, fs_maxit = 30, fs_mhist = 5
++      INTEGER       :: fs_npass = 0, fs_nhist = 0, fs_nmaxit = 0
++      INTEGER       :: fs_mx = 0, fs_my = 0, fs_nkx = 0
++      REAL(KIND=GP) :: fs_tol = 1.0e-10_GP, fs_mean = 0.0_GP, fs_res = 0.0_GP
++      REAL(KIND=GP) :: fs_beta(0:FS_NMAX) = 0.0_GP, fs_resmaxit = 0.0_GP
++      LOGICAL       :: fs_general = .FALSE.
++      COMPLEX(KIND=GP), ALLOCATABLE, DIMENSION(:,:,:,:) :: fs_tr,fs_trn
++      COMPLEX(KIND=GP), ALLOCATABLE, DIMENSION(:,:,:,:) :: fs_ahx,fs_ahr
++      COMPLEX(KIND=GP), ALLOCATABLE, DIMENSION(:,:)     :: fs_etap,fs_ptr_guess
++      COMPLEX(KIND=GP), ALLOCATABLE, DIMENSION(:,:)     :: fs_ex,fs_ey,fs_ph
++
        CONTAINS
  
        INCLUDE 'vboundary.f90'
-@@ -401,6 +420,121 @@ MODULE boundary
++      INCLUDE 'fsorder.f90'
+ #ifdef SCALAR_
+       INCLUDE 'sboundary.f90'
+ #endif
+@@ -401,6 +441,142 @@ MODULE boundary
        RETURN
        END SUBROUTINE sol_project
  
 +!***********************************************************************
-+      SUBROUTINE sol_project_fs(a,b,c,d,dtop)
++      SUBROUTINE sol_project_fs(a,b,c,d,dtop,dder)
 +!-----------------------------------------------------------------------
 +!    Projection for the deformable free surface. Same as sol_project, but
 +!   with a different boundary condition on each face, which the single
@@ -106,6 +144,9 @@ index d75c808..d06850c 100644
 +!     d        : potential, (z,ky,kx)                             [OUT]
 +!     dtop     : value of d at z=Lz, (ky,kx), normalized like a
 +!                field in the (z,ky,kx) domain                    [IN]
++!     dder     : (optional) d^m d/dz^m at z=Lz, m = 0..2, same
++!                normalization: spectral sums for d_inh and the exact
++!                derivatives of the harmonic part (d'' = k^2 d)   [OUT]
 +!
 +      USE grid
 +      USE var
@@ -120,6 +161,7 @@ index d75c808..d06850c 100644
 +      COMPLEX(KIND=GP), INTENT(INOUT), DIMENSION(nz,ny,ista:iend) :: a,b,c
 +      COMPLEX(KIND=GP), INTENT(OUT), DIMENSION(nz,ny,ista:iend)   :: d
 +      COMPLEX(KIND=GP), INTENT(IN), DIMENSION(ny,ista:iend)       :: dtop
++      COMPLEX(KIND=GP), INTENT(OUT), DIMENSION(ny,ista:iend,0:FS_NMAX), OPTIONAL :: dder
 +
 +      COMPLEX(KIND=GP), ALLOCATABLE, DIMENSION(:,:,:)             :: C1,C2,C3
 +      COMPLEX(KIND=GP), DIMENSION(2,ny,ista:iend)                 :: bc
@@ -171,6 +213,23 @@ index d75c808..d06850c 100644
 +      ! Harmonic part: C1 = d_hom, C3 = d(d_hom)/dz, both in (z,ky,kx)
 +      CALL laplace_z(bc,C1,C3,1,0)
 +
++      ! Normal derivatives of d at z=Lz (order-N surface): d_inh by spectral
++      ! sums, d_hom exactly from its value and slope (d_hom'' = k^2 d_hom)
++      IF ( PRESENT(dder) ) THEN
++         dder = 0.0_GP
++         DO i=ista,iend
++            DO j=1,ny
++               DO k=1,nz
++                  dder(j,i,1) = dder(j,i,1) + d(k,j,i)*fs_ph(k,1)
++                  dder(j,i,2) = dder(j,i,2) + d(k,j,i)*fs_ph(k,2)
++               ENDDO
++               dder(j,i,0) = dtop(j,i)
++               dder(j,i,1) = dder(j,i,1) + C3(nz-Cz,j,i)
++               dder(j,i,2) = dder(j,i,2) + khom(j,i)**2*C1(nz-Cz,j,i)
++            ENDDO
++         ENDDO
++      ENDIF
++
 +      ! d = d_inh + d_hom in (z,ky,kx)
 +!$omp parallel do if (iend-ista.ge.nth) private (j,k)
 +      DO i=ista,iend
@@ -205,7 +264,7 @@ index d75c808..d06850c 100644
  !*****************************************************************
        SUBROUTINE poisson_inhomogeneous(a,b,c,d)
  !-----------------------------------------------------------------
-@@ -471,6 +605,9 @@ MODULE boundary
+@@ -471,6 +647,9 @@ MODULE boundary
  !             * =0 for homogeneous Dirichlet BC
  !             * =1 for homogeneous Neumann BC
  !             * =2 for homogeneous Robin BC
@@ -215,7 +274,7 @@ index d75c808..d06850c 100644
  !
  
        USE kes
-@@ -623,6 +760,97 @@ MODULE boundary
+@@ -623,6 +802,97 @@ MODULE boundary
           END DO
        ENDIF  !End Dirichlet bottom - Robin top
  
@@ -314,7 +373,7 @@ index d75c808..d06850c 100644
           IF ( myrank .eq. 0) PRINT*, "[ERROR] Unsupported BC combination in call "&
                "to laplace_z. Aborting..."
 diff --git a/src/boundary/vboundary.f90 b/src/boundary/vboundary.f90
-index da16622..4d6f292 100644
+index da16622..8b06001 100644
 --- a/src/boundary/vboundary.f90
 +++ b/src/boundary/vboundary.f90
 @@ -3,17 +3,31 @@
@@ -370,7 +429,7 @@ index da16622..4d6f292 100644
           STOP
        ENDIF
        RETURN
-@@ -47,13 +65,19 @@
+@@ -47,13 +65,20 @@
  !             for each boundary. [INOUT]
  !---------------------------------------------------------------------------
        USE fcgram
@@ -385,14 +444,15 @@ index da16622..4d6f292 100644
        TYPE(FCPLAN), INTENT(INOUT)   :: planfc
        CHARACTER(len=15), INTENT(IN) :: bckind(6)
  
-+      REAL(KIND=GP) :: fsgrav,fstens,fsamp
-+      INTEGER       :: fskx,fsky,fscoup
++      REAL(KIND=GP) :: fsgrav,fstens,fsamp,fsmean,fstol
++      INTEGER       :: fskx,fsky,fscoup,fsorder,fsmaxit,fsgen
 +      NAMELIST / freesurface / fsgrav,fstens,fsamp,fskx,fsky,fscoup
++      NAMELIST / freesurface / fsorder,fsmean,fstol,fsmaxit,fsgen
 +
        this%bcxsta = v_parsebc(preprocess(bckind(1)))
        this%bcxend = v_parsebc(preprocess(bckind(2)))
        this%bcysta = v_parsebc(preprocess(bckind(3)))
-@@ -61,6 +85,66 @@
+@@ -61,6 +86,90 @@
        this%bczsta = v_parsebc(preprocess(bckind(5)))
        this%bczend = v_parsebc(preprocess(bckind(6)))
  
@@ -431,9 +491,16 @@ index da16622..4d6f292 100644
 +      !     fsky   : integer y wavenumber of the initial elevation
 +      !     fscoup : 2 (default) exact coupling of the tangential stress;
 +      !              1 lagged coupling, O(dt) error, for verification only
++      !     fsorder: order N of the surface conditions (1, 2 or 3; 1 is the
++      !              linear surface; >= 2 uses the general path, fsorder.f90)
++      !     fsmean : mean initial elevation
++      !     fstol  : relative tolerance of the per-substage iteration (N >= 2)
++      !     fsmaxit: maximum number of passes of that iteration
++      !     fsgen  : 1 uses the general path also for fsorder = 1
 +      IF ( this%bczend .eq. 2 ) THEN
 +         fsgrav = 0.0_GP; fstens = 0.0_GP; fsamp = 0.0_GP
 +         fskx = 1; fsky = 0; fscoup = 2
++         fsorder = 1; fsmean = 0.0_GP; fstol = 1.0e-10_GP; fsmaxit = 30; fsgen = 0
 +         IF (myrank.eq.0) THEN
 +            OPEN(1,file='parameter.inp',status='unknown',form="formatted")
 +            READ(1,NML=freesurface)
@@ -445,8 +512,25 @@ index da16622..4d6f292 100644
 +         CALL MPI_BCAST(fskx,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
 +         CALL MPI_BCAST(fsky,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
 +         CALL MPI_BCAST(fscoup,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
++         CALL MPI_BCAST(fsorder,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
++         CALL MPI_BCAST(fsmean,1,GC_REAL,0,MPI_COMM_WORLD,ierr)
++         CALL MPI_BCAST(fstol,1,GC_REAL,0,MPI_COMM_WORLD,ierr)
++         CALL MPI_BCAST(fsmaxit,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
++         CALL MPI_BCAST(fsgen,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
 +         fs_grav = fsgrav; fs_tens = fstens; fs_amp = fsamp
 +         fs_kx0 = fskx; fs_ky0 = fsky; fs_coup = fscoup
++         IF ( fsorder .lt. 1 .OR. fsorder .gt. FS_NMAX ) THEN
++            IF ( myrank .eq. 0 ) THEN
++               PRINT*, "[ERROR] fsorder must be 1, 2 or 3 (got ", fsorder, &
++                   "). Aborting..."
++               FLUSH(6)
++            ENDIF
++            CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
++            CALL MPI_ABORT(MPI_COMM_WORLD,1,ierr)
++         ENDIF
++         fs_order = fsorder; fs_mean = fsmean; fs_tol = fstol
++         fs_maxit = MAX(fsmaxit,2)
++         fs_general = ( fsorder .ge. 2 ) .OR. ( fsgen .eq. 1 )
 +         IF ( fs_coup .ne. 1 .AND. fs_coup .ne. 2 ) THEN
 +            IF ( myrank .eq. 0 ) PRINT*, "[ERROR] fscoup must be 1 or 2."
 +            CALL MPI_ABORT(MPI_COMM_WORLD,1,ierr)
@@ -459,7 +543,7 @@ index da16622..4d6f292 100644
        END SUBROUTINE v_setup
  
  !***********************************************************************
-@@ -70,6 +154,14 @@
+@@ -70,6 +179,14 @@
  !   Subroutine to apply boundary conditions to the velocity field and
  !  project the field into a solenoidal space, for the latter a Poisson
  !  equation with appropriate boundary conditions is solved.
@@ -474,7 +558,7 @@ index da16622..4d6f292 100644
  !  ARGUMENTS:
  !    planbc : BCPLAN to use during the imposition. [IN]
  !    planfc : FCPLAN to use during the imposition. [IN]
-@@ -95,6 +187,8 @@
+@@ -95,6 +212,8 @@
        REAL(KIND=GP), INTENT(IN), DIMENSION(2), OPTIONAL :: v_zsta, v_zend
        INTEGER, INTENT(IN), OPTIONAL       :: rki
  
@@ -483,7 +567,7 @@ index da16622..4d6f292 100644
  !TODO Create interface for the case of non-periodic BC in X
  !(in that case pr should be real)
  
-@@ -102,24 +196,55 @@
+@@ -102,24 +221,62 @@
        IF ( planbc%bcysta .ne. -1 .OR. planbc%bcyend .ne. -1) THEN
           IF ( myrank .eq. 0 ) PRINT*, "[ERROR] Non-periodic boundary ", &
               "conditions in Y direction not supported yet. Aborting..."
@@ -511,7 +595,14 @@ index da16622..4d6f292 100644
 +                "`rki` in call to imposebc_and_project. Aborting..."
 +            CALL MPI_ABORT(MPI_COMM_WORLD,1,ierr)
 +         ENDIF
-+         IF ( PRESENT(v_zsta) ) THEN
++         IF ( fs_general ) THEN
++            IF ( PRESENT(v_zsta) ) THEN
++               CALL fs_general_imposebc(planbc,planfc,vx,vy,vz,pr,rki,v_zsta)
++            ELSE
++               CALL fs_general_imposebc(planbc,planfc,vx,vy,vz,pr,rki, &
++                                        (/.0_GP,.0_GP/))
++            ENDIF
++         ELSEIF ( PRESENT(v_zsta) ) THEN
 +            CALL freesurface_imposebc(planbc,planfc,vx,vy,vz,pr,rki,v_zsta)
 +         ELSE
 +            CALL freesurface_imposebc(planbc,planfc,vx,vy,vz,pr,rki, &
@@ -543,7 +634,7 @@ index da16622..4d6f292 100644
           STOP
        ENDIF
  
-@@ -130,6 +255,8 @@
+@@ -130,6 +287,8 @@
            ELSE
               CALL noslip_z(planfc,rki,vx,vy,vz,pr,v_zsta,0)
            ENDIF
@@ -552,7 +643,7 @@ index da16622..4d6f292 100644
        ENDIF
  
        ! Z=Lz
-@@ -139,6 +266,8 @@
+@@ -139,6 +298,8 @@
            ELSE
               CALL noslip_z(planfc,rki,vx,vy,vz,pr,v_zend,1)
            ENDIF
@@ -561,7 +652,7 @@ index da16622..4d6f292 100644
        ENDIF
  
        ! Back to 3D Fourier
-@@ -149,7 +278,7 @@
+@@ -149,7 +310,7 @@
  
        RETURN
        END SUBROUTINE v_imposebc_and_project
@@ -570,7 +661,7 @@ index da16622..4d6f292 100644
  !***********************************************************************
        SUBROUTINE noslip_z(planfc,o,vx,vy,vz,pr,vbound,pos)
  !-----------------------------------------------------------------------
-@@ -210,21 +339,738 @@
+@@ -210,21 +371,768 @@
  
        END SUBROUTINE noslip_z
  
@@ -1061,7 +1152,7 @@ index da16622..4d6f292 100644
 +         ! Nyquist modes are excluded: their coefficient is its own
 +         ! conjugate and the A/2 split below does not apply
 +         IF ( i0 .gt. nx/2 .OR. j0 .lt. 1 .OR. j0 .gt. ny .OR. &
-+              j0 .eq. ny/2+1 ) THEN
++              (ny .gt. 1 .AND. j0 .eq. ny/2+1) ) THEN
 +            IF ( myrank .eq. 0 ) PRINT*, "[ERROR] fskx, fsky out of range ", &
 +                "(|fskx| < nx/2 and |fsky| < ny/2 are required)."
 +            CALL MPI_ABORT(MPI_COMM_WORLD,1,ierr)
@@ -1077,6 +1168,8 @@ index da16622..4d6f292 100644
 +               IF ( i0 .eq. 1 ) fs_eta(ny-j0+2,1) = amp/2
 +            ENDIF
 +         ENDIF
++         IF ( ista .eq. 1 ) fs_eta(1,1) = fs_eta(1,1) + &
++             fs_mean*real(nx,kind=GP)*real(ny,kind=GP)
 +      ELSE
 +         CALL fs_read(dir,ext)
 +      ENDIF
@@ -1101,6 +1194,34 @@ index da16622..4d6f292 100644
 +      ! Traces of the initial velocity
 +      CALL fs_trace(planfc,vz,fs_wtop)
 +      CALL fs_dwz_trace(planfc,vx,vy,fs_dwz)
++
++      ! General path (fsorder.f90): transforms, traces of the initial state,
++      ! and the initial pressure solving p + sum eta^m/m! d^m p/dz^m = E0 at
++      ! z=Lz by fixed-point iteration (p harmonic, dp/dz = 0 at the bottom)
++      IF ( fs_general ) THEN
++         CALL fs_gen_setup(planfc)
++         ALLOCATE( fs_tr(ny,ista:iend,3,0:FS_NMAX), fs_trn(ny,ista:iend,3,0:FS_NMAX) )
++         ALLOCATE( fs_ahx(ny,ista:iend,4,fs_mhist), fs_ahr(ny,ista:iend,4,fs_mhist) )
++         ALLOCATE( fs_etap(ny,ista:iend), fs_ptr_guess(ny,ista:iend) )
++         fs_ahx = 0.0_GP; fs_ahr = 0.0_GP
++         CALL fs_traces_general(vx,vy,vz,fs_order,fs_tr)
++         fs_trn = fs_tr
++         fs_wtop = fs_tr(:,:,3,0)
++         fs_etap = fs_eta
++         CALL fs_init_pressure(fs_order,fs_eta,fs_tr,dd,fs_ptr_guess)
++         IF ( stat .eq. 0 ) THEN
++            DO i = ista,iend
++               DO j = 1,ny
++                  DO k = 1,nz
++                     pr(k,j,i) = dt*dd(k,j,i)
++                  ENDDO
++               ENDDO
++            ENDDO
++         ENDIF
++         DEALLOCATE( dd )
++         fs_ready = .TRUE.
++         RETURN
++      ENDIF
 +
 +      ! Initial pressure potential, as after an o=1 substage: d = dt p
 +      IF ( stat .eq. 0 ) THEN
@@ -1311,7 +1432,7 @@ index da16622..4d6f292 100644
  !
  ! Parameters
  !     a  : velocity field in the x-direction
-@@ -247,22 +1093,50 @@
+@@ -247,22 +1155,51 @@
        REAL(KIND=GP), INTENT(IN)        :: dt
        INTEGER, INTENT(IN)              :: t
  
@@ -1363,12 +1484,13 @@ index da16622..4d6f292 100644
 +         ! Deformable free surface: full tangential stress and elevation
 +         IF ( planbc%bczend .eq. 2 ) THEN
 +            CALL fs_diagnostic(planfc,a,b,c,t,dt,tmp,tmr)
++            IF ( fs_general ) CALL fs_order_diagnostic(planfc,a,b,c,t,dt,tmp)
 +         ENDIF
        ENDIF
  
        RETURN
 diff --git a/src/specter.fpp b/src/specter.fpp
-index b66655a..6ce0456 100644
+index b66655a..f9d0fe9 100644
 --- a/src/specter.fpp
 +++ b/src/specter.fpp
 @@ -976,6 +976,10 @@
@@ -1390,12 +1512,13 @@ index b66655a..6ce0456 100644
  
  #ifdef SCALAR_
              rmp = 1.0_GP/ &
-@@ -1176,6 +1181,8 @@
+@@ -1176,6 +1181,9 @@
  #endif
        INCLUDE 'tests/energy.f90'
        INCLUDE 'tests/poisson.f90'
 +      INCLUDE 'tests/laplace_dirneu.f90'
 +      INCLUDE 'tests/laplace_neudir.f90'
++      INCLUDE 'tests/fs_orden.f90'
  #endif /*End of if TESTS_*/
  
  ! Computes the benchmark
