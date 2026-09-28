@@ -1,0 +1,11 @@
+Se volvió a correr, sin cambios y sobre el árbol modificado, la puerta de la Fase~2,
+\archivo{verificacion/test_aceptacion_fase2.py} (hash \texttt{6f0b4da4}\ldots):
+\textbf{6/6}, con los mismos números que en \etq{V-09}. Residuo de tensión
+$6{,}14\cdot10^{-12}$ con razón en $dt$ $1{,}00$ en las dos caras; $\lambda_0$ con error
+$5{,}8\cdot10^{-10}$; cociente canal/libre $4{,}000000015$ (log
+\archivo{verificacion/logs/fase2_regresion_2026-09-28.log}, 6\,min, 173\,MB). En esa corrida los caminos \texttt{noslip} y \texttt{freeslip} no
+habían cambiado. Después se corrigió \texttt{freeslip\_z} \etq{D-50} y las dos puertas se
+volvieron a correr: Fase~2 \textbf{6/6}, con los mismos números (V3 pasa de $1{,}061$ a
+$1{,}062\cdot10^{-7}$: era ciega al defecto), y Fase~5 \textbf{8/8}
+(\archivo{verificacion/logs/fase2_freeslip_corregido_2026-09-28.log},
+\archivo{fase5_freeslip_corregido_2026-09-28.log}).

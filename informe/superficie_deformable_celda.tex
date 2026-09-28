@@ -1,0 +1,61 @@
+Las cuentas son de \archivo{numerico/fase5/superficie_deformable_escalas.py}, con $h$, $\nu$,
+el $k$ del forzado y el campo del PIV de \archivo{codigo/celda.py}, y $g$, $\rho$, $\sigma$ de
+agua limpia declarados en \archivo{numerico/fase4/superficie_libre_escalas.py} (no son del
+electrolito; supuesto de \etq{D-28}). La parte poloidal se calcula con la misma referencia
+MAC de la puerta, importada, en variables adimensionales y con Richardson (error relativo
+$\lesssim10^{-5}$).
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{superficie_deformable_escalas.png}
+\caption{Izquierda: en la celda real, la parte poloidal de cada modo es una onda de
+gravedad-capilaridad (frecuencia y amortiguamiento), y la parte toroidal ---el flujo
+vortical--- decae con $\lambda=\nu[(\pi/2h)^2+k^2]$ sin sentir la deformación
+(§\ref{sec:toroidal}). La línea punteada es el límite inviscido, como control: la
+frecuencia viscosa queda apenas por debajo, por la capa límite de fondo. Derecha: paso de
+tiempo máximo con la caja igual al campo del PIV.}
+\label{fig:celda}
+\end{figure}
+
+\paragraph{Lo que mueve la superficie.} En el $k$ del forzado ($296\,\mathrm{m^{-1}}$) la onda
+tiene $\omega=67\,\mathrm{s^{-1}}$ (período $0{,}09$\,s) y se amortigua a
+$0{,}28\,\mathrm{s^{-1}}$, contra $0{,}156\,\mathrm{s^{-1}}=2{,}28\,\alpha$ del modo
+toroidal. Como la parte toroidal no siente la deformación (§\ref{sec:toroidal}), \textbf{la
+superficie deformable no cambia $\alpha$ a orden lineal, exactamente}. Su efecto es no
+lineal: la presión dinámica levanta la superficie $\eta\sim U^2/g$, y una estimación de orden
+de magnitud\propio{} del efecto relativo es $\mathrm{Fr}^2\sim10^{-4}$ (con
+$\mathrm{Fr}\sim10^{-2}$ de \etq{D-28}), no medida. Para \etq{P-02} esto descarta la
+deformación lineal como explicación del déficit. Medir la no lineal completa no se puede con
+esta implementación (§\ref{sec:toroidal}): pide el orden cuadrático en la frontera.
+
+\paragraph{Lo que cuesta.} Las ondas se integran en forma explícita\propio. Con
+\texttt{ORD=2} el Runge--Kutta no tiene intervalo de estabilidad sobre el eje imaginario,
+$|G|^2=1+(\omega\,dt)^4/4$, y la estabilización viene sólo del amortiguamiento viscoso de la
+onda; tomándolo como $2\nu k^2$ (el de superficie) sale
+$dt<(16\nu k^2/\omega^4)^{1/3}$ en el $k$ máximo retenido (regla de 2/3, supuesta). Con
+\texttt{ORD=4}, $dt\le2\sqrt2/\omega$. El verificador mostró que para $kh\gtrsim3$ el
+amortiguamiento real es 2--4\,\% \emph{menor} que $2\nu k^2$, así que llamarlo conservador
+habría sido falso; aun así, con el autovalor exacto el límite RK2 da $2{,}83$ y
+$1{,}36\cdot10^{-3}$\,s contra $2{,}77$ y $1{,}35\cdot10^{-3}$\,s de la fórmula en $64^2$ y
+$128^2$: la cota vale. Contra el límite viscoso vertical
+$dt\le2/(\nu(\pi/\Delta z)^2)$:
+
+\begin{center}\small
+\begin{tabular}{rrcccc}
+\toprule
+malla & $N_z$ físico & $dt$ viscoso [s] & ondas, ORD=2 [s] & ondas, ORD=4 [s] & viscoso / ondas ORD=2\\
+\midrule
+$32^2$ & 39 & $5{,}1\cdot10^{-3}$ & $4{,}6\cdot10^{-3}$ & $5{,}0\cdot10^{-2}$ & 1{,}1\\
+$64^2$ & 39 & $5{,}1\cdot10^{-3}$ & $2{,}8\cdot10^{-3}$ & $2{,}4\cdot10^{-2}$ & 1{,}8\\
+$128^2$ & 39 & $5{,}1\cdot10^{-3}$ & $1{,}3\cdot10^{-3}$ & $1{,}0\cdot10^{-2}$ & 3{,}8\\
+$64^2$ & 103 & $7{,}0\cdot10^{-4}$ & $2{,}8\cdot10^{-3}$ & $2{,}4\cdot10^{-2}$ & 0{,}25\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Con la malla vertical de las corridas de la Fase~4 ($N_z=64$, 39 puntos físicos) y
+\texttt{ORD=2}, las ondas bajan el paso admisible entre $1{,}1$ y $3{,}8$ veces según la
+malla horizontal; con \texttt{ORD=4} no limitan. Es una estimación de estabilidad lineal, no
+validada con bibliografía ni con corridas a esa resolución, y el \texttt{ORD=4} no se probó
+con la puerta. Elegir el orden y el paso de producción es una decisión, no una optimización
+mecánica.

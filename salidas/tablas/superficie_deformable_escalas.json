@@ -1,0 +1,220 @@
+{
+  "descripcion": "Qué cambia la superficie deformable en la celda real, y cuánto cuesta integrarla.",
+  "celda": {
+    "h_m": 0.006,
+    "nu_m2_s": 1e-06,
+    "k_forzado_1_m": 296.19219587722444,
+    "campo_de_vision_m": 0.2694736842105263
+  },
+  "g_m_s2": 9.81,
+  "sigma_sobre_rho_m3_s2": 7.199999999999999e-05,
+  "procedencia_g_rho_sigma": "numerico/fase4/superficie_libre_escalas.py",
+  "tasa_vortical": [
+    {
+      "k_1_m": 40.0,
+      "kh": 0.24,
+      "G_adim": 2143843.2,
+      "onda_frecuencia_1_s": 9.493123972519436,
+      "onda_amortiguamiento_1_s": 0.18703264693550797,
+      "onda_error_richardson_relativo": 2.8152475555796738e-06,
+      "omega_inviscida_1_s": 9.669213852882768,
+      "lambda_toroidal_1_s": 0.07013891945200942
+    },
+    {
+      "k_1_m": 50.1,
+      "kh": 0.30060000000000003,
+      "G_adim": 2157995.6755200005,
+      "onda_frecuencia_1_s": 11.893885485614115,
+      "onda_amortiguamiento_1_s": 0.20559111064315583,
+      "onda_error_richardson_relativo": 3.850473255383702e-06,
+      "omega_inviscida_1_s": 12.086644563349596,
+      "lambda_toroidal_1_s": 0.07104892945200943
+    },
+    {
+      "k_1_m": 62.8,
+      "kh": 0.37679999999999997,
+      "G_adim": 2180294.5996800005,
+      "onda_frecuencia_1_s": 14.896397104723146,
+      "onda_amortiguamiento_1_s": 0.22427268095804498,
+      "onda_error_richardson_relativo": 5.20490123339614e-06,
+      "omega_inviscida_1_s": 15.104859182204555,
+      "lambda_toroidal_1_s": 0.07248275945200942
+    },
+    {
+      "k_1_m": 78.7,
+      "kh": 0.4722,
+      "G_adim": 2215284.26688,
+      "onda_frecuencia_1_s": 18.623499845288485,
+      "onda_amortiguamiento_1_s": 0.24164435640554272,
+      "onda_error_richardson_relativo": 6.8979560955273385e-06,
+      "omega_inviscida_1_s": 18.84470314842963,
+      "lambda_toroidal_1_s": 0.07473260945200944
+    },
+    {
+      "k_1_m": 98.6,
+      "kh": 0.5916,
+      "G_adim": 2270155.92192,
+      "onda_frecuencia_1_s": 23.230597670874626,
+      "onda_amortiguamiento_1_s": 0.2557490967048054,
+      "onda_error_richardson_relativo": 8.872446329681328e-06,
+      "omega_inviscida_1_s": 23.458770054019,
+      "lambda_toroidal_1_s": 0.07826087945200944
+    },
+    {
+      "k_1_m": 123.6,
+      "kh": 0.7415999999999999,
+      "G_adim": 2356547.2819200004,
+      "onda_frecuencia_1_s": 28.923540628260128,
+      "onda_amortiguamiento_1_s": 0.2643560554622199,
+      "onda_error_richardson_relativo": 1.093359388678448e-05,
+      "omega_inviscida_1_s": 29.14935335047973,
+      "lambda_toroidal_1_s": 0.08381587945200943
+    },
+    {
+      "k_1_m": 154.9,
+      "kh": 0.9294,
+      "G_adim": 2492114.84352,
+      "onda_frecuencia_1_s": 35.91678735889762,
+      "onda_amortiguamiento_1_s": 0.2659754022084069,
+      "onda_error_richardson_relativo": 1.266287819245879e-05,
+      "omega_inviscida_1_s": 36.1274810906162,
+      "lambda_toroidal_1_s": 0.09253292945200943
+    },
+    {
+      "k_1_m": 194.1,
+      "kh": 1.1646,
+      "G_adim": 2704878.64512,
+      "onda_frecuencia_1_s": 44.531841304935476,
+      "onda_amortiguamiento_1_s": 0.2623158816438708,
+      "onda_error_richardson_relativo": 1.34795435754801e-05,
+      "omega_inviscida_1_s": 44.71328110751851,
+      "lambda_toroidal_1_s": 0.10621372945200942
+    },
+    {
+      "k_1_m": 243.3,
+      "kh": 1.4598000000000002,
+      "G_adim": 3039558.92928,
+      "onda_frecuencia_1_s": 55.29546784384479,
+      "onda_amortiguamiento_1_s": 0.26123382050481275,
+      "onda_error_richardson_relativo": 1.2846619331444408e-05,
+      "omega_inviscida_1_s": 55.43629668657489,
+      "lambda_toroidal_1_s": 0.12773380945200943
+    },
+    {
+      "k_1_m": 296.19219587722444,
+      "kh": 1.7771531752633467,
+      "G_adim": 3483334.1124065933,
+      "onda_frecuencia_1_s": 67.06113330728502,
+      "onda_amortiguamiento_1_s": 0.2747088249944552,
+      "onda_error_richardson_relativo": 1.1002009772157095e-05,
+      "omega_inviscida_1_s": 67.16341364096229,
+      "lambda_toroidal_1_s": 0.15626873635058153
+    },
+    {
+      "k_1_m": 304.9,
+      "kh": 1.8294,
+      "G_adim": 3564736.28352,
+      "onda_frecuencia_1_s": 69.03441461995754,
+      "onda_amortiguamiento_1_s": 0.2787583449399698,
+      "onda_error_richardson_relativo": 1.0643852087269464e-05,
+      "omega_inviscida_1_s": 69.13120969155179,
+      "lambda_toroidal_1_s": 0.16150292945200942
+    },
+    {
+      "k_1_m": 382.1,
+      "kh": 2.2926,
+      "G_adim": 4389558.376320001,
+      "onda_frecuencia_1_s": 87.16545804238639,
+      "onda_amortiguamiento_1_s": 0.33831388758582087,
+      "onda_error_richardson_relativo": 7.433401458673567e-06,
+      "omega_inviscida_1_s": 87.22507630564604,
+      "lambda_toroidal_1_s": 0.21453932945200946
+    },
+    {
+      "k_1_m": 478.8,
+      "kh": 2.8728000000000002,
+      "G_adim": 5684247.290879999,
+      "onda_frecuencia_1_s": 111.85442866865674,
+      "onda_amortiguamiento_1_s": 0.46833464144941095,
+      "onda_error_richardson_relativo": 4.4805809709881505e-06,
+      "omega_inviscida_1_s": 111.89181350353257,
+      "lambda_toroidal_1_s": 0.2977883594520095
+    },
+    {
+      "k_1_m": 600.0,
+      "kh": 3.6,
+      "G_adim": 7717679.999999999,
+      "onda_frecuencia_1_s": 146.2751349179986,
+      "onda_amortiguamiento_1_s": 0.7029844027832196,
+      "onda_error_richardson_relativo": 3.996148365050634e-06,
+      "omega_inviscida_1_s": 146.30793986561503,
+      "lambda_toroidal_1_s": 0.42853891945200945
+    }
+  ],
+  "paso_de_tiempo": [
+    {
+      "nxy": 32,
+      "nz_fisico": 39,
+      "kmax_1_m": 248.70941840919195,
+      "omega_max_1_s": 56.62172901601162,
+      "dt_viscoso_s": 0.0050520257771802775,
+      "dt_ondas_rk2_s": 0.004583430456033364,
+      "dt_ondas_rk4_s": 0.049953033471414506,
+      "cociente_rk2": 1.102236812719626
+    },
+    {
+      "nxy": 32,
+      "nz_fisico": 103,
+      "kmax_1_m": 248.70941840919195,
+      "omega_max_1_s": 56.62172901601162,
+      "dt_viscoso_s": 0.0007011846618846906,
+      "dt_ondas_rk2_s": 0.004583430456033364,
+      "dt_ondas_rk4_s": 0.049953033471414506,
+      "cociente_rk2": 0.15298250264966745
+    },
+    {
+      "nxy": 64,
+      "nz_fisico": 39,
+      "kmax_1_m": 497.4188368183839,
+      "omega_max_1_s": 116.92274941369988,
+      "dt_viscoso_s": 0.0050520257771802775,
+      "dt_ondas_rk2_s": 0.0027668744548423863,
+      "dt_ondas_rk4_s": 0.02419056290524402,
+      "cociente_rk2": 1.8258962810324055
+    },
+    {
+      "nxy": 64,
+      "nz_fisico": 103,
+      "kmax_1_m": 497.4188368183839,
+      "omega_max_1_s": 116.92274941369988,
+      "dt_viscoso_s": 0.0007011846618846906,
+      "dt_ondas_rk2_s": 0.0027668744548423863,
+      "dt_ondas_rk4_s": 0.02419056290524402,
+      "cociente_rk2": 0.2534212062486345
+    },
+    {
+      "nxy": 128,
+      "nz_fisico": 39,
+      "kmax_1_m": 994.8376736367678,
+      "omega_max_1_s": 283.9876530842555,
+      "dt_viscoso_s": 0.0050520257771802775,
+      "dt_ondas_rk2_s": 0.0013452681645709313,
+      "dt_ondas_rk4_s": 0.009959683437036723,
+      "cociente_rk2": 3.7554042459568677
+    },
+    {
+      "nxy": 128,
+      "nz_fisico": 103,
+      "kmax_1_m": 994.8376736367678,
+      "omega_max_1_s": 283.9876530842555,
+      "dt_viscoso_s": 0.0007011846618846906,
+      "dt_ondas_rk2_s": 0.0013452681645709313,
+      "dt_ondas_rk4_s": 0.009959683437036723,
+      "cociente_rk2": 0.5212229653173508
+    }
+  ],
+  "salvedades": [
+    "Modelo lineal en la frontera; la deformación no lineal forzada, eta ~ U^2/g, es la de [D-28] y no entra acá.",
+    "El límite de dt con ORD=2 es una estimación de estabilidad lineal de esta sesión, con amortiguamiento 2 nu k^2 (no conservador para kh > ~3, por 2-4 %); no está validado con bibliografía."
+  ]
+}

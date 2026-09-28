@@ -1,0 +1,92 @@
+OBJETIVO
+========
+Implementar en SPECTER una superficie libre DEFORMABLE en z=Lz, linealizada: el dominio
+no se mueve, las condiciones se transfieren a z=Lz, y la elevación eta(x,y,t) se
+integra como un campo 2D propio. El fondo sigue siendo no-deslizante (o free-slip).
+
+Pedido por Lucía el 2026-09-28 ("with deformations this time"), eligiendo explícitamente
+la versión lineal como paso previo a la jerarquía cúbica que dejó la sesión de codex en
+research/2026-09-25_nonlinear_free_surface/. Cambia el alcance fijado en [D-28], que
+dejaba la superficie deformable fuera: [D-28] sigue valiendo como estimación física
+(eta/h ~ 1e-5 en esta celda); lo que cambia es que ahora se CALCULA en vez de estimarse.
+
+Este archivo se escribe ANTES de la implementación, junto con la puerta
+verificacion/test_aceptacion_fase5.py, que en este momento está en rojo.
+
+CONVENCIONES CONGELADAS
+=======================
+- z=0 es el fondo (no-deslizante o free-slip), z=Lz la superficie. La superficie
+  deformable sólo se admite en z=Lz; en z=0 el código aborta con un mensaje que
+  contiene "only at z=Lz".
+- La cadena nueva para parameter.inp es exactamente "freesurface".
+- p es la presión cinemática menos la hidrostática del estado en reposo, la misma
+  variable que SPECTER ya integra. La gravedad NO entra como fuerza de volumen.
+- Namelist nuevo en parameter.inp, leído sólo si z=Lz es "freesurface":
+      &freesurface
+      fsgrav = g            ! aceleración de la gravedad
+      fstens = sigma/rho    ! tensión superficial sobre densidad
+      fsamp  = A            ! amplitud inicial de eta
+      fskx, fsky            ! índices ENTEROS del modo inicial, eta = A cos(kx x + ky y)
+      fscoup = 2            ! 2: acoplamiento exacto (default); 1: rezagado, SÓLO para
+                            !    el control negativo de la puerta
+      /
+- Diagnóstico nuevo 'freesurface_diagnostic.txt', escrito junto a los otros cada cstep,
+  formato 1P 9E23.15, columnas:
+      1 t
+      2 Re(eta_k0) y 3 Im(eta_k0), el coeficiente del modo (fskx,fsky) normalizado para
+        que eta = A cos(k0.x) dé exactamente A en la columna 2
+      4 media de eta (física)
+      5 rms de eta (física)
+      6 <|tau_t|^2> en z=Lz, con tau_t = d(v_t)/dz + grad_t(v_z): la tensión TANGENCIAL
+        COMPLETA, que en una superficie deformable ya no es d(v_t)/dz
+      7 <|d(v_t)/dz|^2> en z=0 (la tensión de la pared rígida, escala de referencia)
+      8 <|v_z|^2> en z=0
+      9 discordancia relativa del acoplamiento en el último subpaso (ver abajo)
+  Las columnas 6-8 con la normalización de bouncheck_z.
+- Test unitario nuevo src/tests/laplace_neudir.f90 que escribe laplace_neudir.txt, con
+  las mismas columnas que laplace_dirneu.txt pero con g0 = phi'(0) y g1 = phi(Lz).
+
+EL MODELO
+=========
+En z=Lz, a primer orden en la amplitud:
+    cinemática          d(eta)/dt = w
+    tensión tangencial  du/dz + dw/dx = 0 ,  dv/dz + dw/dy = 0
+    tensión normal      p = g eta - (sigma/rho) lap_h(eta) + 2 nu dw/dz
+El volumen de fluido se conserva (el modo medio de eta no cambia).
+
+LA DERIVACIÓN QUE HAY QUE HACER
+===============================
+En cada subpaso o del Runge-Kutta, SPECTER avanza v* y proyecta v = v* - grad(d), con
+d = (dt/o) p (verificado en el código: noslip_z usa (o+1)/o para reescalar el pr del
+subpaso anterior, y la salida divide pr por dt).
+
+(a) Presión. La tensión normal PRESCRIBE d en la superficie: Dirichlet arriba,
+    d(Lz) = (dt/o)[(g + sigma k^2/rho) eta + 2 nu dw/dz], evaluado en el estado del
+    subpaso anterior, como cualquier otro término del miembro derecho de un Runge-Kutta
+    explícito. El fondo sigue con Neumann (w=0 después de proyectar). Hace falta la
+    rama Neumann(z=0) - Dirichlet(z=Lz) de laplace_z, que no existe, y una proyección
+    con condiciones distintas en cada cara (sol_project tiene un único bctarget).
+
+(b) Elevación. eta^(o) = eta^n + (dt/o) w(Lz) del subpaso anterior: el mismo esquema
+    que la velocidad.
+
+(c) Tensión tangencial sobre v*. Como la tensión es vorticidad + 2 grad_t(w) y la
+    vorticidad no cambia al proyectar, la condición sobre v* es
+        d(v*_x)/dz = i kx (v*_z - 2 W) ,   d(v*_y)/dz = i ky (v*_z - 2 W),
+    con W = w(Lz) DESPUÉS de proyectar, que todavía no se conoce. Se reduce a freeslip_z
+    cuando W = 0. Toda la cadena (reconstrucción de Neumann, continuación FC-Gram,
+    proyección) es lineal y desacoplada por modo horizontal, así que W_final = A_k + B_k W
+    con B_k fijo para la corrida: se calcula una vez al arrancar, y en cada subpaso una
+    pasada con un W de prueba da A_k, W = A_k/(1 - B_k) es exacto, y una segunda pasada lo
+    impone. La columna 9 del diagnóstico mide cuánto difiere el W resultante del impuesto.
+    fscoup = 1 usa el W del subpaso anterior en una sola pasada: tiene error O(dt) en la
+    tensión y es el control negativo.
+
+LO QUE LA PUERTA NO PUEDE VERIFICAR
+===================================
+- La no linealidad de la superficie (orden eta^2): el modelo es lineal en la frontera
+  por diseño. El volumen sí es no lineal (SPECTER completo).
+- La estabilidad a resolución de producción: las ondas de gravedad y capilaridad se
+  integran explícitamente, con omega_max creciendo como k^(3/2) por capilaridad. Con
+  ORD=2 el eje imaginario es marginalmente inestable y lo estabiliza la viscosidad. Hay
+  que cuantificarlo antes de producción; no es un chequeo de esta puerta.

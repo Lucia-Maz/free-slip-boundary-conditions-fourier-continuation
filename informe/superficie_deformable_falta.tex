@@ -1,0 +1,43 @@
+\paragraph{Decisiones que quedan para Lucía.}
+\begin{itemize}
+\item \emph{Resuelta:} \etq{P-03}, el camino \texttt{freeslip} plano. Corregido y medido
+  (\etq{D-50}, §\ref{sec:defecto}).
+\item \textbf{Orden y paso de tiempo si se usa la superficie deformable en producción}
+  (§\ref{sec:celda}). No hace falta para $\alpha$ a orden lineal.
+\end{itemize}
+
+\paragraph{Lo que el modelo no hace.}
+\begin{itemize}
+\item \textbf{La geometría no lineal de la superficie.} El modelo es lineal en la frontera:
+  la jerarquía cúbica de la sesión anterior
+  (\archivo{research/2026-09-25_nonlinear_free_surface/}) es el paso siguiente natural,
+  porque resuelve este mismo operador lineal una vez por orden, con los términos de orden
+  superior como dato. Más allá de pocos órdenes hace falta una coordenada que siga la
+  superficie (ALE), con operadores de coeficientes variables en todo el volumen: es un
+  proyecto de otra escala. Un grafo tampoco representa olas que rompen.
+\item \textbf{Validación a resolución de producción.} La puerta usa $8\times8\times128$; la
+  estabilidad con capilaridad en $k$ grande, \texttt{ORD=4}, y más de dos procesos MPI no se
+  probaron.
+\item \textbf{Reinicio.} $\eta$ se escribe y se relee (\archivo{fs_eta.NNNN.dat}); E2 lo
+  prueba (§\ref{sec:extras}). La primera corrida de un reinicio recalcula $B_{\mathbf k}$ y
+  las trazas a partir del campo leído.
+\end{itemize}
+
+\paragraph{Problemas encontrados en el camino.}
+\begin{itemize}
+\item La referencia de Chebyshev de cuarto orden empeoraba al refinar y se reemplazó por la
+  MAC de segundo orden con Richardson.
+\item Un chequeo del límite de tapa rígida ($g\to\infty$ contra \texttt{freeslip}) se
+  descartó antes de congelar la puerta: arrancando con $\eta=0$ se excitan ondas cuyo efecto
+  escala como $g^{-1/2}$ y no como $g^{-1}$, así que el criterio habría sido frágil. Se
+  reemplazó por F7, que es exacto.
+\item El aborto de SPECTER upstream ante una cadena desconocida termina en un
+  \emph{segmentation fault}, probablemente porque llama
+  \texttt{MPI\_FINALIZE(MPI\_COMM\_WORLD, ierr)}, con un argumento de más (inferencia, no
+  verificada). La puerta de la Fase~2 lo acepta porque sólo pide que aborte. No se tocó; el
+  código nuevo aborta con \texttt{MPI\_ABORT}.
+\item La hipótesis de la condición inicial incompatible como causa del F6 fallido era
+  razonable y resultó falsa; se refutó con la referencia antes de tocar código.
+\item La primera corrección del defecto (reconstruir sólo el incremento del subpaso) no
+  cambió nada y se sacó del código.
+\end{itemize}

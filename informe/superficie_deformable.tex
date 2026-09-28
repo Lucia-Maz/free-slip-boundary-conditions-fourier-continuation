@@ -1,0 +1,370 @@
+\PassOptionsToPackage{hyphens}{url}
+\documentclass[11pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish,es-noquoting,es-tabla]{babel}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage[margin=2.4cm]{geometry}
+\usepackage{microtype}
+\usepackage[colorlinks=true,linkcolor=black,urlcolor=blue,citecolor=black]{hyperref}
+\usepackage{xcolor}
+\urlstyle{tt}
+\usepackage{enumitem}
+\usepackage{tocloft}
+\usepackage{listings}
+\setlength{\cftsecnumwidth}{2.4em}
+\setlength{\cftsubsecnumwidth}{3.2em}
+\setlist{nosep}
+\lstset{basicstyle=\ttfamily\footnotesize,columns=fullflexible,frame=single,
+        framerule=0.3pt,rulecolor=\color{gray},xleftmargin=1em,xrightmargin=1em}
+
+\newcommand{\dd}{\mathrm{d}}
+\newcommand{\etq}[1]{\textcolor{gray}{\texttt{[#1]}}}
+\newcommand{\archivo}[1]{\nolinkurl{#1}}
+\makeatletter\g@addto@macro{\UrlBreaks}{\do\_\do\-\do\.}\makeatother
+\newcommand{\propio}{\textsuperscript{\textcolor{gray}{\,\S}}}
+\newcommand{\PuertaFinal}{8/8}
+\newcommand{\FaseDosRegresion}{6/6}
+\graphicspath{{../salidas/figuras/}}
+
+\title{Superficie libre deformable en SPECTER:\\
+implementación lineal, verificación y lo que encontró la puerta}
+\author{Lucía Mazaira\\ \small INFINA, CONICET--UBA}
+\date{\small Informe de implementación --- 28 de septiembre de 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+Se implementó en SPECTER una superficie libre \emph{deformable}, linealizada: el dominio
+no se mueve, la cinemática y el balance de tensiones de la superficie se aplican en
+$z=L_z$, y la elevación $\eta(x,y,t)$ se integra como un campo 2D propio. El volumen sigue
+siendo Navier--Stokes completo. La presión pasa a ser Dirichlet en la superficie, lo que
+pidió una rama nueva de \texttt{laplace\_z} y una proyección con una condición distinta en
+cada cara; la tensión tangencial deja de ser una condición sobre la vorticidad y se
+acopla a la velocidad de la superficie, y ese acople se resuelve \emph{exactamente} con
+dos pasadas, porque toda la cadena es lineal y diagonal en los modos horizontales. La
+puerta de aceptación se escribió antes, en rojo, sin fórmula analítica del resultado:
+compara la trayectoria $\eta(t)$ contra una referencia de diferencias finitas propia que
+se verifica a sí misma por balance de energía. La primera versión dio \textbf{7/8}: el
+chequeo de orden temporal falló (1{,}45 en vez de 2), y la búsqueda de la causa encontró
+un defecto que \emph{ya estaba en el camino free-slip plano de la Fase 2}: una pérdida de
+energía por paso que no depende de $dt$. Corregido en los dos caminos, la puerta da
+\textbf{\PuertaFinal}, la de la Fase~2 sigue en 6/6, y las tasas de la Fase~4 vueltas a
+medir no se mueven ($\le5\cdot10^{-10}$). Se muestra además que el modo vortical del experimento
+---horizontal, sin $w$--- no siente la deformación a orden lineal: su efecto sobre
+$\alpha$ es puramente no lineal, $O(\mathrm{Fr}^2)$.
+\end{abstract}
+
+\noindent\small Convención: un \propio{} marca una derivación, estimación o hipótesis
+hecha en esta sesión y no validada contra bibliografía. Las etiquetas \etq{D-nn},
+\etq{H-nn}, \etq{V-nn} remiten a \archivo{DECISIONES.md}.\normalsize
+
+\tableofcontents
+
+%=====================================================================
+\section{Qué se pidió y en qué estado estaba}
+
+El pedido de Lucía (2026-09-28) fue revisar qué había dejado sin hacer una sesión
+anterior (de otro agente, codex) y seguir con la superficie libre, \emph{``with
+deformations this time''}. Hasta acá SPECTER tenía una superficie \emph{free-slip plana}
+\etq{V-09}: $w=0$ y tensión tangencial nula en $z=L_z$. La deformación estaba fuera de
+alcance por \etq{D-28}, que estimaba $\eta/h\sim10^{-5}$ en la celda.
+
+\paragraph{Lo que había dejado la sesión anterior.} Un directorio no versionado,
+\archivo{research/2026-09-25_nonlinear_free_surface/}, con una derivación de una
+jerarquía cúbica en amplitud, núcleos de frontera en Python y en Fortran autónomo, una
+referencia 2D viscosa pequeña (no SPECTER), una referencia inviscida de ondas y una revisión
+independiente. Se volvieron a correr sus siete chequeos: pasan todos (pico de memoria
+150\,MB). Lo que \emph{no} había hecho:
+\begin{itemize}
+\item nada de SPECTER había cambiado (el árbol de trabajo coincidía byte a byte con el
+  parche de la Fase 2);
+\item el \archivo{report.pdf} que anunciaba su README no existía;
+\item \archivo{ESTADO.md} y \archivo{DECISIONES.md} se habían quedado en el 2026-09-23 y no
+  mencionaban nada de ese trabajo; no había ningún commit.
+\end{itemize}
+Además, su jerarquía cúbica suponía que existía una superficie deformable \emph{lineal}
+en otra sesión en Sakura, que nunca estuvo en el repositorio. Como su esquema cúbico
+resuelve el mismo problema lineal una vez por orden, la lineal es un requisito previo.
+Lucía eligió explícitamente implementar primero la lineal en SPECTER \etq{D-49}.
+
+%=====================================================================
+\section{El modelo}
+
+\subsection{Las condiciones de una superficie libre viscosa}
+
+Para una interfaz $z=h+\eta(x,y,t)$ entre el fluido y una atmósfera de presión constante
+$p_e$, Wang, Tice y Kim escriben, en su §1.1 \cite{wtk2014},
+\begin{equation}
+(\bar p\,I-\mu\,\mathbb{D}v)\,n = p_e\,n-\sigma H\,n,\qquad
+n=\frac{(-\partial_1\eta,-\partial_2\eta,1)}{\sqrt{1+|\nabla_*\eta|^2}},\qquad
+H=\nabla_*\cdot\frac{\nabla_*\eta}{\sqrt{1+|\nabla_*\eta|^2}},
+\tag{WTK 1.4--1.6}
+\end{equation}
+con $(\mathbb{D}v)_{ij}=\partial_jv_i+\partial_iv_j$ y la normal hacia arriba, y la
+condición cinemática $\partial_t\eta=v_3-v_1\partial_1\eta-v_2\partial_2\eta$ (WTK 1.8).
+La gravedad es una fuerza de volumen $-g\rho e_3$ (WTK 1.3). Esas ecuaciones se leyeron en
+el original (arXiv:1109.1798v2) y su DOI se resolvió contra Crossref. Son las ecuaciones
+\emph{no lineales}; la forma linealizada que el paper escribe (1.25) no tiene tensión
+superficial, así que la linealización con capilaridad de abajo es de esta sesión.
+
+\subsection{La linealización que usa SPECTER\propio}
+
+SPECTER integra la presión cinemática sin la parte hidrostática. Escribiendo
+$\bar p=p_e+\rho g(h-z)+\rho p$, la presión total en la superficie es
+$p_e-\rho g\eta+\rho p$. A primer orden en la amplitud, evaluando en $z=h$ y con
+$\gamma=\sigma/\rho$, la componente normal de (WTK 1.4), sus dos componentes tangenciales
+y la cinemática dan
+\begin{equation}
+\partial_t\eta=w,\qquad
+\partial_zu+\partial_xw=0,\quad \partial_zv+\partial_yw=0,\qquad
+p=g\,\eta-\gamma\,\nabla_h^2\eta+2\nu\,\partial_zw
+\qquad\text{en } z=L_z .
+\label{eq:modelo}
+\end{equation}
+Los dos términos restituyen: para un modo $e^{i\mathbf k\cdot\mathbf x}$ la presión es
+$(g+\gamma k^2)\eta+2\nu\partial_zw$. La gravedad \emph{no} entra como fuerza de volumen.
+El fondo sigue siendo no-deslizante (o free-slip). El dominio no se mueve y el volumen es
+Navier--Stokes completo: es el modelo de «frontera lineal, volumen no lineal». No
+representa la geometría no lineal de la superficie; para eso está la jerarquía cúbica de
+la sesión anterior o una formulación ALE (§\ref{sec:falta}).
+
+\subsection{Qué modos mueve la superficie\propio}
+\label{sec:toroidal}
+
+Un modo horizontal $\mathbf k$ se separa en una parte \emph{toroidal} (velocidad horizontal
+perpendicular a $\mathbf k$, sin $w$ y sin presión) y una \emph{poloidal} (velocidad en el
+plano de $\mathbf k$ y $z$). Con $w\equiv0$ y $p\equiv0$ las tres condiciones
+\eqref{eq:modelo} se reducen a las de la superficie plana, así que \textbf{a orden lineal la
+parte toroidal no siente la deformación}: decae exactamente con
+$\nu[(\pi/2h)^2+k^2]=\alpha(1+4\varepsilon^2/\pi^2)$, la tasa de la Fase~1 \etq{V-07}. El
+flujo cuasi-2D del experimento es esencialmente toroidal. La superficie entra sólo en la
+parte poloidal, que son ondas de gravedad-capilaridad amortiguadas (§\ref{sec:celda}). El
+acople entre las dos es no lineal: la presión dinámica $\rho U^2$ levanta la superficie
+$\eta\sim U^2/g$, que es exactamente la estimación de \etq{D-28}. El desacople se comprueba en
+SPECTER en §\ref{sec:extras} (E1 y E1b), bit a bit.
+
+\textbf{Lo que esta implementación no puede calcular.} Al orden en que la deformación sí
+cambia $\alpha$, $O(\mathrm{Fr}^2)$, entran también los términos de transferencia
+$\eta\,\partial_z(\cdot)$ ---evaluar las condiciones en $h+\eta$ y no en $h$, es decir, el
+cambio de espesor---, que un modelo lineal en la frontera descarta por diseño. Lo señaló el
+verificador independiente y se acepta: comparar \texttt{freesurface} contra \texttt{freeslip}
+mediría sólo la parte del efecto que pasa por el flujo poloidal inducido. El efecto completo
+pide el orden cuadrático de la jerarquía de la sesión anterior.
+
+%=====================================================================
+\section{Cómo lo impone SPECTER}
+
+\subsection{El esquema en el que hay que encajarlo}
+
+En cada subpaso $o=\texttt{ord},\dots,1$ del Runge--Kutta, SPECTER avanza un campo sin
+presión, le impone condiciones de contorno y proyecta \cite{fontana2020}:
+\[
+v^*=v^n+\tfrac{dt}{o}\,F(v^{(o+1)}),\qquad v^{(o)}=v^*-\nabla d .
+\]
+La variable \texttt{pr} guarda $d=(dt/o)\,p$ del subpaso en que se calculó: se deduce de
+que \texttt{noslip\_z} reescala el \texttt{pr} del subpaso anterior por $(o+1)/o$ y de que
+la salida lo divide por $dt$ (no está en el paper; el código lo marca como
+\texttt{!TODO update documentation about p' = dt*p}).
+
+\subsection{(a) La presión: Dirichlet arriba}
+
+La tensión normal \emph{prescribe} $p$ en la superficie, así que $d$ es Dirichlet en
+$z=L_z$, con el dato
+\begin{equation}
+d(L_z)=\frac{dt}{o}\Big[(g+\gamma k^2)\,\eta^{(o+1)}+2\nu\,\partial_zw^{(o+1)}\Big],
+\label{eq:dirichlet}
+\end{equation}
+evaluado en el estado del subpaso anterior, como cualquier otro término del miembro
+derecho de un Runge--Kutta explícito. En el fondo sigue la condición de Neumann que deja
+$w=0$ después de proyectar. Hicieron falta dos cosas nuevas:
+\begin{itemize}
+\item \textbf{la rama Neumann($z=0$)--Dirichlet($z=L_z$) de \texttt{laplace\_z}}, la
+  \emph{opuesta} a la que se agregó en la Fase~2 \etq{H-08}. En la base del archivo,
+  $\phi=C_1e^{k(z-L_z)}+C_2e^{-kz}$ con $r=e^{-kL_z}$ y datos $g_0=\phi'(0)$,
+  $g_1=\phi(L_z)$:
+  \[
+  C_1=\frac{g_1+r\,g_0/k}{1+r^2},\qquad C_2=\frac{r\,g_1-g_0/k}{1+r^2},\qquad
+  \phi_{k=0}=g_0z+(g_1-g_0L_z).
+  \]
+  Mismo denominador $1+r^2$ que la rama espejo: no tiene resonancia.
+\item \textbf{\texttt{sol\_project\_fs}}: \texttt{sol\_project} tiene un único
+  \texttt{bctarget} para las dos caras, y acá hacen falta distintos (Neumann abajo,
+  Dirichlet inhomogéneo arriba). La rutina nueva es la misma proyección con la condición
+  de cada cara explícita; el camino plano no se tocó.
+\end{itemize}
+
+\subsection{(b) La elevación}
+
+$\eta^{(o)}=\eta^n+(dt/o)\,w^{(o+1)}(L_z)$: el mismo esquema que la velocidad. $\eta$ vive
+en el espacio $(k_y,k_x)$, con la misma normalización que un campo en $(z,k_y,k_x)$, y el
+modo medio se conserva (es $\int w\,\dd A$ en la superficie, que la incompresibilidad
+anula).
+
+\subsection{(c) La tensión tangencial y su acople exacto}
+
+La tensión tangencial es vorticidad más un término de $w$:
+$\tau_x=\partial_zu+ik_xw=\omega_y+2ik_xw$, con $\omega_y=\partial_zu-ik_xw$. La
+vorticidad no cambia al proyectar (el rotor de un gradiente es cero), así que pedir
+$\tau_x=0$ sobre el campo \emph{proyectado} es, sobre $v^*$,
+\begin{equation}
+\partial_zv^*_x=ik_x\,(v^*_z-2W),\qquad \partial_zv^*_y=ik_y\,(v^*_z-2W),
+\label{eq:tension}
+\end{equation}
+con $W=w(L_z)$ \emph{después} de proyectar. Con $W=0$ es exactamente \texttt{freeslip\_z}
+de la Fase~2. Pero $W$ no se conoce antes de proyectar: es el problema que
+\archivo{teoria/superficie_libre_v_estrella_y_p.md} §4.4 dejaba abierto (iterar o
+rezagar).
+
+\paragraph{La salida exacta\propio.} Toda la cadena ---reconstrucción de Neumann,
+continuación FC-Gram, proyección--- es lineal y está desacoplada por modo horizontal. Para
+cada modo, entonces, $W_{\text{final}}=A_{\mathbf k}+B_{\mathbf k}W$, con $B_{\mathbf k}$
+fijo para toda la corrida (depende de la malla y de $k$, no del estado ni de $dt$). Se
+calcula una sola vez al arrancar, pasando la cadena sobre un campo nulo con $W=1$ en todos
+los modos. En cada subpaso:
+\begin{enumerate}
+\item una pasada con un $W$ de prueba $W_g$ (el del subpaso anterior) da
+  $W_1=A_{\mathbf k}+B_{\mathbf k}W_g$;
+\item $W^\star=(W_1-B_{\mathbf k}W_g)/(1-B_{\mathbf k})$ es el punto fijo exacto;
+\item se restauran los campos guardados y una segunda pasada impone $W^\star$.
+\end{enumerate}
+El diagnóstico mide cuánto difiere el $W$ que sale del impuesto: $5{,}6\cdot10^{-16}$
+relativo, redondeo. En la malla de la puerta $\max|B_{\mathbf k}|=9{,}6\cdot10^{-4}$. El
+parámetro \texttt{fscoup=1} hace una sola pasada con el $W$ rezagado: tiene error $O(dt)$ en
+la tensión y existe sólo como control negativo de la puerta.
+
+\subsection{(d) El defecto que encontró la puerta}
+\label{sec:defecto}
+
+\input{superficie_deformable_defecto.tex}
+
+\subsection{Inicialización, reinicio y diagnóstico}
+
+\begin{itemize}
+\item \texttt{v\_fs\_init}, llamada después de la condición inicial: arma $\eta$ inicial
+  ($A\cos(\mathbf k_0\cdot\mathbf x)$, o la lee al reiniciar), calcula $B_{\mathbf k}$, las
+  trazas de la velocidad inicial, y ---en una corrida nueva--- inicializa \texttt{pr} con
+  $dt$ por la presión armónica que impone la superficie inicial en vez de cero (es
+  exactamente la presión inicial cuando el fluido arranca en reposo y sin forzado).
+\item $\eta$ se escribe junto con los otros binarios como \archivo{fs_eta.NNNN.dat} y se
+  relee al reiniciar.
+\item \archivo{freesurface_diagnostic.txt}, cada \texttt{cstep}: el coeficiente del modo
+  inicial, la media y el rms de $\eta$, la tensión tangencial \emph{completa}
+  $\partial_zv_t+\nabla_tw$ en la superficie (en una superficie deformable ya no es
+  $\partial_zv_t$), la de la pared rígida como escala, y la discordancia del acople.
+\end{itemize}
+
+\subsection{Qué se tocó}
+
+\begin{center}\small
+\begin{tabular}{p{4.6cm}p{10.2cm}}
+\toprule
+archivo & qué \\ \midrule
+\texttt{boundary/vboundary.f90} & \texttt{freeslip\_z} recibe la traza de $v^*_z$
+  (\texttt{trace\_z} nueva) \etq{D-50}; \texttt{v\_parsebc} acepta \texttt{freesurface}; \texttt{v\_setup}
+  la rechaza fuera de $z=L_z$, carga las tablas y lee el namelist; despacho en
+  \texttt{v\_imposebc\_and\_project}; rutinas nuevas \texttt{freesurface\_imposebc},
+  \texttt{fs\_top\_pass}, \texttt{fs\_trace(\_bottom)}, \texttt{fs\_dwz\_trace},
+  \texttt{v\_fs\_init}, \texttt{fs\_read}, \texttt{v\_fs\_output}, \texttt{fs\_diagnostic}\\
+\texttt{boundary/boundary\_mod.fpp} & estado \texttt{fs\_*} del módulo; rama
+  Neumann--Dirichlet de \texttt{laplace\_z}; \texttt{sol\_project\_fs} \\
+\texttt{specter.fpp} & llamada a \texttt{v\_fs\_init}, salida de $\eta$, test unitario \\
+\texttt{tests/laplace\_neudir.f90} & test unitario nuevo de la rama \\
+\texttt{bin/parameter.inp}, \texttt{SOLVERS\_AND\_...md} & documentación \\
+\bottomrule
+\end{tabular}
+\end{center}
+El camino \texttt{noslip} quedó sin cambios. \texttt{freeslip\_z} cambió sólo en cómo lee
+$v^*_z$ (su traza, \texttt{trace\_z}; \etq{D-50}, §\ref{sec:defecto}). La puerta de la
+Fase~2 sigue dando \FaseDosRegresion{} (§\ref{sec:regresion}). El namelist nuevo:
+\begin{lstlisting}
+&freesurface
+fsgrav = 1.0   ! gravedad
+fstens = 0.0   ! tension superficial / densidad
+fsamp  = 0.0   ! amplitud inicial, eta = fsamp cos(kx x + ky y)
+fskx   = 1     ! numero de onda entero en x de eta inicial
+fsky   = 0     ! idem en y
+fscoup = 2     ! 2: acople exacto; 1: rezagado (solo verificacion)
+/
+\end{lstlisting}
+
+%=====================================================================
+\section{Verificación}
+
+\subsection{La puerta, escrita antes}
+
+\archivo{verificacion/test_aceptacion_fase5.py} y
+\archivo{verificacion/intent_fase5.txt} se escribieron \emph{antes} de tocar Fortran, se
+corrieron en rojo contra el árbol sin modificar (1/8: sólo pasa F3, que verifica la
+referencia y no a SPECTER; log \archivo{fase5_rojo_2026-09-28.log}) y se congelaron:
+\begin{center}\small
+\texttt{test\_aceptacion\_fase5.py}\quad
+\texttt{4505944863b5a524e7bec58748c489ffa488125cda8badba3ff48779f89a7bbd}\\
+\texttt{intent\_fase5.txt}\quad
+\texttt{9ecf858b106a2b0c7882e298215e88a5d4ae31cdb60937337f8c975e84af3991}
+\end{center}
+No se editaron después: el F6 que falló se resolvió cambiando la implementación.
+
+\paragraph{La referencia.} La puerta no contiene la relación de dispersión. Construye su
+propia referencia: el problema de Stokes lineal de un modo horizontal (parte poloidal),
+en diferencias finitas de segundo orden sobre una malla escalonada (MAC: $w$ en las caras,
+$u$ y $p$ en los centros), con la presión eliminada con el momento $x$, integrado en el
+tiempo con la exponencial de la matriz y extrapolado con Richardson en dos niveles
+($n=100,200,400$). Un primer intento en colocación de Chebyshev con la función corriente
+(cuarto orden) se descartó: \emph{empeoraba} al refinar, por condicionamiento $\sim N^8$.
+Antes de usarla, la referencia se verifica a sí misma (F3): su balance
+$E=\tfrac12\!\int|v|^2+\tfrac12(g+\gamma k^2)|\eta|^2$, $\dot E=-\tfrac\nu2\!\int S\!:\!S$
+cierra y converge como $h^2$. Ese balance es también lo que fija los signos del modelo sin
+usar la relación de dispersión: con un signo cambiado en la tensión normal no cierra.
+
+\subsection{Resultado}
+
+\input{superficie_deformable_puerta.tex}
+
+\subsection{Chequeos adicionales}
+\label{sec:extras}
+
+\input{superficie_deformable_extras.tex}
+
+\subsection{Regresión de la Fase 2}
+\label{sec:regresion}
+
+\input{superficie_deformable_regresion.tex}
+
+\subsection{Revisión independiente}
+
+\input{superficie_deformable_verificador.tex}
+
+%=====================================================================
+\section{Qué implica para la celda}
+\label{sec:celda}
+
+\input{superficie_deformable_celda.tex}
+
+%=====================================================================
+\section{Lo que falta y las decisiones abiertas}
+\label{sec:falta}
+
+\input{superficie_deformable_falta.tex}
+
+%=====================================================================
+\begin{thebibliography}{9}
+\bibitem{fontana2020} M.~Fontana, O.~P.~Bruno, P.~D.~Mininni y P.~Dmitruk,
+  \emph{Fourier continuation method for incompressible fluids with boundaries},
+  Comput.\ Phys.\ Commun.\ \textbf{256}, 107482 (2020).
+  DOI \href{https://doi.org/10.1016/j.cpc.2020.107482}{10.1016/j.cpc.2020.107482};
+  arXiv:2002.01392. Leído en el original, §§4.1--4.4 (verificado contra Crossref el
+  2026-09-07, \archivo{bibliografia/REFERENCIAS.md}).
+\bibitem{wtk2014} Y.~Wang, I.~Tice y C.~Kim, \emph{The viscous surface-internal wave
+  problem: global well-posedness and decay}, Arch.\ Rational Mech.\ Anal.\ \textbf{212},
+  1--92 (2014). DOI
+  \href{https://doi.org/10.1007/s00205-013-0700-2}{10.1007/s00205-013-0700-2};
+  arXiv:1109.1798. Leído en el original, §1.1, ecs.\ (1.3)--(1.8) (verificado contra
+  Crossref el 2026-09-28). Se usa sólo la superficie superior; sus teoremas no se usan.
+\end{thebibliography}
+
+\end{document}

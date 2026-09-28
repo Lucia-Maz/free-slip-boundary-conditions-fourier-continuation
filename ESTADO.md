@@ -1,6 +1,6 @@
 # Estado — dónde estamos y cómo retomar
 
-**Instantánea del 2026-09-23.** Este archivo existe para que se pueda retomar el trabajo
+**Instantánea del 2026-09-28.** Este archivo existe para que se pueda retomar el trabajo
 sin la conversación que lo produjo: si la sesión se cae, o pasa una semana, alcanza con
 leer esto, `DECISIONES.md` y `bibliografia/REFERENCIAS.md`.
 
@@ -62,6 +62,7 @@ de instrumento y la barra de error de la comparación con el experimento. Las en
 | **2** | Implementar el tope free-slip (libre de tensiones tangenciales) en Fortran | **hecha** — [V-09], [D-24], [D-26] |
 | **3** | Verificación V1–V6, con un caso que falla a propósito | **hecha** — puerta 6/6, [V-09] |
 | **4** | La física, la comparación con el experimento y la entrega | **en curso** — decaimiento medido ([V-13]) y puente local 32² ([V-19]); falta convergencia 64², producción y entrega |
+| **5** | Superficie libre **deformable**, lineal, en SPECTER ([D-49]) | **hecha** — puerta 8/8 ([V-20]), regresión de la Fase 2 6/6; encontró [H-20] |
 
 ## Números ya establecidos
 
@@ -322,7 +323,28 @@ tenía de útil acá: un fondo de movimiento en la banda de los imanes, anterior
 que decae a 0,5 α ([H-18]). Restado como piso constante sube el α medido 4–5 %: candidato
 parcial para [P-02], no cierre.
 
+**Hecho el 2026-09-28:** se revisó lo que dejó la sesión de codex
+(`research/2026-09-25_nonlinear_free_surface/`: prototipos de una jerarquía cúbica, sin tocar
+SPECTER, sin el PDF que anunciaba y sin actualizar este archivo ni el log) y se implementó en
+SPECTER la **superficie libre deformable lineal** ([D-49]): cadena `freesurface`, presión
+Dirichlet arriba, η como campo propio, y la tensión tangencial acoplada a la velocidad de la
+superficie resuelta exactamente con dos pasadas. Puerta de la Fase 5 escrita antes, en rojo,
+congelada: primera corrida **7/8**, segunda **8/8** ([V-20]). El 7/8 encontró [H-20]: **el
+camino `freeslip` plano de la Fase 2 pierde energía por paso en una cantidad que no depende de
+dt**, por mandar vz por la vuelta de transformadas; corregido en los dos caminos ([D-50]), y
+el 16² de [V-19] vuelto a correr muestra que las tasas de la Fase 4 no se mueven (≤ 5·10⁻¹⁰). Y [H-21]: a orden lineal el modo vortical no siente la
+deformación, así que su efecto sobre α es puramente no lineal, O(Fr²), y **esta implementación
+lineal no lo calcula completo** (faltan los términos η∂_z del orden cuadrático). El verificador
+independiente encontró además [H-22]: la enstrofía de `balance.txt` omite ω_z (bug de upstream),
+que es la causa de [H-17]. Informe explicado en `informe/superficie_deformable.pdf`.
+
 **Lo que sigue, en este orden:**
+
+0. ~~Decidir [P-03]~~ — **hecho** ([D-50]): `freeslip_z` corregido; Fase 2 6/6 y Fase 5 8/8
+   con la corrección; el 16² de [V-19] vuelto a correr cambia las tasas en ≤ 5·10⁻¹⁰, así que
+   los resultados de la Fase 4 quedan. La superficie deformable ([D-49]) no hace falta para la
+   producción ([H-21]); si se usa, ver el costo en paso de tiempo en
+   `salidas/tablas/superficie_deformable_escalas.json`.
 
 1. ~~Medir α_eff con SPECTER en un barrido en δ~~ — **hecho** ([D-42], [V-16], y la
    etapa 1b de superficie en [V-17]). La prueba puente de banda ancha de [V-18] ya está
@@ -363,7 +385,10 @@ punto 2 son los cómputos pesados que quedan.
   donde el término no lineal es exactamente cero; V3 usa un campo 3D pero sólo 400 pasos.
 - Sólo se probó en doble precisión y con `ORD=2`. Con 1, 2 y 4 procesos MPI sí está
   verificado, y coincide en 15 cifras ([V-10]).
+- ~~[P-03]: el error por paso de `freeslip_z` ([H-20])~~ — **corregido** ([D-50]); las tasas
+  de la Fase 4 no cambian (≤ 5·10⁻¹⁰ en el 16² de [V-19]).
 - El borde superior es **free-slip y plano**: `w = 0` en el tope, sin tensión tangencial.
+  *(Desde el 2026-09-28 existe además `freesurface`, deformable lineal, [D-49].)*
   La deformación de la superficie libre real está fuera de alcance y cuantificada como
   despreciable ([D-28], η/h ~ 10⁻⁵); si alguna vez hiciera falta modelarla, ese sería el
   caso que sí necesitaría la rama Neumann–Dirichlet de `laplace_z`, que no está.
@@ -426,6 +451,8 @@ punto 2 son los cómputos pesados que quedan.
   puertas están fijadas por hash. Se pueden leer, no se editan para que pasen.
   Fase 1: `0c3ebd62f6c42d08f0fa9a64a0f57b9cfdaf1144ee8a84e968a148d9d66b18bf`.
   Fase 2: `6f0b4da4ba20617d483dfff0a20f8e2e11e82795b20351c259ffcf740ca4b1cc`.
+  Fase 5: `4505944863b5a524e7bec58748c489ffa488125cda8badba3ff48779f89a7bbd`
+  (`intent_fase5.txt`: `9ecf858b106a2b0c7882e298215e88a5d4ae31cdb60937337f8c975e84af3991`).
 - `jobs/2026-09-04_205253_derive-fase1-capa-delgada/out/`: es el registro de lo que
   produjo el equipo de agentes. Las correcciones van en `DECISIONES.md`, no ahí adentro.
 - El otro árbol, `~/GW-AI-course/piv-s0008-forzado`, tampoco se toca ([D-19]).

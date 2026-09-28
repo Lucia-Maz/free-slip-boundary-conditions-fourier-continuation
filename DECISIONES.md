@@ -2112,3 +2112,195 @@ PATH» vale sólo para los nodos que lo traen instalado.
 **Consecuencia:** los trabajos que compilan SPECTER se mandan con `--nodelist` a un nodo
 que tenga `make`: comprobado en a2 hoy y en g1 según [H-14]; a1 y g2 no se probaron. Como en [D-39], va en
 la línea de comando y no dentro del `sbatch`.
+
+### [D-49] Se implementa la superficie libre deformable, lineal; cambia el alcance de [D-28]
+
+Pedido de Lucía el 2026-09-28: revisar lo que había dejado sin hacer la sesión anterior (de
+codex) y seguir con la superficie libre *«with deformations this time»*. Ante la pregunta de
+si implementar primero la superficie deformable lineal en SPECTER o ir directo a la jerarquía
+cúbica que había derivado codex, eligió **la lineal** (la cúbica resuelve el mismo problema
+lineal una vez por orden, así que la necesita).
+
+**Qué quedó de la sesión de codex, revisado:** `research/2026-09-25_nonlinear_free_surface/`,
+sin versionar. Tiene derivación cúbica, núcleos de frontera Python y Fortran autónomos, una
+referencia 2D viscosa (no SPECTER), una inviscida de ondas y una revisión independiente; sus
+siete chequeos se volvieron a correr y pasan (150 MB). **No había hecho:** ningún cambio en
+SPECTER (el árbol coincidía con el parche de la Fase 2), el `report.pdf` que anunciaba, ni la
+actualización de `ESTADO.md` / `DECISIONES.md`, ni ningún commit. Suponía además una
+superficie lineal «en otra sesión en Sakura» que nunca estuvo en el repositorio.
+
+**Qué cambia en [D-28]:** su conclusión física no (η/h ~ 10⁻⁵ en la celda); lo que cambia es
+que ahora la deformación **se calcula** en vez de estimarse. [H-21] muestra además que a
+orden lineal no toca al modo vortical.
+
+**El modelo:** dominio fijo, condiciones en z = Lz a primer orden: ∂η/∂t = w, tensión
+tangencial ∂u/∂z + ∂w/∂x = 0, tensión normal p = gη − (σ/ρ)∇²η + 2ν∂w/∂z, con p la presión
+cinemática menos la hidrostática. Es la linealización de Wang, Tice & Kim, Arch. Rational Mech.
+Anal. 212, 1–92 (2014), DOI 10.1007/s00205-013-0700-2, §1.1 ecs. (1.3)–(1.8), leídas en el
+original (arXiv:1109.1798v2) y con el DOI resuelto en Crossref; la linealización es de esta
+sesión. Volumen: Navier–Stokes completo.
+
+**La implementación** (`vboundary.f90`, `boundary_mod.fpp`, `specter.fpp`,
+`tests/laplace_neudir.f90`): cadena `freesurface` sólo en z = Lz; presión Dirichlet arriba con
+el dato (dt/o)[(g + σk²/ρ)η + 2ν∂w/∂z] del subpaso anterior, con la rama nueva
+Neumann(z=0)–Dirichlet(z=Lz) de `laplace_z` y una proyección nueva `sol_project_fs` con una
+condición por cara; η avanzada por el mismo Runge–Kutta; tensión tangencial sobre v* como
+∂v*ₓ/∂z = ikₓ(v*_z − 2W), con W = w(Lz) después de proyectar, resuelta **exactamente** con dos
+pasadas porque W_final = A_k + B_k W con B_k fijo por corrida (derivación de esta sesión). El
+namelist `&freesurface` y el diagnóstico `freesurface_diagnostic.txt` están congelados en
+`verificacion/intent_fase5.txt`. La puerta es [V-20]; el informe, `informe/superficie_deformable.pdf`.
+
+### [V-20] Puerta de la Fase 5: 8/8, después de una primera corrida en 7/8
+
+`verificacion/test_aceptacion_fase5.py` e `intent_fase5.txt` se escribieron antes del Fortran,
+se corrieron en rojo contra el árbol sin modificar (1/8, sólo F3, que verifica la referencia;
+`verificacion/logs/fase5_rojo_2026-09-28.log`) y se congelaron:
+
+- `test_aceptacion_fase5.py`: `4505944863b5a524e7bec58748c489ffa488125cda8badba3ff48779f89a7bbd`
+- `intent_fase5.txt`: `9ecf858b106a2b0c7882e298215e88a5d4ae31cdb60937337f8c975e84af3991`
+
+**La referencia no contiene la relación de dispersión:** es el problema de Stokes lineal de un
+modo horizontal (parte poloidal) en diferencias finitas MAC de segundo orden, integrado con la
+exponencial de la matriz y extrapolado con Richardson (n = 100, 200, 400). Se verifica a sí
+misma (F3): su balance de energía con gravedad y capilaridad cierra en 5,7·10⁻⁷ y converge como
+h² (cociente 15,4 y 13,4 por dos refinamientos). Un primer intento con Chebyshev de cuarto orden
+se descartó: empeoraba al refinar (condicionamiento ~N⁸).
+
+**Primera corrida: 7/8.** F6 (orden temporal) dio 1,45 en vez de 2. La causa es [H-20]; se
+corrigió la implementación, no la puerta (`verificacion/logs/fase5_primera_7de8_2026-09-28.txt`).
+
+**Segunda corrida: 8/8** (`verificacion/logs/fase5_2026-09-28.log`, 8 min, pico 173 MB):
+
+| | |
+|---|---|
+| F1 parser | acepta `freesurface` arriba, aborta abajo con «only at z=Lz», rechaza lo desconocido |
+| F2 rama Neumann–Dirichlet | propiedades definitorias 1,9·10⁻¹⁶ y 2,7·10⁻¹⁶; contra cosh/sinh 6,5·10⁻¹⁶ |
+| F4 η(t) contra la referencia | 1,23·10⁻⁶ (modo (1,0), gravedad) y 5,56·10⁻⁶ (modo (1,1), γ = 0,2), tolerancia 10⁻⁴; np = 2 idéntico bit a bit |
+| F5 tensión tangencial completa | 5,5·10⁻¹³ de la de la pared, razón dt 1,06; rezagado 5,4·10⁻⁸, razón 4,25 (O(dt)) |
+| F6 orden temporal | **2,00** (diferencias 1,38·10⁻⁷ y 3,45·10⁻⁸) |
+| F7 modo k = 0 | λ = 2,467401099·10⁻² contra 2,467401100·10⁻², η ≡ 0 |
+| F8 poder discriminante | los cuatro modelos equivocados quedan a ≥ 2,5·10⁻², 250 veces la tolerancia |
+
+**Regresión:** la puerta de la Fase 2 da 6/6 con los mismos números de [V-09]
+(`verificacion/logs/fase2_regresion_2026-09-28.log`): los caminos planos no se tocaron.
+
+**Lo que la puerta no prueba:** la no linealidad de la superficie (el modelo es lineal en la
+frontera por diseño), la estabilidad a resolución de producción (ondas explícitas, ver
+`numerico/fase5/superficie_deformable_escalas.py`), ni más de 2 procesos MPI.
+
+### [H-20] El camino `freeslip` plano de la Fase 2 tiene un error por paso que no depende de dt
+
+Lo encontró F6 de [V-20]. La cadena de controles, todos en la laptop y en secuencia:
+
+1. Con fondo free-slip el orden sigue en 1,48: no es el no-deslizamiento.
+2. Los caminos planos `freeslip` y `noslip`, en la energía de un modo 3D con w ≠ 0, dan orden
+   ≈ 2,4: el esquema de SPECTER en general está bien.
+3. La superficie deformable desde un modo de velocidad suave da orden ≈ 3, con g = 0 y g = 1.
+4. **Hipótesis refutada:** que la culpa fuera la condición inicial incompatible (reposo con
+   η ≠ 0 genera capas límite impulsivas). El mismo RK2 sobre la referencia MAC, con la misma
+   condición inicial, da orden 2,00 exacto.
+5. La diferencia entre SPECTER y el RK2 de la referencia debería no depender de dt, y crece con
+   el número de pasos (8,07 → 9,20·10⁻⁷ de dt = 10⁻³ a 1,25·10⁻⁴). Con Nz = 64 domina: las
+   diferencias sucesivas se duplican al dividir dt por dos.
+6. Con dt = 10⁻⁹ y 10⁻¹⁰ (miembro derecho nulo), la energía de `balance.txt` cambia por paso
+   −1,4·10⁻⁷ (Nz = 64) y ≈ −10⁻⁸ (Nz = 128) en `freeslip` y `freesurface`, **igual para los dos
+   dt**; en `noslip`, proporcional a dt.
+
+**La causa:** para leer v*_z en la cara, el parche de la Fase 2 manda vz por
+`goto_domain_w_boundaries` y de vuelta por `goto_3d_fourier`, y esa vuelta recalcula la
+continuación FC-Gram de vz desde sus valores físicos, que después de una proyección no
+coinciden con la continuación que el campo trae. Cada subpaso cambia el campo en una cantidad
+que no se anula con dt. `noslip` nunca transforma vz. Una primera corrección que suponía un
+defecto de la reconstrucción de Neumann no cambió nada y se sacó.
+
+**Corregido en el camino `freesurface`:** vz queda en (kz,ky,kx) y se leen sólo sus trazas.
+Resultado: orden 2,00 y deriva a dt → 0 proporcional a dt (−2,2·10⁻⁹ y −2,2·10⁻¹⁰).
+
+**No corregido en el camino `freeslip` plano**, que ya se usó en [V-16], [V-17] y [V-19]: es
+[P-03]. **Es disipación espuria física:** `energy()` suma sólo los puntos físicos
+(`pseudospec_hd.f90`, lazos `k = 1,nz-Cz`). Una primera versión de esta entrada decía que era
+la energía del dominio extendido; lo refutó el verificador de [V-20] y se comprobó leyendo la
+rutina. Su modelo de juguete con las tablas FC reales da −1,24·10⁻⁸ (Nz = 128) y −2,2·10⁻⁷
+(Nz = 64) por subpaso en la energía física: el mismo signo y orden que SPECTER. La nota de
+`test_aceptacion_fase2.py` que atribuye a «el dominio EXTENDIDO» un factor entre ⟨v²⟩ y ⟨ω²⟩
+también se equivoca de causa: es [H-22]. Tamaño en la Fase 4, **no medido**; estimación de esta
+sesión: δ/dt ≈ 1,4·10⁻⁷/5·10⁻⁴ ≈ 3·10⁻⁴ por unidad de tiempo contra 2α ≈ 0,2, un 0,1 % para el
+modo de prueba (w ≠ 0); las corridas de la Fase 4 arrancan con w = 0, donde sólo actúa por el vz
+que genera la no linealidad, así que debería ser menor. **Actualización:** corregido también en
+`freeslip_z` y medido en [D-50]: en el 16² de [V-19] las tasas cambian ≤ 5·10⁻¹⁰.
+
+### [H-21] A orden lineal, la superficie deformable no toca al modo vortical
+
+Derivación de esta sesión; la comprobación en SPECTER es E1 de `numerico/fase5/corridas_superficie_deformable.py`. Un modo horizontal k se separa en una parte
+toroidal (velocidad horizontal perpendicular a k, w = 0, p = 0) y una poloidal. Con w ≡ 0 y
+p ≡ 0 las tres condiciones de la superficie deformable se reducen a las de la plana, así que la
+parte toroidal decae **exactamente** con ν((π/2h)² + k²) = α(1 + 4ε²/π²) con o sin
+deformación. La superficie entra sólo en la parte poloidal: ondas de gravedad-capilaridad, que
+en la celda tienen ω = 67 s⁻¹ y amortiguamiento 0,28 s⁻¹ en el k del forzado (296 m⁻¹),
+contra 0,156 s⁻¹ del modo toroidal (`salidas/tablas/superficie_deformable_escalas.json`).
+Consecuencia: el efecto de la deformación sobre α es **puramente no lineal**, O(Fr²), el de la
+estimación η ~ U²/g de [D-28]. Para [P-02] eso descarta la deformación lineal como candidato.
+Para la no lineal, una estimación de orden de magnitud de esta sesión (no medida) es un efecto
+relativo ~Fr² ~ 10⁻⁴. **Salvedad del verificador, que se acepta:** a ese orden entran los
+términos de transferencia η∂_z(·) (evaluar las condiciones en h + η y no en h, el cambio de
+espesor), que el modelo lineal en la frontera descarta por diseño. Así que **esta
+implementación no calcula todo ese efecto**: correr `freesurface` contra `freeslip` mediría sólo
+la parte que pasa por el flujo poloidal inducido. El efecto completo pide el orden cuadrático
+de la jerarquía de `research/2026-09-25_nonlinear_free_surface/`.
+
+### [H-22] La enstrofía de `balance.txt` omite ω_z y cuenta ω_y dos veces: es la causa de [H-17]
+
+Lo encontró el verificador independiente de [V-20] y se comprobó leyendo el código:
+`src/pseudo/pseudospec_hd.f90`, subrutina `energy` con `kin = 0`, llama `curlk(b,c,C1,1)` y
+después **dos veces** `curlk(a,c,C1,2)`, y nunca `curlk(a,b,C1,3)`. Es código de upstream
+(idéntico en `SPECTER-upstream`). Para un flujo cuasi-2D, donde casi toda la vorticidad es ω_z,
+el ⟨ω²⟩ de `balance.txt` está mal: es exactamente la discrepancia que [H-17] había registrado
+(`verificacion/barrido_delta_etapa1.py`, «balance.txt dice 2,12» contra 4,98 del campo) y por la
+que se dejó de usar, sin encontrar la causa. **No afecta a las puertas:** sus controles de
+energía contra enstrofía usan modos con ω_z = 0, donde la tasa sigue siendo la misma. No se
+corrigió (es upstream y no se usa); si alguna vez se necesita, es cambiar el segundo
+`curlk(a,c,C1,2)` por `curlk(a,b,C1,3)`.
+
+### [P-03] ~~Pregunta abierta: ¿se corrige el camino `freeslip` plano, y cuánto movió las corridas de la Fase 4?~~ — cerrada por [D-50]
+
+[H-20] encontró en `freeslip_z` un cambio por paso que no se anula con dt. La corrección es la
+misma que ya tiene `freesurface` (leer las trazas de vz sin mandarlo por la vuelta de
+transformadas), de pocas líneas, pero **cambia un camino verificado** y los resultados
+registrados en [V-16], [V-17] y [V-19]. Queda para Lucía decidir: (a) corregirlo y volver a
+correr la puerta de la Fase 2 (que no lo detecta, así que seguiría en 6/6), y (b) medir en una
+corrida chica de la Fase 4 cuánto cambian las tasas con y sin la corrección antes de la
+producción en Sakura.
+
+### [D-50] Se corrige `freeslip_z`, y las tasas de la Fase 4 no se mueven; cierra [P-03]
+
+Decisión de Lucía, 2026-09-28: *«Lets fix freeslip_z»*. La corrección es la misma que ya tenía
+el camino `freesurface` ([H-20]): `freeslip_z` recibe la **traza** de v*_z en la cara (rutina
+nueva `trace_z`) en vez del campo, y vz no vuelve a pasar por `goto_domain_w_boundaries` /
+`goto_3d_fourier`. El camino no-deslizante no cambia; el `freesurface`, tampoco (reusa
+`freeslip_z` si el fondo es free-slip).
+
+**Medido, antes (árbol reconstruido desde el parche del commit anterior) y después**
+(`verificacion/logs/freeslip_correccion_2026-09-28.json`; modo Ψ = cos x sin(πz/Lz), 8×8×Nz):
+
+| | deriva por paso, dt = 10⁻⁹ / 10⁻¹⁰, Nz = 64 | ídem, Nz = 128 | Nz = 64, diferencias entre dt sucesivos |
+|---|---|---|---|
+| antes | −1,44·10⁻⁷ / −1,43·10⁻⁷ (no depende de dt) | −1,05·10⁻⁸ / −8,4·10⁻⁹ | 2,5 → 3,9 → 6,7·10⁻⁶ (crecen) |
+| después | −9,4·10⁻¹⁰ / −8,0·10⁻¹¹ (∝ dt) | −2,25·10⁻⁹ / −2,25·10⁻¹⁰ (∝ dt: la física) | 9,6 → 7,1 → 4,2·10⁻⁷ (convergen) |
+
+**Puertas con la corrección:** Fase 2 **6/6**, con los mismos números
+(`verificacion/logs/fase2_freeslip_corregido_2026-09-28.log`; V3 pasa de 1,061 a 1,062·10⁻⁷, era
+ciega a esto) y Fase 5 **8/8** (`fase5_freeslip_corregido_2026-09-28.log`).
+
+**Lo que [P-03] pedía medir, medido:** el puente de banda ancha de [V-19] a 16², con la misma
+configuración, vuelto a correr con la corrección
+(`verificacion/logs/decaimiento_banda_ancha_n16_freeslip_corregido_2026-09-28.log`, 12 min,
+162 MB; `salidas/tablas/decaimiento_banda_ancha.json`, entrada `n16`, sobrescrita):
+
+- control lineal: tasas **idénticas a 10⁻¹⁵** relativo;
+- amplitud experimental: tasas cambian **2–5·10⁻¹⁰** relativo; el intercepto α del ajuste
+  λ(k²) pasa de 0,0556537794 a 0,0556537793 s⁻¹.
+
+Es lo que anticipaba el argumento de [H-20]: esas corridas arrancan con w = 0, y el defecto sólo
+actúa a través del vz en la cara. **Los resultados registrados de la Fase 4 quedan como están.**
+Salvedad: se volvió a correr sólo el 16² de [V-19]; [V-16], [V-17] y el 32² de [V-19] son de la
+misma clase (condición inicial con w = 0) y no se volvieron a correr.

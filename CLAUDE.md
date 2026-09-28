@@ -24,7 +24,10 @@ esa superficie libre válida cuando su deformación es despreciable ([D-28])— 
 no-deslizante es sobre la tensión tangencial en un borde fijo; superficie libre
 (deformable) vs. tapa rígida es sobre si ese borde se mueve. Lo que está implementado y
 verificado es free-slip **y además plano** — dos aproximaciones apiladas, la segunda
-cuantificada en `teoria/superficie_libre_v_estrella_y_p.md` §4.1. Al escribir sobre esto:
+cuantificada en `teoria/superficie_libre_v_estrella_y_p.md` §4.1. Desde el 2026-09-28 hay
+además una superficie **deformable lineal** (`freesurface`, [D-49], puerta de la Fase 5): no
+reemplaza a la plana en la producción, porque a orden lineal no toca al modo vortical
+([H-21]). Al escribir sobre esto:
 "free-slip" para la condición de contorno (así la llama el propio código: `freeslip`,
 `freeslip_z`), "superficie libre" para el escenario físico que la motiva.
 
@@ -34,8 +37,8 @@ cuantificada en `teoria/superficie_libre_v_estrella_y_p.md` §4.1. Al escribir s
   viscosidad y la geometría de los imanes cambian entre experiencias y viven **sólo** en
   `codigo/celda.py`, con su procedencia. Las derivaciones se escriben en forma simbólica y
   los números aparecen sólo como evaluación al final ([D-27]).
-- **Las puertas de aceptación están fijadas por hash.** `verificacion/test_aceptacion_fase1.py`
-  y `..._fase2.py` se pueden leer e importar, **no se editan para que pasen**. Una puerta se
+- **Las puertas de aceptación están fijadas por hash.** `verificacion/test_aceptacion_fase1.py`,
+  `..._fase2.py` y `..._fase5.py` se pueden leer e importar, **no se editan para que pasen**. Una puerta se
   escribe antes de la implementación y arranca en rojo.
 - **Ninguna puerta contiene la fórmula analítica del resultado que verifica.** Construye su
   propia referencia numérica —diferencias finitas, extrapolación de Richardson— para que el
@@ -144,7 +147,7 @@ entorno, no del directorio del proceso. Lanzarlo con `subprocess.run(cwd=...)` s
 
 El árbol no está en el repositorio. Se reconstruye desde upstream con el parche:
 ver `numerico/specter-parche/README.md`. Después, `verificacion/test_aceptacion_fase2.py`
-tiene que dar 6/6.
+tiene que dar 6/6 y `verificacion/test_aceptacion_fase5.py`, 8/8.
 
 Convención que costó una iteración: **los números de onda de SPECTER son enteros**
 (`specter.fpp:777-780`), así que el `Lx = 1` del archivo de parámetros son 2π de largo

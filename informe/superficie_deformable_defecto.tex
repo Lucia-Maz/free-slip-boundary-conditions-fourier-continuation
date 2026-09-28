@@ -1,0 +1,95 @@
+La primera versión pasó siete de los ocho chequeos. Falló F6: el orden temporal observado
+en el caso A, con \texttt{ORD=2}, fue \textbf{1{,}45}, con diferencias sucesivas
+$1{,}47\cdot10^{-7}$ y $5{,}39\cdot10^{-8}$. Como la puerta no se edita, se buscó la causa.
+La secuencia de controles, en orden:
+
+\begin{enumerate}
+\item \textbf{No es el fondo no-deslizante}: con fondo free-slip el orden es 1{,}48.
+\item \textbf{No es el esquema de SPECTER en general}: los caminos \texttt{freeslip} y
+  \texttt{noslip} planos, sobre un modo 3D con $w\neq0$, dan orden $\approx2{,}4$ en la
+  energía.
+\item \textbf{No es el acople de $\eta$}: partiendo de un modo de velocidad suave, la
+  superficie deformable da orden $\approx3$ con $g=0$ y con $g=1$.
+\item \textbf{No es la condición inicial incompatible}. Arrancar del reposo con
+  $\eta\neq0$ viola la compatibilidad (en $t=0^+$, $\partial_tu=-\nabla p_0$ no respeta
+  el no-deslizamiento ni la tensión nula) y se esperaba una reducción de orden por las
+  capas límite impulsivas. Pero el mismo RK2 aplicado a la referencia MAC, con la misma
+  condición inicial y el mismo $\Delta z$, da orden \textbf{2{,}00} exacto. La hipótesis
+  quedó refutada.
+\item \textbf{Es un error por paso.} La diferencia entre SPECTER y el RK2 de la referencia
+  (extrapolada en el espacio) debería ser independiente de $dt$ si SPECTER fuera un RK2
+  consistente de alguna discretización espacial. No lo es: crece al achicar $dt$
+  ($8{,}07$, $8{,}29$, $8{,}61$, $9{,}20\cdot10^{-7}$ para
+  $dt=10^{-3}\dots1{,}25\cdot10^{-4}$), aproximadamente en proporción al número de pasos.
+  Con $N_z=64$ domina todo: las diferencias sucesivas se \emph{duplican} al dividir $dt$
+  por dos.
+\item \textbf{Aislado con $dt\to0$}: con $dt=10^{-9}$ y $10^{-10}$ el miembro derecho es
+  nulo y el estado no debería cambiar. En los caminos \texttt{freeslip} y
+  \texttt{freesurface} la energía de \archivo{balance.txt} cambia $-1{,}4\cdot10^{-7}$ por
+  paso con $N_z=64$ y $\approx-10^{-8}$ con $N_z=128$, \emph{igual} para los dos $dt$; en
+  \texttt{noslip} el cambio es proporcional a $dt$, el físico.
+\end{enumerate}
+
+\paragraph{La causa.} Los caminos \texttt{freeslip} y \texttt{freesurface} necesitan
+$v^*_z$ en la cara, y el parche de la Fase~2 lo conseguía mandando $v_z$ por
+\texttt{goto\_domain\_w\_boundaries} y de vuelta por \texttt{goto\_3d\_fourier}. Esa vuelta
+\emph{recalcula la continuación FC-Gram} de $v_z$ a partir de sus valores físicos, y después
+de una proyección ---que actúa sobre todo el dominio periódico extendido--- la
+continuación de $v_z$ ya no coincide con la que FC-Gram le daría a sus valores físicos. Cada
+subpaso cambia entonces el campo en una cantidad que \emph{no se anula con $dt$}. El camino
+\texttt{noslip} nunca transforma $v_z$, y por eso no lo tiene. Un primer intento de
+corrección, suponiendo que el defecto era de la reconstrucción de Neumann del valor de
+borde, no cambió nada y se descartó.
+
+\paragraph{La corrección.} $v^*_z$ se queda en el dominio $(k_z,k_y,k_x)$ y sólo se leen sus
+trazas en las caras (\texttt{fs\_trace}). Con eso el cambio por paso a $dt\to0$ pasa a ser
+proporcional a $dt$ ($-2{,}2\cdot10^{-9}$ y $-2{,}2\cdot10^{-10}$ con $N_z=128$), y el orden
+del caso A es \textbf{2{,}00}, con diferencias $1{,}381\cdot10^{-7}$ y
+$3{,}450\cdot10^{-8}$, a 6\,\% del RK2 puro de la referencia ($1{,}458\cdot10^{-7}$ y
+$3{,}646\cdot10^{-8}$).
+
+\paragraph{Lo que implica para la Fase 2\propio.} El camino \texttt{freeslip\_z} plano, que
+ya se usó en las corridas del barrido en $\delta$ y del puente de banda ancha, \emph{tiene
+el mismo defecto}. La puerta de la Fase~2 no podía verlo: sus chequeos de tasa (V4, V5)
+usan el modo de corte sin estructura horizontal, que no lo tiene (el modo $k=0$ de $v_z$ es
+nulo), y V3 mide la tensión, no la energía. Su tamaño depende de la resolución vertical y del
+flujo: para el modo de prueba ($k_x=1$) es $\sim10^{-8}$ de la energía por paso con
+$N_z=128$ y $\sim1{,}4\cdot10^{-7}$ con $N_z=64$, que es la malla de
+\archivo{decaimiento_banda_ancha.py}. Esos números son de la energía de
+\archivo{balance.txt}, que \texttt{energy()} suma sólo sobre los puntos \emph{físicos}
+(\archivo{pseudospec_hd.f90}, lazos \texttt{k = 1,nz-Cz}): \textbf{es disipación espuria en
+el dominio físico}. Una primera versión de este informe decía lo contrario, que era la energía
+del dominio extendido; lo refutó el verificador leyendo esa rutina y se comprobó. Sesga las
+tasas hacia arriba, y \etq{P-02} es justamente una comparación de tasas.
+
+\textbf{Cuánto afecta a la Fase~4 no se midió.} Una estimación de esta sesión, sin validar:
+la deriva por unidad de tiempo es $\delta/dt$, con $\delta$ el cambio por paso. Con
+$\delta=1{,}4\cdot10^{-7}$ y $dt=5\cdot10^{-4}$ serían $2{,}8\cdot10^{-4}$ por unidad de
+tiempo del código, contra una tasa de energía $2\alpha\approx0{,}2$ en esas unidades: un
+$0{,}1$\,\% para el modo de prueba, que tiene $w\neq0$. Las corridas de la Fase~4 arrancan
+con $w=0$ (flujo horizontal cuasi-2D), donde el mecanismo sólo actúa a través del $v_z$ que
+genera la no linealidad, así que el sesgo ahí debería ser menor. Es una estimación, no una
+medida.
+\paragraph{Corregido también en el camino plano \etq{D-50}.} Lucía decidió corregir
+\texttt{freeslip\_z}: recibe la traza de $v^*_z$ en la cara (\texttt{trace\_z}) y $v_z$ ya no
+hace la vuelta. Antes y después, con el mismo modo de prueba:
+
+\begin{center}\footnotesize
+\begin{tabular}{lccc}
+\toprule
+ & \multicolumn{2}{c}{deriva por paso, $dt=10^{-9}$ / $10^{-10}$} & $N_z=64$: diferencias \\
+ & $N_z=64$ & $N_z=128$ & entre $dt$ sucesivos\\
+\midrule
+antes & $-1{,}44$ / $-1{,}43\cdot10^{-7}$ & $-1{,}05\cdot10^{-8}$ / $-8{,}4\cdot10^{-9}$ & $2{,}5\to3{,}9\to6{,}7\cdot10^{-6}$\\
+después & $-9{,}4\cdot10^{-10}$ / $-8{,}0\cdot10^{-11}$ & $-2{,}25\cdot10^{-9}$ / $-2{,}25\cdot10^{-10}$ & $9{,}6\to7{,}1\to4{,}2\cdot10^{-7}$\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Después de la corrección la deriva es proporcional a $dt$ (la física) y las diferencias
+convergen. Lo que se temía para la Fase~4 se midió: el puente de banda ancha 16² de
+\etq{V-19}, vuelto a correr con la misma configuración, cambia sus tasas en
+$\le5\cdot10^{-10}$ relativo (el control lineal, en $10^{-15}$). Esas corridas arrancan con
+$w=0$, y el defecto sólo actúa a través del $v_z$ en la cara. \textbf{Los resultados de la
+Fase~4 quedan como están}; el 32² de \etq{V-19}, \etq{V-16} y \etq{V-17}, de la misma clase,
+no se volvieron a correr.

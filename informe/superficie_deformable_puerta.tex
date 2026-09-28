@@ -1,0 +1,40 @@
+Malla de las puertas ($8\times8\times128$, $C_z=25$, 103 puntos físicos en $z$),
+\texttt{ORD=2}, $\nu=10^{-2}$, $g=1$, $L_z=1$, amplitud $A=10^{-6}$ (el término no lineal
+del volumen queda en $\sim10^{-6}$). Log \archivo{verificacion/logs/fase5_2026-09-28.log},
+8\,min, pico de memoria 173\,MB.
+
+\begin{center}\small
+\begin{tabular}{lp{11.6cm}}
+\toprule
+& resultado \\ \midrule
+F1 & acepta \texttt{freesurface} arriba, aborta abajo con ``only at z=Lz'', rechaza lo desconocido \\
+F2 & rama Neumann--Dirichlet: $\phi'(0)-g_0=1{,}9\cdot10^{-16}$, $\phi(L_z)-g_1=2{,}7\cdot10^{-16}$, contra la forma cosh/sinh $6{,}5\cdot10^{-16}$ \\
+F3 & referencia: balance de energía $5{,}7\cdot10^{-7}$ y $9{,}8\cdot10^{-7}$ en $n=400$, convergencia $\times15{,}4$ y $\times13{,}4$ por dos refinamientos (esperado 16); Richardson $8\cdot10^{-8}$ y $2\cdot10^{-7}$ \\
+F4 & $\max_t|\eta_{\text{SPECTER}}-\eta_{\text{ref}}|/A$: \textbf{$1{,}23\cdot10^{-6}$} (modo $(1,0)$, gravedad) y \textbf{$5{,}56\cdot10^{-6}$} (modo $(1,1)$, $\gamma=0{,}2$), contra la tolerancia $10^{-4}$; parte imaginaria $\sim10^{-12}$; media de $\eta$ $\sim10^{-26}$; con 2 procesos MPI, idéntico bit a bit \\
+F5 & tensión tangencial completa en la superficie: \textbf{$5{,}5\cdot10^{-13}$} de la de la pared (cuadrados medios), razón entre $dt$ y $dt/2$: $1{,}06$. Control negativo (acople rezagado): $5{,}4\cdot10^{-8}$, razón $4{,}25$, es decir $O(dt)$ en amplitud \\
+F6 & orden temporal: diferencias $1{,}38\cdot10^{-7}$ y $3{,}45\cdot10^{-8}$, \textbf{orden 2{,}00} (en la primera corrida, 1{,}45: §\ref{sec:defecto}) \\
+F7 & modo de corte $k=0$: $\lambda=2{,}467401099\cdot10^{-2}$ contra $2{,}467401100\cdot10^{-2}$ de la referencia de la Fase~2 ($5{,}8\cdot10^{-10}$); $\eta\equiv0$ \\
+F8 & desvío de SPECTER respecto de cuatro modelos equivocados: sin $2\nu\partial_zw$, $5\cdot10^{-2}$ y $0{,}11$; freeslip plano reusado, $2{,}5\cdot10^{-2}$ y $5\cdot10^{-2}$; sin capilaridad, $1{,}0$; capilaridad con signo cambiado, $1{,}4$. Todos $\ge250$ veces la tolerancia \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Resultado: 8/8.} La tolerancia de F4 se fijó antes de correr, con un presupuesto de
+error estimado ($\sim3\cdot10^{-6}$) y un margen de $\sim30$; F8 demuestra que no es laxa. El
+error medido de F4 está dentro del presupuesto.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{f_sd1_trayectorias.png}
+\caption{Arriba: $\eta(t)/A$ de SPECTER (azul) sobre la referencia MAC (gris), y dos de los
+modelos equivocados de F8 como escala de lo que la comparación detecta. Abajo: el error, con
+la tolerancia de F4 y el error estimado de la referencia.}
+\end{figure}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\textwidth]{f_sd2_tension_y_orden.png}
+\caption{Izquierda: tensión tangencial completa en la superficie relativa a la de la pared;
+con el acople exacto queda en el nivel de reconstrucción y no depende de $dt$; con el rezagado
+escala como $dt^2$ en cuadrados. Derecha: orden temporal del caso A.}
+\end{figure}

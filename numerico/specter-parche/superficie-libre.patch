@@ -1,47 +1,221 @@
 diff --git a/bin/parameter.inp b/bin/parameter.inp
-index dbf0adc..c716bb9 100644
+index dbf0adc..68b0ed7 100644
 --- a/bin/parameter.inp
 +++ b/bin/parameter.inp
-@@ -40,8 +40,8 @@ vparam0 = 1.0        ! idem for the initial velocity field
+@@ -40,14 +40,24 @@ vparam0 = 1.0        ! idem for the initial velocity field
  
  ! Parameters for the velocity boundary conditions
  &velbound
 -vbczsta = "noslip"   ! velocity BC kind at z=0
 -vbczend = "noslip"   ! velocity BC kind at z=Lz
 +vbczsta = "noslip"   ! velocity BC kind at z=0   (noslip | freeslip)
-+vbczend = "noslip"   ! velocity BC kind at z=Lz  (noslip | freeslip)
++vbczend = "noslip"   ! velocity BC kind at z=Lz  (noslip | freeslip | freesurface)
  vxzsta  = 0.0        ! uniform vx at z=0
  vyzsta  = 0.0        ! uniform vy at z=0
  vxzend  = 0.0        ! uniform vx at z=Lz
+ vyzend  = 0.0        ! uniform vy at z=Lz
+ /
+ 
++! Parameters of the deformable free surface (read only if vbczend = "freesurface")
++&freesurface
++fsgrav = 1.0         ! gravity
++fstens = 0.0         ! surface tension over density
++fsamp  = 0.0         ! amplitude of the initial elevation, eta = fsamp cos(kx x + ky y)
++fskx   = 1           ! integer x wavenumber of the initial elevation
++fsky   = 0           ! integer y wavenumber of the initial elevation
++fscoup = 2           ! 2: exact tangential-stress coupling; 1: lagged (verification only)
++/
++
+ ! Parameters for Bousinessq equation's
+ &boussinesq
+ gama = 1.0           ! amplitude of bouyancy term
 diff --git a/src/SOLVERS_AND_BOUNDARY_CONDITIONS.md b/src/SOLVERS_AND_BOUNDARY_CONDITIONS.md
-index 47937cd..74bcf33 100644
+index 47937cd..747e48b 100644
 --- a/src/SOLVERS_AND_BOUNDARY_CONDITIONS.md
 +++ b/src/SOLVERS_AND_BOUNDARY_CONDITIONS.md
-@@ -13,6 +13,9 @@ Boundary conditions supported
+@@ -13,6 +13,19 @@ Boundary conditions supported
  =============================
  - Velocity field: 
      * `noslip`      No slip boundary conditions.
 +    * `freeslip`    Free-slip (zero tangential stress) boundary conditions,
 +      i.e. a flat free surface. The normal velocity still vanishes at the
 +      wall, so the surface is not allowed to deform.
++    * `freesurface` Deformable free surface, linearized; only at z=Lz. The
++      domain does not move: w = d(eta)/dt, zero tangential stress
++      d(v_t)/dz + grad_t(w) = 0, and normal stress
++      p = g eta - (sigma/rho) lap(eta) + 2 nu dw/dz are imposed at z=Lz,
++      with the elevation eta(x,y,t) advanced as a separate 2D field. p is the
++      pressure minus the hydrostatic one at rest (no gravity body force).
++      Parameters in the namelist `freesurface` of parameter.inp; output in
++      `freesurface_diagnostic.txt` and `fs_eta.NNNN.dat` (read back on
++      restart). Gravity-capillary waves are integrated explicitly: with
++      ORD=2 the scheme is only stabilized by viscosity, check dt.
  
  - Magnetic field:
      * `conducting`  Perfectly conducting boundary conditions (requires
 diff --git a/src/boundary/boundary_mod.fpp b/src/boundary/boundary_mod.fpp
-index d75c808..7552935 100644
+index d75c808..d06850c 100644
 --- a/src/boundary/boundary_mod.fpp
 +++ b/src/boundary/boundary_mod.fpp
-@@ -471,6 +471,9 @@ MODULE boundary
+@@ -16,6 +16,25 @@ MODULE boundary
+          INTEGER  :: bcxsta,bcxend,bcysta,bcyend,bczsta,bczend
+       ENDTYPE BCPLAN
+ 
++      ! State of the deformable free surface at z=Lz (vbczend = "freesurface"),
++      ! see vboundary.f90. The elevation and the surface traces live in the
++      ! (ky,kx) domain, with the same normalization as a field in the (z,ky,kx)
++      ! domain (i.e. carrying the nx*ny factor of the unnormalized x,y FFT).
++      !   fs_eta  : elevation at the current Runge-Kutta stage
++      !   fs_eta0 : elevation at the beginning of the time step
++      !   fs_wtop : w(z=Lz) of the last projected field
++      !   fs_dwz  : dw/dz(z=Lz) of the last projected field
++      !   fs_bk   : response of w(z=Lz) to the surface velocity W used in the
++      !             tangential stress datum, per horizontal mode (fixed per run)
++      COMPLEX(KIND=GP), ALLOCATABLE, DIMENSION(:,:)   :: fs_eta,fs_eta0
++      COMPLEX(KIND=GP), ALLOCATABLE, DIMENSION(:,:)   :: fs_wtop,fs_dwz,fs_bk
++      COMPLEX(KIND=GP), ALLOCATABLE, DIMENSION(:,:,:) :: fs_s1,fs_s2,fs_s3
++      COMPLEX(KIND=GP), ALLOCATABLE, DIMENSION(:,:,:) :: fs_work
++      REAL(KIND=GP) :: fs_grav = 0.0_GP, fs_tens = 0.0_GP, fs_amp = 0.0_GP
++      REAL(KIND=GP) :: fs_nu = 0.0_GP, fs_dt = 0.0_GP, fs_mismatch = 0.0_GP
++      INTEGER       :: fs_kx0 = 1, fs_ky0 = 0, fs_coup = 2
++      LOGICAL       :: fs_ready = .FALSE.
++
+       CONTAINS
+ 
+       INCLUDE 'vboundary.f90'
+@@ -401,6 +420,121 @@ MODULE boundary
+       RETURN
+       END SUBROUTINE sol_project
+ 
++!***********************************************************************
++      SUBROUTINE sol_project_fs(a,b,c,d,dtop)
++!-----------------------------------------------------------------------
++!    Projection for the deformable free surface. Same as sol_project, but
++!   with a different boundary condition on each face, which the single
++!   bctarget of sol_project cannot express:
++!     z=0  : the normal component c vanishes after projection (Neumann
++!            problem for the potential, exactly as for a rigid wall);
++!     z=Lz : the potential itself takes the value dtop (inhomogeneous
++!            Dirichlet), which is how the normal stress balance of the
++!            surface enters the scheme.
++!   The potential d = (dt/o)*p is returned in the (z,ky,kx) domain, as in
++!   sol_project, so that it can be stored in pr.
++!
++! Parameters
++!     a, b, c  : x,y,z components of v, respectively (kz,ky,kx) [INOUT]
++!     d        : potential, (z,ky,kx)                             [OUT]
++!     dtop     : value of d at z=Lz, (ky,kx), normalized like a
++!                field in the (z,ky,kx) domain                    [IN]
++!
++      USE grid
++      USE var
++      USE kes
++      USE fft
++      USE commtypes
++      USE mpivars
++!$    USE threads
++
++      IMPLICIT NONE
++
++      COMPLEX(KIND=GP), INTENT(INOUT), DIMENSION(nz,ny,ista:iend) :: a,b,c
++      COMPLEX(KIND=GP), INTENT(OUT), DIMENSION(nz,ny,ista:iend)   :: d
++      COMPLEX(KIND=GP), INTENT(IN), DIMENSION(ny,ista:iend)       :: dtop
++
++      COMPLEX(KIND=GP), ALLOCATABLE, DIMENSION(:,:,:)             :: C1,C2,C3
++      COMPLEX(KIND=GP), DIMENSION(2,ny,ista:iend)                 :: bc
++
++      REAL(KIND=GP)    :: tmp
++      INTEGER          :: i,j,k
++
++      ALLOCATE( C1(nz,ny,ista:iend), C2(nz,ny,ista:iend), C3(nz,ny,ista:iend) )
++
++      ! Inhomogeneous solution, applied
++      CALL poisson_inhomogeneous(a,b,c,d)
++!$omp parallel do if (iend-ista.ge.nth) private (j,k)
++      DO i=ista,iend
++!$omp parallel do if (iend-ista.lt.nth) private (k)
++         DO j=1,ny
++            DO k=1,nz
++               a(k,j,i) = a(k,j,i) - im*kx(i)*d(k,j,i)
++               b(k,j,i) = b(k,j,i) - im*ky(j)*d(k,j,i)
++               c(k,j,i) = c(k,j,i) - im*kz(k)*d(k,j,i)
++            ENDDO
++         ENDDO
++      ENDDO
++
++      ! Residual normal velocity and inhomogeneous potential, in (z,ky,kx)
++      tmp = 1.0_GP/nz
++!$omp parallel do if (iend-ista.ge.nth) private (j,k)
++      DO i=ista,iend
++!$omp parallel do if (iend-ista.lt.nth) private (k)
++         DO j=1,ny
++            DO k=1,nz
++               C1(k,j,i) = c(k,j,i)*tmp
++               C2(k,j,i) = d(k,j,i)*tmp
++            ENDDO
++         ENDDO
++      ENDDO
++      CALL fftp1d_complex_to_real_z(planfc,C1,MPI_COMM_WORLD)
++      CALL fftp1d_complex_to_real_z(planfc,C2,MPI_COMM_WORLD)
++
++      ! Neumann datum at z=0 cancels the residual normal velocity there;
++      ! Dirichlet datum at z=Lz completes d_inh to the prescribed value.
++!$omp parallel do private (j)
++      DO i=ista,iend
++         DO j=1,ny
++            bc(1,j,i) = C1(1,j,i)
++            bc(2,j,i) = dtop(j,i) - C2(nz-Cz,j,i)
++         ENDDO
++      ENDDO
++
++      ! Harmonic part: C1 = d_hom, C3 = d(d_hom)/dz, both in (z,ky,kx)
++      CALL laplace_z(bc,C1,C3,1,0)
++
++      ! d = d_inh + d_hom in (z,ky,kx)
++!$omp parallel do if (iend-ista.ge.nth) private (j,k)
++      DO i=ista,iend
++!$omp parallel do if (iend-ista.lt.nth) private (k)
++         DO j=1,ny
++            DO k=1,nz
++               d(k,j,i) = C2(k,j,i) + C1(k,j,i)
++            ENDDO
++         ENDDO
++      ENDDO
++
++      ! Remove the harmonic contribution from the field
++      CALL fftp1d_real_to_complex_z(planfc,C1,MPI_COMM_WORLD)
++      CALL fftp1d_real_to_complex_z(planfc,C3,MPI_COMM_WORLD)
++!$omp parallel do if (iend-ista.ge.nth) private (j,k)
++      DO i=ista,iend
++!$omp parallel do if (iend-ista.lt.nth) private (k)
++         DO j=1,ny
++            DO k=1,nz
++               a(k,j,i) = a(k,j,i) - im*kx(i)*C1(k,j,i)
++               b(k,j,i) = b(k,j,i) - im*ky(j)*C1(k,j,i)
++               c(k,j,i) = c(k,j,i) - C3(k,j,i)
++            ENDDO
++         ENDDO
++      ENDDO
++
++      DEALLOCATE( C1,C2,C3 )
++
++      RETURN
++      END SUBROUTINE sol_project_fs
++
+ !*****************************************************************
+       SUBROUTINE poisson_inhomogeneous(a,b,c,d)
+ !-----------------------------------------------------------------
+@@ -471,6 +605,9 @@ MODULE boundary
  !             * =0 for homogeneous Dirichlet BC
  !             * =1 for homogeneous Neumann BC
  !             * =2 for homogeneous Robin BC
 +!
 +!  Supported combinations: Dirichlet/Dirichlet, Neumann/Neumann, Robin/Robin,
-+! Dirichlet/Robin and Dirichlet/Neumann.
++! Dirichlet/Robin, Dirichlet/Neumann and Neumann/Dirichlet.
  !
  
        USE kes
-@@ -623,6 +626,53 @@ MODULE boundary
+@@ -623,6 +760,97 @@ MODULE boundary
           END DO
        ENDIF  !End Dirichlet bottom - Robin top
  
@@ -92,20 +266,68 @@ index d75c808..7552935 100644
 +         END DO
 +      ENDIF  !End Dirichlet bottom - Neumann top
 +
++      ! Neumann bottom - Dirichlet top (the deformable free surface)
++      ! With phi(z) = coef1*exp(k(z-Lz)) + coef2*exp(-kz) and r = exp(-k*Lz),
++      !     phi'(0)  = k*(coef1*r - coef2) = bc(1)
++      !     phi(Lz)  = coef1 + coef2*r     = bc(2)
++      ! so that coef1 = (bc2 + r*bc1/k)/(1+r^2), coef2 = (r*bc2 - bc1/k)/(1+r^2).
++      ! It is the mirror of the branch above, with the same 1+r^2 denominator
++      ! and no resonance. For k=0, phi = bc1*z + (bc2 - bc1*Lz).
++      ELSEIF ( bczsta .eq. 1 .AND. bczend .eq. 0 ) THEN
++      IF (ista.eq.1) THEN
++         coef(1,1,1) = bc(1,1,1)
++         coef(2,1,1) = bc(2,1,1) - bc(1,1,1)*Lz
++!$omp parallel do private (k,tmp)
++         DO j = 2,ny
++            tmp   = 1.0_GP/(1 + exp(-2*khom(j,1)*Lz))
++            coef(1,j,1) = (bc(2,j,1) + &
++                           bc(1,j,1)*exp(-khom(j,1)*Lz)/khom(j,1))*tmp
++            coef(2,j,1) = (bc(2,j,1)*exp(-khom(j,1)*Lz) - &
++                           bc(1,j,1)/khom(j,1))*tmp
++         END DO
++!$omp parallel do if (iend-ista.ge.nth) private (j,k,tmp)
++         DO i = 2,iend
++!$omp parallel do if (iend-ista.lt.nth) private (k,tmp)
++            DO j = 1,ny
++               tmp   = 1.0_GP/(1 + exp(-2*khom(j,i)*Lz))
++               coef(1,j,i) = (bc(2,j,i) + &
++                              bc(1,j,i)*exp(-khom(j,i)*Lz)/khom(j,i))*tmp
++               coef(2,j,i) = (bc(2,j,i)*exp(-khom(j,i)*Lz) - &
++                              bc(1,j,i)/khom(j,i))*tmp
++            END DO
++         END DO
++      ELSE
++!$omp parallel do if (iend-ista.ge.nth) private (j,k,tmp)
++         DO i = ista,iend
++!$omp parallel do if (iend-ista.lt.nth) private (k,tmp)
++            DO j = 1,ny
++               tmp   = 1.0_GP/(1 + exp(-2*khom(j,i)*Lz))
++               coef(1,j,i) = (bc(2,j,i) + &
++                              bc(1,j,i)*exp(-khom(j,i)*Lz)/khom(j,i))*tmp
++               coef(2,j,i) = (bc(2,j,i)*exp(-khom(j,i)*Lz) - &
++                              bc(1,j,i)/khom(j,i))*tmp
++           END DO
++         END DO
++      ENDIF  !End Neumann bottom - Dirichlet top
++
        ELSE  ! Unsupported combination of BC
           IF ( myrank .eq. 0) PRINT*, "[ERROR] Unsupported BC combination in call "&
                "to laplace_z. Aborting..."
 diff --git a/src/boundary/vboundary.f90 b/src/boundary/vboundary.f90
-index da16622..5f2f763 100644
+index da16622..4d6f292 100644
 --- a/src/boundary/vboundary.f90
 +++ b/src/boundary/vboundary.f90
-@@ -3,17 +3,24 @@
+@@ -3,17 +3,31 @@
  !
  !  -1 : Periodic boundary conditions.
  !   0 : Non-slip boundary conditions.
 +!   1 : Free-slip (zero tangential stress) boundary conditions, i.e. a
 +!       flat free surface. Impermeability (v_n = 0) is retained, so the
 +!       surface is not allowed to deform.
++!   2 : Deformable free surface, linearized (only at z=Lz). The domain
++!       does not move: the kinematic, tangential-stress and normal-stress
++!       conditions are transferred to z=Lz, and the elevation eta(x,y,t)
++!       is advanced as a separate 2D field. See freesurface_imposebc.
  !
  !  References:
 -!  - No-Slip: https://doi.org/10.1016/j.cpc.2020.107482 
@@ -113,9 +335,12 @@ index da16622..5f2f763 100644
 +!  - Free-slip: derived from the same time-splitting scheme; see
 +!    verificacion/intent_fase2.txt in the project tree that carries this
 +!    modification, and the acceptance gate test_aceptacion_fase2.py.
++!  - Deformable free surface: verificacion/intent_fase5.txt and the gate
++!    test_aceptacion_fase5.py of the same project.
  !
  ! 2020 Mauro Fontana. DF-UBA.
 +! 2026 Free-slip boundary condition added (L. Mazaira).
++! 2026 Linearized deformable free surface added (L. Mazaira).
  !======================================================================
  
  !***********************************************************************
@@ -126,12 +351,14 @@ index da16622..5f2f763 100644
  !  integer for internal module usage.
  !-----------------------------------------------------------------------
        USE mpivars
-@@ -25,12 +32,14 @@
+@@ -25,12 +39,16 @@
  
        IF ( str .eq. 'noslip' ) THEN
           bc = 0
 +      ELSEIF ( str .eq. 'freeslip' ) THEN
 +         bc = 1
++      ELSEIF ( str .eq. 'freesurface' ) THEN
++         bc = 2
        ELSEIF ( str .eq. 'periodic' ) THEN
           bc = -1
        ELSE
@@ -143,11 +370,13 @@ index da16622..5f2f763 100644
           STOP
        ENDIF
        RETURN
-@@ -47,9 +56,9 @@
+@@ -47,13 +65,19 @@
  !             for each boundary. [INOUT]
  !---------------------------------------------------------------------------
        USE fcgram
 - 
++      USE mpivars
++      USE commtypes
 +
        IMPLICIT NONE
 - 
@@ -155,7 +384,15 @@ index da16622..5f2f763 100644
        TYPE(BCPLAN), INTENT(INOUT)   :: this
        TYPE(FCPLAN), INTENT(INOUT)   :: planfc
        CHARACTER(len=15), INTENT(IN) :: bckind(6)
-@@ -61,6 +70,16 @@
+ 
++      REAL(KIND=GP) :: fsgrav,fstens,fsamp
++      INTEGER       :: fskx,fsky,fscoup
++      NAMELIST / freesurface / fsgrav,fstens,fsamp,fskx,fsky,fscoup
++
+       this%bcxsta = v_parsebc(preprocess(bckind(1)))
+       this%bcxend = v_parsebc(preprocess(bckind(2)))
+       this%bcysta = v_parsebc(preprocess(bckind(3)))
+@@ -61,6 +85,66 @@
        this%bczsta = v_parsebc(preprocess(bckind(5)))
        this%bczend = v_parsebc(preprocess(bckind(6)))
  
@@ -163,16 +400,66 @@ index da16622..5f2f763 100644
 +      ! which is applied by reconstructing the boundary value from the
 +      ! normal derivative. Up to now only the magnetic field required these
 +      ! tables, so the plan does not carry them by default.
-+      IF ( this%bczsta .eq. 1 .OR. this%bczend .eq. 1 ) THEN
++      ! The deformable surface imposes its tangential stress in the same way.
++      IF ( this%bczsta .eq. 1 .OR. this%bczend .eq. 1 .OR. &
++           this%bczend .eq. 2 ) THEN
 +         IF (.NOT. is_neumann_loaded(planfc%z,1) ) THEN
 +            CALL load_neumann_tables(planfc%z,planfc%tdir,1)
++         ENDIF
++      ENDIF
++
++      ! The deformable surface is a graph over the bottom, with gravity
++      ! pointing to -z: it only makes sense at z=Lz.
++      IF ( this%bczsta .eq. 2 .OR. this%bcxsta .eq. 2 .OR. &
++           this%bcxend .eq. 2 .OR. this%bcysta .eq. 2 .OR. &
++           this%bcyend .eq. 2 ) THEN
++         IF ( myrank .eq. 0 ) THEN
++            PRINT*, "[ERROR] The deformable 'freesurface' boundary is ", &
++                "supported only at z=Lz. Aborting..."
++            FLUSH(6)
++         ENDIF
++         CALL MPI_BARRIER(MPI_COMM_WORLD,ierr)
++         CALL MPI_ABORT(MPI_COMM_WORLD,1,ierr)
++      ENDIF
++
++      ! Parameters of the deformable surface, from the namelist
++      ! 'freesurface' of parameter.inp (read only when it is used):
++      !     fsgrav : gravity
++      !     fstens : surface tension over density
++      !     fsamp  : amplitude of the initial elevation, eta = A cos(k0.x)
++      !     fskx   : integer x wavenumber of the initial elevation
++      !     fsky   : integer y wavenumber of the initial elevation
++      !     fscoup : 2 (default) exact coupling of the tangential stress;
++      !              1 lagged coupling, O(dt) error, for verification only
++      IF ( this%bczend .eq. 2 ) THEN
++         fsgrav = 0.0_GP; fstens = 0.0_GP; fsamp = 0.0_GP
++         fskx = 1; fsky = 0; fscoup = 2
++         IF (myrank.eq.0) THEN
++            OPEN(1,file='parameter.inp',status='unknown',form="formatted")
++            READ(1,NML=freesurface)
++            CLOSE(1)
++         ENDIF
++         CALL MPI_BCAST(fsgrav,1,GC_REAL,0,MPI_COMM_WORLD,ierr)
++         CALL MPI_BCAST(fstens,1,GC_REAL,0,MPI_COMM_WORLD,ierr)
++         CALL MPI_BCAST(fsamp,1,GC_REAL,0,MPI_COMM_WORLD,ierr)
++         CALL MPI_BCAST(fskx,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
++         CALL MPI_BCAST(fsky,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
++         CALL MPI_BCAST(fscoup,1,MPI_INTEGER,0,MPI_COMM_WORLD,ierr)
++         fs_grav = fsgrav; fs_tens = fstens; fs_amp = fsamp
++         fs_kx0 = fskx; fs_ky0 = fsky; fs_coup = fscoup
++         IF ( fs_coup .ne. 1 .AND. fs_coup .ne. 2 ) THEN
++            IF ( myrank .eq. 0 ) PRINT*, "[ERROR] fscoup must be 1 or 2."
++            CALL MPI_ABORT(MPI_COMM_WORLD,1,ierr)
++         ENDIF
++         IF ( fs_kx0 .lt. 0 ) THEN   ! use the conjugate mode, kx >= 0
++            fs_kx0 = -fs_kx0; fs_ky0 = -fs_ky0
 +         ENDIF
 +      ENDIF
 +
        END SUBROUTINE v_setup
  
  !***********************************************************************
-@@ -70,6 +89,14 @@
+@@ -70,6 +154,14 @@
  !   Subroutine to apply boundary conditions to the velocity field and
  !  project the field into a solenoidal space, for the latter a Poisson
  !  equation with appropriate boundary conditions is solved.
@@ -187,7 +474,16 @@ index da16622..5f2f763 100644
  !  ARGUMENTS:
  !    planbc : BCPLAN to use during the imposition. [IN]
  !    planfc : FCPLAN to use during the imposition. [IN]
-@@ -102,24 +129,34 @@
+@@ -95,6 +187,8 @@
+       REAL(KIND=GP), INTENT(IN), DIMENSION(2), OPTIONAL :: v_zsta, v_zend
+       INTEGER, INTENT(IN), OPTIONAL       :: rki
+ 
++      COMPLEX(KIND=GP), DIMENSION(planfc%y%n,ista:iend) :: wbot,wtop
++
+ !TODO Create interface for the case of non-periodic BC in X
+ !(in that case pr should be real)
+ 
+@@ -102,24 +196,55 @@
        IF ( planbc%bcysta .ne. -1 .OR. planbc%bcyend .ne. -1) THEN
           IF ( myrank .eq. 0 ) PRINT*, "[ERROR] Non-periodic boundary ", &
               "conditions in Y direction not supported yet. Aborting..."
@@ -198,7 +494,8 @@ index da16622..5f2f763 100644
        ! Check BC in Z direction
 -      IF ( planbc%bczsta .ne. 0 .OR. planbc%bczend .ne. 0 ) THEN
 +      IF ( (planbc%bczsta .ne. 0 .AND. planbc%bczsta .ne. 1) .OR. &
-+           (planbc%bczend .ne. 0 .AND. planbc%bczend .ne. 1) ) THEN
++           (planbc%bczend .ne. 0 .AND. planbc%bczend .ne. 1 .AND. &
++            planbc%bczend .ne. 2) ) THEN
           IF ( myrank .eq. 0 ) PRINT*, "[ERROR] Unsupported boundary ", &
               "conditions in Z direction. Aborting..."
 -         CALL MPI_FINALIZE(MPI_COMM_WORLD, ierr) 
@@ -206,17 +503,36 @@ index da16622..5f2f763 100644
           STOP
        ENDIF
  
--      CALL goto_domain_w_boundaries(planbc,planfc,vx,vy)
-+      ! vz is needed in the (kx,ky,z) domain as well when a face is free-slip:
-+      ! that condition couples the tangential derivative of the normal velocity
-+      ! into the boundary value of the tangential components. When there is no
-+      ! free-slip face the pure no-slip path is left exactly as upstream had it,
-+      ! with no extra transform.
-+      IF ( planbc%bczsta .eq. 1 .OR. planbc%bczend .eq. 1 ) THEN
-+         CALL goto_domain_w_boundaries(planbc,planfc,vx,vy,vz)
-+      ELSE
-+         CALL goto_domain_w_boundaries(planbc,planfc,vx,vy)
++      ! Deformable free surface at z=Lz: its own path, which also takes care
++      ! of the bottom. The flat paths below are left exactly as they were.
++      IF ( planbc%bczend .eq. 2 ) THEN
++         IF ( .NOT. PRESENT(rki) ) THEN
++            IF ( myrank .eq. 0 ) PRINT*, "[ERROR] The free surface requires ", &
++                "`rki` in call to imposebc_and_project. Aborting..."
++            CALL MPI_ABORT(MPI_COMM_WORLD,1,ierr)
++         ENDIF
++         IF ( PRESENT(v_zsta) ) THEN
++            CALL freesurface_imposebc(planbc,planfc,vx,vy,vz,pr,rki,v_zsta)
++         ELSE
++            CALL freesurface_imposebc(planbc,planfc,vx,vy,vz,pr,rki, &
++                                      (/.0_GP,.0_GP/))
++         ENDIF
++         RETURN
 +      ENDIF
++
++      ! A free-slip face needs v*_z at the face: that condition couples the
++      ! tangential derivative of the normal velocity into the boundary value
++      ! of the tangential components. Only its TRACES are read, and vz stays
++      ! in the (kz,ky,kx) domain. Sending vz through goto_domain_w_boundaries
++      ! and back (as this path did until 2026-09-28) recomputes its FC
++      ! continuation from the physical values, which after a projection do
++      ! not match it exactly: a change of the field at every substage that
++      ! does not vanish with dt, i.e. a spurious dissipation proportional to
++      ! the number of steps ([H-20] of the project that carries this patch).
++      IF ( planbc%bczsta .eq. 1 .OR. planbc%bczend .eq. 1 ) THEN
++         CALL trace_z(planfc,vz,wbot,wtop)
++      ENDIF
+       CALL goto_domain_w_boundaries(planbc,planfc,vx,vy)
  
        IF ( (planbc%bczsta .eq. 0 .OR. planbc%bczend .eq. 0) .AND. &
              .NOT. PRESENT(rki) ) THEN
@@ -227,33 +543,25 @@ index da16622..5f2f763 100644
           STOP
        ENDIF
  
-@@ -130,6 +167,8 @@
+@@ -130,6 +255,8 @@
            ELSE
               CALL noslip_z(planfc,rki,vx,vy,vz,pr,v_zsta,0)
            ENDIF
 +      ELSEIF (planbc%bczsta .eq. 1) THEN
-+          CALL freeslip_z(planfc,vx,vy,vz,0)
++          CALL freeslip_z(planfc,vx,vy,wbot,0)
        ENDIF
  
        ! Z=Lz
-@@ -139,17 +178,23 @@
+@@ -139,6 +266,8 @@
            ELSE
               CALL noslip_z(planfc,rki,vx,vy,vz,pr,v_zend,1)
            ENDIF
 +      ELSEIF (planbc%bczend .eq. 1) THEN
-+          CALL freeslip_z(planfc,vx,vy,vz,1)
++          CALL freeslip_z(planfc,vx,vy,wtop,1)
        ENDIF
  
        ! Back to 3D Fourier
--      CALL goto_3d_fourier(planbc,planfc,vx,vy)
-+      IF ( planbc%bczsta .eq. 1 .OR. planbc%bczend .eq. 1 ) THEN
-+         CALL goto_3d_fourier(planbc,planfc,vx,vy,vz)
-+      ELSE
-+         CALL goto_3d_fourier(planbc,planfc,vx,vy)
-+      ENDIF
- 
-       ! Now project
-       CALL sol_project(vx,vy,vz,pr,1,0,0)
+@@ -149,7 +278,7 @@
  
        RETURN
        END SUBROUTINE v_imposebc_and_project
@@ -262,12 +570,12 @@ index da16622..5f2f763 100644
  !***********************************************************************
        SUBROUTINE noslip_z(planfc,o,vx,vy,vz,pr,vbound,pos)
  !-----------------------------------------------------------------------
-@@ -210,21 +255,114 @@
+@@ -210,21 +339,738 @@
  
        END SUBROUTINE noslip_z
  
 +!***********************************************************************
-+      SUBROUTINE freeslip_z(planfc,vx,vy,vz,pos)
++      SUBROUTINE freeslip_z(planfc,vx,vy,wface,pos)
 +!-----------------------------------------------------------------------
 +!  Subroutine to apply free-slip (zero tangential stress) boundary
 +!  conditions at the top or bottom boundary, i.e. a flat free surface.
@@ -308,8 +616,10 @@ index da16622..5f2f763 100644
 +!
 +!  ARGUMENTS:
 +!    planfc : FCPLAN to use during the imposition. [IN]
-+!    vi     : Array containing the ith component of the velocity field in
-+!             the (kx,ky,z) domain. [INOUT]
++!    vx, vy : x and y components of the velocity field in the (kx,ky,z)
++!             domain. [INOUT]
++!    wface  : v*_z at the face, in the (ky,kx) domain with the
++!             normalization of the (kx,ky,z) domain (see trace_z). [IN]
 +!    pos    : 0 for bottom boundary, 1 for top boundary. [IN]
 +!-----------------------------------------------------------------------
 +      USE fprecision
@@ -324,7 +634,7 @@ index da16622..5f2f763 100644
 +
 +      TYPE(FCPLAN), INTENT(IN)  :: planfc
 +      COMPLEX(KIND=GP),INTENT(INOUT),DIMENSION(planfc%z%n,planfc%y%n,ista:iend) :: vx,vy
-+      COMPLEX(KIND=GP),INTENT(IN),DIMENSION(planfc%z%n,planfc%y%n,ista:iend)    :: vz
++      COMPLEX(KIND=GP),INTENT(IN),DIMENSION(planfc%y%n,ista:iend)               :: wface
 +      INTEGER, INTENT(IN)  :: pos
 +
 +      REAL(KIND=GP) :: sgn
@@ -343,8 +653,8 @@ index da16622..5f2f763 100644
 +      DO i = ista,iend
 + !$omp parallel do if (iend-ista.lt.nth)
 +         DO j = 1,planfc%y%n
-+            vx(ind,j,i) = sgn*im*kx(i)*vz(ind,j,i)
-+            vy(ind,j,i) = sgn*im*ky(j)*vz(ind,j,i)
++            vx(ind,j,i) = sgn*im*kx(i)*wface(j,i)
++            vy(ind,j,i) = sgn*im*ky(j)*wface(j,i)
 +         ENDDO
 +      ENDDO
 +
@@ -352,6 +662,628 @@ index da16622..5f2f763 100644
 +      CALL neumann_reconstruct(planfc,vy,5+pos,1)
 +
 +      END SUBROUTINE freeslip_z
++
++!***********************************************************************
++      SUBROUTINE trace_z(planfc,f,bot,top)
++!-----------------------------------------------------------------------
++!  Values at z=0 and z=Lz of a field given in the (kz,ky,kx) domain,
++!  returned in the (ky,kx) domain with the normalization of the (z,ky,kx)
++!  domain (as goto_domain_w_boundaries leaves it). The field is not
++!  modified: a work copy is transformed.
++!-----------------------------------------------------------------------
++      USE fprecision
++      USE mpivars
++      USE commtypes
++      USE fcgram
++
++      IMPLICIT NONE
++
++      TYPE(FCPLAN), INTENT(IN)  :: planfc
++      COMPLEX(KIND=GP),INTENT(IN),DIMENSION(planfc%z%n,planfc%y%n,ista:iend) :: f
++      COMPLEX(KIND=GP),INTENT(OUT),DIMENSION(planfc%y%n,ista:iend)           :: bot,top
++
++      COMPLEX(KIND=GP), ALLOCATABLE, DIMENSION(:,:,:) :: w
++      REAL(KIND=GP) :: tmp
++      INTEGER       :: ind,i,j
++
++      ALLOCATE( w(planfc%z%n,planfc%y%n,ista:iend) )
++      w = f
++      CALL fftp1d_complex_to_real_z(planfc,w,MPI_COMM_WORLD)
++      ind = planfc%z%n - planfc%z%c
++      tmp = 1.0_GP/real(planfc%z%n, kind=GP)
++      DO i = ista,iend
++         DO j = 1,planfc%y%n
++            bot(j,i) = w(1,j,i)*tmp
++            top(j,i) = w(ind,j,i)*tmp
++         ENDDO
++      ENDDO
++      DEALLOCATE( w )
++
++      RETURN
++      END SUBROUTINE trace_z
++
++!***********************************************************************
++      SUBROUTINE freesurface_imposebc(planbc,planfc,vx,vy,vz,pr,o,vbot)
++!-----------------------------------------------------------------------
++!  One Runge-Kutta substage with a deformable free surface at z=Lz,
++!  linearized: the conditions are applied at z=Lz, and the elevation
++!  eta(x,y,t) is a separate 2D field.
++!
++!      d(eta)/dt = w ,  du/dz + dw/dx = 0 ,  dv/dz + dw/dy = 0 ,
++!      p = g eta - (sigma/rho) lap_h(eta) + 2 nu dw/dz            at z=Lz,
++!
++!  with p the kinematic pressure minus the hydrostatic one of the fluid at
++!  rest, the same variable SPECTER integrates. Gravity is not a body force.
++!
++!  DERIVATION. Each substage o advances a pressureless v* and projects
++!  v = v* - grad(d), d = (dt/o) p (see noslip_z for the rescaling of pr).
++!
++!  (a) Pressure. The normal stress balance PRESCRIBES p at the surface, so
++!      d is Dirichlet at z=Lz, with datum (dt/o)[(g+sigma k^2/rho) eta +
++!      2 nu dw/dz], evaluated at the state of the previous substage like
++!      every other right-hand-side term of an explicit Runge-Kutta. The
++!      bottom keeps its Neumann datum (w=0 after projection). This is
++!      sol_project_fs, with the Neumann-Dirichlet branch of laplace_z.
++!
++!  (b) Elevation. eta^(o) = eta^n + (dt/o) w(Lz) of the previous substage,
++!      the same scheme as the velocity.
++!
++!  (c) Tangential stress. The stress is tau_x = du/dz + i kx w = omega_y +
++!      2 i kx w, where omega_y = du/dz - i kx w is the tangential vorticity,
++!      and the vorticity is not changed by the projection. Requiring
++!      tau_x = 0 on the PROJECTED field is then, on v*,
++!
++!          d(v*_x)/dz = i kx (v*_z - 2W) ,  d(v*_y)/dz = i ky (v*_z - 2W),
++!
++!      with W = w(Lz) AFTER the projection. With W = 0 this is freeslip_z.
++!      W is not known in advance, but the whole chain (Neumann
++!      reconstruction, FC-Gram continuation, projection) is linear and
++!      decoupled in the horizontal modes, so that W_final = A_k + B_k W for
++!      each mode, with B_k fixed for the run (computed in v_fs_init). One
++!      pass with a trial W gives A_k, W = A_k/(1-B_k) is then exact, and a
++!      second pass imposes it. fscoup=1 does a single pass with the W of
++!      the previous substage, an O(dt) stress error kept only as the
++!      negative control of the acceptance gate.
++!
++!  (d) v*_z stays in the (kz,ky,kx) domain; only its traces are read. The
++!      flat path used to send it through goto_domain_w_boundaries and back
++!      (fixed there too on 2026-09-28), which
++!      recomputes its FC continuation from the physical values. After a
++!      projection those do not match exactly, so each substage changes the
++!      field by an amount that does NOT vanish with dt: an error proportional
++!      to the number of steps (measured with the acceptance gate: observed
++!      time order 1.45 instead of 2, and an energy change per step
++!      independent of dt as dt -> 0). Without the round trip the order is
++!      2.00 and the drift is gone.
++!
++!  ARGUMENTS:
++!    planbc : BCPLAN to use during the imposition. [IN]
++!    planfc : FCPLAN to use during the imposition. [IN]
++!    vi     : ith component of the velocity field, (kz,ky,kx). [INOUT]
++!    pr     : pressure potential d, (z,ky,kx). [INOUT]
++!    o      : current iteration of the Runge-Kutta scheme. [IN]
++!    vbot   : tangential velocity of the bottom wall. [IN]
++!-----------------------------------------------------------------------
++      USE fprecision
++      USE mpivars
++      USE commtypes
++      USE fcgram
++      USE kes
++      USE var
++      USE order
++!$    USE threads
++
++      IMPLICIT NONE
++
++      TYPE(BCPLAN), INTENT(IN)  :: planbc
++      TYPE(FCPLAN), INTENT(IN)  :: planfc
++      COMPLEX(KIND=GP),INTENT(INOUT),DIMENSION(planfc%z%n,planfc%y%n,ista:iend) :: vx,vy,vz,pr
++      INTEGER, INTENT(IN)       :: o
++      REAL(KIND=GP), INTENT(IN), DIMENSION(2) :: vbot
++
++      COMPLEX(KIND=GP), DIMENSION(planfc%y%n,ista:iend) :: dtop,wg,wn,wst,wsb
++      REAL(KIND=GP) :: fac
++      REAL(KIND=GP), DIMENSION(2) :: loc,glo
++      INTEGER       :: i,j
++
++      IF ( .NOT. fs_ready ) THEN
++         IF ( myrank .eq. 0 ) PRINT*, "[ERROR] freesurface used before ", &
++             "v_fs_init. Aborting..."
++         CALL MPI_ABORT(MPI_COMM_WORLD,1,ierr)
++      ENDIF
++
++      fac = fs_dt/real(o, kind=GP)
++      IF ( o .eq. ord ) fs_eta0 = fs_eta
++
++      ! (a) and (b), both from the state of the previous substage
++      DO i = ista,iend
++         DO j = 1,planfc%y%n
++            dtop(j,i) = fac*( (fs_grav + fs_tens*khom(j,i)**2)*fs_eta(j,i) + &
++                              2*fs_nu*fs_dwz(j,i) )
++            fs_eta(j,i) = fs_eta0(j,i) + fac*fs_wtop(j,i)
++         ENDDO
++      ENDDO
++
++      ! v*_z is only read at the faces, through its traces (item d)
++      CALL fs_trace(planfc,vz,wst)
++      IF ( planbc%bczsta .ne. 0 ) CALL fs_trace_bottom(planfc,vz,wsb)
++
++      ! Bottom, as in the flat paths
++      CALL goto_domain_w_boundaries(planbc,planfc,vx,vy)
++      IF ( planbc%bczsta .eq. 0 ) THEN
++         CALL noslip_z(planfc,o,vx,vy,vz,pr,vbot,0)
++      ELSE
++         CALL freeslip_z(planfc,vx,vy,wsb,0)
++      ENDIF
++
++      ! (c) Surface
++      wg = fs_wtop
++      IF ( fs_coup .eq. 2 ) THEN
++         fs_s1 = vx; fs_s2 = vy; fs_s3 = vz
++      ENDIF
++      CALL fs_top_pass(planbc,planfc,vx,vy,vz,pr,dtop,wst,wg)
++      CALL fs_trace(planfc,vz,wn)
++      IF ( fs_coup .eq. 2 ) THEN
++         wg = (wn - fs_bk*wg)/(1.0_GP - fs_bk)
++         vx = fs_s1; vy = fs_s2; vz = fs_s3
++         CALL fs_top_pass(planbc,planfc,vx,vy,vz,pr,dtop,wst,wg)
++         CALL fs_trace(planfc,vz,wn)
++      ENDIF
++
++      ! Relative mismatch between the surface velocity used in the stress
++      ! datum and the one obtained (roundoff for fscoup=2, O(dt) for 1)
++      loc(1) = maxval(abs(wn-wg))
++      loc(2) = maxval(abs(wn))
++      CALL MPI_ALLREDUCE(loc,glo,2,GC_REAL,MPI_MAX,MPI_COMM_WORLD,ierr)
++      fs_mismatch = glo(1)/max(glo(2),tiny(1.0_GP))
++
++      ! Traces for the next substage
++      fs_wtop = wn
++      CALL fs_dwz_trace(planfc,vx,vy,fs_dwz)
++
++      RETURN
++      END SUBROUTINE freesurface_imposebc
++
++!***********************************************************************
++      SUBROUTINE fs_top_pass(planbc,planfc,vx,vy,vz,d,dtop,wstar,wsurf)
++!-----------------------------------------------------------------------
++!  Imposes the tangential stress datum at z=Lz for a given surface
++!  velocity wsurf, goes back to 3D Fourier and projects with sol_project_fs.
++!  vx,vy enter in the (z,ky,kx) domain and leave in (kz,ky,kx); vz is in
++!  (kz,ky,kx) throughout, and wstar is its value at z=Lz. d is the
++!  resulting potential in (z,ky,kx). The sign convention of
++!  neumann_reconstruct is the outward normal derivative, +d/dz at z=Lz.
++!-----------------------------------------------------------------------
++      USE fprecision
++      USE mpivars
++      USE commtypes
++      USE fcgram
++      USE kes
++      USE var
++!$    USE threads
++
++      IMPLICIT NONE
++
++      TYPE(BCPLAN), INTENT(IN)  :: planbc
++      TYPE(FCPLAN), INTENT(IN)  :: planfc
++      COMPLEX(KIND=GP),INTENT(INOUT),DIMENSION(planfc%z%n,planfc%y%n,ista:iend) :: vx,vy,vz
++      COMPLEX(KIND=GP),INTENT(OUT),DIMENSION(planfc%z%n,planfc%y%n,ista:iend)   :: d
++      COMPLEX(KIND=GP),INTENT(IN),DIMENSION(planfc%y%n,ista:iend) :: dtop,wsurf
++      COMPLEX(KIND=GP),INTENT(IN),DIMENSION(planfc%y%n,ista:iend) :: wstar
++
++      INTEGER :: ind,i,j
++
++      ind = planfc%z%n - planfc%z%c
++!$omp parallel do if (iend-ista.ge.nth) private (j)
++      DO i = ista,iend
++!$omp parallel do if (iend-ista.lt.nth)
++         DO j = 1,planfc%y%n
++            vx(ind,j,i) = im*kx(i)*(wstar(j,i) - 2*wsurf(j,i))
++            vy(ind,j,i) = im*ky(j)*(wstar(j,i) - 2*wsurf(j,i))
++         ENDDO
++      ENDDO
++      CALL neumann_reconstruct(planfc,vx,6,1)
++      CALL neumann_reconstruct(planfc,vy,6,1)
++
++      CALL goto_3d_fourier(planbc,planfc,vx,vy)
++      CALL sol_project_fs(vx,vy,vz,d,dtop)
++
++      RETURN
++      END SUBROUTINE fs_top_pass
++
++!***********************************************************************
++      SUBROUTINE fs_trace(planfc,f,t)
++!-----------------------------------------------------------------------
++!  Value at z=Lz of a field given in the (kz,ky,kx) domain, returned in
++!  the (ky,kx) domain with the normalization of the (z,ky,kx) domain.
++!-----------------------------------------------------------------------
++      USE fprecision
++      USE mpivars
++      USE commtypes
++      USE fcgram
++
++      IMPLICIT NONE
++
++      TYPE(FCPLAN), INTENT(IN)  :: planfc
++      COMPLEX(KIND=GP),INTENT(IN),DIMENSION(planfc%z%n,planfc%y%n,ista:iend) :: f
++      COMPLEX(KIND=GP),INTENT(OUT),DIMENSION(planfc%y%n,ista:iend)           :: t
++
++      INTEGER :: ind,i,j
++
++      fs_work = f
++      CALL fftp1d_complex_to_real_z(planfc,fs_work,MPI_COMM_WORLD)
++      ind = planfc%z%n - planfc%z%c
++      DO i = ista,iend
++         DO j = 1,planfc%y%n
++            t(j,i) = fs_work(ind,j,i)/real(planfc%z%n, kind=GP)
++         ENDDO
++      ENDDO
++
++      RETURN
++      END SUBROUTINE fs_trace
++
++!***********************************************************************
++      SUBROUTINE fs_trace_bottom(planfc,f,t)
++!-----------------------------------------------------------------------
++!  Same as fs_trace, at z=0.
++!-----------------------------------------------------------------------
++      USE fprecision
++      USE mpivars
++      USE commtypes
++      USE fcgram
++
++      IMPLICIT NONE
++
++      TYPE(FCPLAN), INTENT(IN)  :: planfc
++      COMPLEX(KIND=GP),INTENT(IN),DIMENSION(planfc%z%n,planfc%y%n,ista:iend) :: f
++      COMPLEX(KIND=GP),INTENT(OUT),DIMENSION(planfc%y%n,ista:iend)           :: t
++
++      INTEGER :: i,j
++
++      fs_work = f
++      CALL fftp1d_complex_to_real_z(planfc,fs_work,MPI_COMM_WORLD)
++      DO i = ista,iend
++         DO j = 1,planfc%y%n
++            t(j,i) = fs_work(1,j,i)/real(planfc%z%n, kind=GP)
++         ENDDO
++      ENDDO
++
++      RETURN
++      END SUBROUTINE fs_trace_bottom
++
++!***********************************************************************
++      SUBROUTINE fs_dwz_trace(planfc,vx,vy,t)
++!-----------------------------------------------------------------------
++!  dw/dz at z=Lz, from incompressibility: dw/dz = -i (kx vx + ky vy). It
++!  holds to FC-continuation accuracy (the harmonic part of the projection is
++!  continued with FC-Gram, so the spectral divergence is not exactly zero),
++!  which is the accuracy of the rest of the scheme.
++!-----------------------------------------------------------------------
++      USE fprecision
++      USE mpivars
++      USE commtypes
++      USE fcgram
++      USE kes
++      USE var
++
++      IMPLICIT NONE
++
++      TYPE(FCPLAN), INTENT(IN)  :: planfc
++      COMPLEX(KIND=GP),INTENT(IN),DIMENSION(planfc%z%n,planfc%y%n,ista:iend) :: vx,vy
++      COMPLEX(KIND=GP),INTENT(OUT),DIMENSION(planfc%y%n,ista:iend)           :: t
++
++      INTEGER :: ind,i,j,k
++
++      DO i = ista,iend
++         DO j = 1,planfc%y%n
++            DO k = 1,planfc%z%n
++               fs_work(k,j,i) = -im*(kx(i)*vx(k,j,i) + ky(j)*vy(k,j,i))
++            ENDDO
++         ENDDO
++      ENDDO
++      CALL fftp1d_complex_to_real_z(planfc,fs_work,MPI_COMM_WORLD)
++      ind = planfc%z%n - planfc%z%c
++      DO i = ista,iend
++         DO j = 1,planfc%y%n
++            t(j,i) = fs_work(ind,j,i)/real(planfc%z%n, kind=GP)
++         ENDDO
++      ENDDO
++
++      RETURN
++      END SUBROUTINE fs_dwz_trace
++
++!***********************************************************************
++      SUBROUTINE v_fs_init(planbc,planfc,vx,vy,vz,pr,nu,dt,stat,dir,ext)
++!-----------------------------------------------------------------------
++!  Initializes the deformable free surface, once the initial velocity is
++!  known. Does nothing unless z=Lz is 'freesurface'.
++!   - eta: A cos(kx0 x + ky0 y) for a new run, or read from
++!     dir/fs_eta.ext.dat when restarting (stat > 0).
++!   - B_k, the response of w(Lz) to the surface velocity used in the
++!     stress datum, by running the surface pass on a zero field.
++!   - The surface traces of the initial velocity.
++!   - For a new run, pr is set to dt times the harmonic pressure that the
++!     initial surface imposes (exactly the initial pressure when the fluid
++!     starts at rest without forcing), instead of zero.
++!  ARGUMENTS:
++!    vi   : initial velocity, (kz,ky,kx). [IN]
++!    pr   : pressure potential, (z,ky,kx). [INOUT]
++!    nu   : kinematic viscosity. [IN]
++!    dt   : time step. [IN]
++!    stat : 0 for a new run, number of the restart file otherwise. [IN]
++!    dir  : input directory. [IN]
++!    ext  : extension of the restart files. [IN]
++!-----------------------------------------------------------------------
++      USE fprecision
++      USE mpivars
++      USE commtypes
++      USE fcgram
++      USE grid
++      USE kes
++      USE var
++
++      IMPLICIT NONE
++
++      TYPE(BCPLAN), INTENT(IN)  :: planbc
++      TYPE(FCPLAN), INTENT(IN)  :: planfc
++      COMPLEX(KIND=GP),INTENT(IN),DIMENSION(nz,ny,ista:iend)    :: vx,vy,vz
++      COMPLEX(KIND=GP),INTENT(INOUT),DIMENSION(nz,ny,ista:iend) :: pr
++      REAL(KIND=GP), INTENT(IN)    :: nu,dt
++      INTEGER, INTENT(IN)          :: stat
++      CHARACTER(len=*), INTENT(IN) :: dir,ext
++
++      COMPLEX(KIND=GP), ALLOCATABLE, DIMENSION(:,:,:) :: dd
++      COMPLEX(KIND=GP), DIMENSION(ny,ista:iend)       :: zero,one
++      COMPLEX(KIND=GP), DIMENSION(2,ny,ista:iend)     :: bc
++      REAL(KIND=GP), DIMENSION(2) :: loc,glo
++      REAL(KIND=GP) :: amp
++      INTEGER       :: i0,j0,i,j,k
++
++      IF ( planbc%bczend .ne. 2 ) RETURN
++
++      ALLOCATE( fs_eta(ny,ista:iend), fs_eta0(ny,ista:iend) )
++      ALLOCATE( fs_wtop(ny,ista:iend), fs_dwz(ny,ista:iend), fs_bk(ny,ista:iend) )
++      ALLOCATE( fs_s1(nz,ny,ista:iend), fs_s2(nz,ny,ista:iend) )
++      ALLOCATE( fs_s3(nz,ny,ista:iend), fs_work(nz,ny,ista:iend) )
++      ALLOCATE( dd(nz,ny,ista:iend) )
++      fs_nu = nu
++      fs_dt = dt
++
++      ! Elevation
++      fs_eta = 0.0_GP
++      IF ( stat .eq. 0 ) THEN
++         i0 = fs_kx0 + 1
++         IF ( fs_ky0 .ge. 0 ) THEN
++            j0 = fs_ky0 + 1
++         ELSE
++            j0 = ny + fs_ky0 + 1
++         ENDIF
++         ! Nyquist modes are excluded: their coefficient is its own
++         ! conjugate and the A/2 split below does not apply
++         IF ( i0 .gt. nx/2 .OR. j0 .lt. 1 .OR. j0 .gt. ny .OR. &
++              j0 .eq. ny/2+1 ) THEN
++            IF ( myrank .eq. 0 ) PRINT*, "[ERROR] fskx, fsky out of range ", &
++                "(|fskx| < nx/2 and |fsky| < ny/2 are required)."
++            CALL MPI_ABORT(MPI_COMM_WORLD,1,ierr)
++         ENDIF
++         ! A cos(k0.x) has coefficient A/2 at +k0 and -k0 (A for k0=0). For
++         ! kx0 > 0 the -k0 mode is implicit; for kx0 = 0 both are stored.
++         amp = fs_amp*real(nx,kind=GP)*real(ny,kind=GP)
++         IF ( i0 .ge. ista .AND. i0 .le. iend ) THEN
++            IF ( i0 .eq. 1 .AND. j0 .eq. 1 ) THEN
++               fs_eta(1,1) = amp
++            ELSE
++               fs_eta(j0,i0) = amp/2
++               IF ( i0 .eq. 1 ) fs_eta(ny-j0+2,1) = amp/2
++            ENDIF
++         ENDIF
++      ELSE
++         CALL fs_read(dir,ext)
++      ENDIF
++      fs_eta0 = fs_eta
++
++      ! B_k: the surface pass on a zero field with W = 1 in every mode
++      fs_s1 = 0.0_GP; fs_s2 = 0.0_GP; fs_s3 = 0.0_GP
++      zero = 0.0_GP
++      one  = 1.0_GP
++      CALL fs_top_pass(planbc,planfc,fs_s1,fs_s2,fs_s3,dd,zero,zero,one)
++      CALL fs_trace(planfc,fs_s3,fs_bk)
++      loc(1) = maxval(abs(fs_bk))
++      CALL MPI_ALLREDUCE(loc,glo,1,GC_REAL,MPI_MAX,MPI_COMM_WORLD,ierr)
++      IF ( glo(1) .ge. 0.9_GP ) THEN
++         IF ( myrank .eq. 0 ) PRINT*, "[ERROR] free surface coupling ", &
++             "coefficient too close to 1: max|B_k| = ", glo(1)
++         CALL MPI_ABORT(MPI_COMM_WORLD,1,ierr)
++      ENDIF
++      IF ( myrank .eq. 0 ) PRINT*, "[INFO] freesurface: g = ", fs_grav, &
++          " sigma/rho = ", fs_tens, " max|B_k| = ", glo(1)
++
++      ! Traces of the initial velocity
++      CALL fs_trace(planfc,vz,fs_wtop)
++      CALL fs_dwz_trace(planfc,vx,vy,fs_dwz)
++
++      ! Initial pressure potential, as after an o=1 substage: d = dt p
++      IF ( stat .eq. 0 ) THEN
++         DO i = ista,iend
++            DO j = 1,ny
++               bc(1,j,i) = 0.0_GP
++               bc(2,j,i) = dt*( (fs_grav + fs_tens*khom(j,i)**2)*fs_eta(j,i) &
++                                + 2*fs_nu*fs_dwz(j,i) )
++            ENDDO
++         ENDDO
++         CALL laplace_z(bc,dd,fs_work,1,0)
++         DO i = ista,iend
++            DO j = 1,ny
++               DO k = 1,nz
++                  pr(k,j,i) = dd(k,j,i)
++               ENDDO
++            ENDDO
++         ENDDO
++      ENDIF
++
++      DEALLOCATE( dd )
++      fs_ready = .TRUE.
++
++      RETURN
++      END SUBROUTINE v_fs_init
++
++!***********************************************************************
++      SUBROUTINE fs_read(dir,ext)
++!-----------------------------------------------------------------------
++!  Reads the elevation, in the (ky,kx) domain, from dir/fs_eta.ext.dat
++!  (unformatted stream, the full ny x (nx/2+1) complex array).
++!-----------------------------------------------------------------------
++      USE fprecision
++      USE mpivars
++      USE commtypes
++      USE grid
++
++      IMPLICIT NONE
++
++      CHARACTER(len=*), INTENT(IN) :: dir,ext
++      COMPLEX(KIND=GP), ALLOCATABLE, DIMENSION(:,:) :: full
++      INTEGER :: ios
++
++      ALLOCATE( full(ny,nx/2+1) )
++      IF ( myrank .eq. 0 ) THEN
++         OPEN(1,file=trim(dir)//'/fs_eta.'//trim(ext)//'.dat', &
++              form='unformatted',access='stream',status='old', &
++              action='read',iostat=ios)
++         IF ( ios .ne. 0 ) THEN
++            PRINT*, "[ERROR] cannot read ", trim(dir)//'/fs_eta.'//trim(ext)//'.dat'
++            CALL MPI_ABORT(MPI_COMM_WORLD,1,ierr)
++         ENDIF
++         READ(1) full
++         CLOSE(1)
++      ENDIF
++      CALL MPI_BCAST(full,ny*(nx/2+1),GC_COMPLEX,0,MPI_COMM_WORLD,ierr)
++      fs_eta(:,ista:iend) = full(:,ista:iend)
++      DEALLOCATE( full )
++
++      RETURN
++      END SUBROUTINE fs_read
++
++!***********************************************************************
++      SUBROUTINE v_fs_output(planbc,dir,ext)
++!-----------------------------------------------------------------------
++!  Writes the elevation to dir/fs_eta.ext.dat, in the format fs_read reads
++!  back: the (ky,kx) coefficients with the nx*ny normalization. Does
++!  nothing unless z=Lz is 'freesurface'.
++!-----------------------------------------------------------------------
++      USE fprecision
++      USE mpivars
++      USE commtypes
++      USE grid
++
++      IMPLICIT NONE
++
++      TYPE(BCPLAN), INTENT(IN)     :: planbc
++      CHARACTER(len=*), INTENT(IN) :: dir,ext
++      COMPLEX(KIND=GP), ALLOCATABLE, DIMENSION(:,:) :: full,part
++
++      IF ( planbc%bczend .ne. 2 ) RETURN
++      ALLOCATE( full(ny,nx/2+1), part(ny,nx/2+1) )
++      part = 0.0_GP
++      part(:,ista:iend) = fs_eta(:,ista:iend)
++      CALL MPI_REDUCE(part,full,ny*(nx/2+1),GC_COMPLEX,MPI_SUM,0, &
++                      MPI_COMM_WORLD,ierr)
++      IF ( myrank .eq. 0 ) THEN
++         OPEN(1,file=trim(dir)//'/fs_eta.'//trim(ext)//'.dat', &
++              form='unformatted',access='stream',status='replace', &
++              action='write')
++         WRITE(1) full
++         CLOSE(1)
++      ENDIF
++      DEALLOCATE( full,part )
++
++      RETURN
++      END SUBROUTINE v_fs_output
++
++!***********************************************************************
++      SUBROUTINE fs_diagnostic(planfc,a,b,c,t,dt,wallstress,wbot)
++!-----------------------------------------------------------------------
++!  Writes 'freesurface_diagnostic.txt' (format frozen in
++!  verificacion/intent_fase5.txt):
++!    t, Re(eta_k0), Im(eta_k0), <eta>, rms(eta), <|tau_t|^2>|z=Lz,
++!    <|d(v_t)/dz|^2>|z=0, <|v_n|^2>|z=0, coupling mismatch,
++!  with eta_k0 normalized so that eta = A cos(k0.x) gives A, and
++!  tau_t = d(v_t)/dz + grad_t(v_z) the FULL tangential stress.
++!-----------------------------------------------------------------------
++      USE fprecision
++      USE mpivars
++      USE commtypes
++      USE fcgram
++      USE grid
++      USE kes
++      USE var
++
++      IMPLICIT NONE
++
++      TYPE(FCPLAN), INTENT(IN)  :: planfc
++      COMPLEX(KIND=GP), INTENT(IN), DIMENSION(nz,ny,ista:iend) :: a,b,c
++      REAL(KIND=GP), INTENT(IN)        :: dt
++      INTEGER, INTENT(IN)              :: t
++      DOUBLE PRECISION, INTENT(IN)     :: wallstress,wbot
++
++      COMPLEX(KIND=GP), ALLOCATABLE, DIMENSION(:,:,:) :: D1,D2
++      DOUBLE PRECISION :: bot,top,loc(4),glo(4),fac
++      INTEGER          :: i,j,k,i0,j0
++
++      ALLOCATE( D1(nz,ny,ista:iend), D2(nz,ny,ista:iend) )
++      CALL derivk(a,D1,3)
++      CALL derivk(b,D2,3)
++      DO i = ista,iend
++         DO j = 1,ny
++            DO k = 1,nz
++               D1(k,j,i) = D1(k,j,i) + im*kx(i)*c(k,j,i)
++               D2(k,j,i) = D2(k,j,i) + im*ky(j)*c(k,j,i)
++            ENDDO
++         ENDDO
++      ENDDO
++      CALL bouncheck_z(planfc,bot,top,D1,D2)
++      DEALLOCATE( D1,D2 )
++
++      i0 = fs_kx0 + 1
++      IF ( fs_ky0 .ge. 0 ) THEN
++         j0 = fs_ky0 + 1
++      ELSE
++         j0 = ny + fs_ky0 + 1
++      ENDIF
++      loc = 0d0
++      IF ( i0 .ge. ista .AND. i0 .le. iend .AND. j0 .ge. 1 .AND. j0 .le. ny ) THEN
++         loc(1) = real(fs_eta(j0,i0), kind=GP)
++         loc(2) = aimag(fs_eta(j0,i0))
++      ENDIF
++      DO i = ista,iend
++         DO j = 1,ny
++            ! kx = 0 and the kx Nyquist column are not duplicated
++            IF ( i .eq. 1 .OR. i .eq. nx/2+1 ) THEN
++               loc(4) = loc(4) + abs(fs_eta(j,i))**2
++            ELSE
++               loc(4) = loc(4) + 2*abs(fs_eta(j,i))**2
++            ENDIF
++         ENDDO
++      ENDDO
++      IF ( ista .eq. 1 ) loc(3) = real(fs_eta(1,1), kind=GP)
++      CALL MPI_REDUCE(loc,glo,4,MPI_DOUBLE_PRECISION,MPI_SUM,0, &
++                      MPI_COMM_WORLD,ierr)
++
++      IF ( myrank .eq. 0 ) THEN
++         fac = 1d0/(dble(nx)*dble(ny))
++         IF ( .NOT. (i0 .eq. 1 .AND. j0 .eq. 1) ) THEN
++            glo(1:2) = 2*glo(1:2)
++         ENDIF
++         OPEN(1,file='freesurface_diagnostic.txt',position='append')
++30          FORMAT( 1P 9E23.15 )
++            WRITE(1,30) (t-1)*dt, glo(1)*fac, glo(2)*fac, glo(3)*fac, &
++                        sqrt(glo(4))*fac, top, wallstress, wbot,      &
++                        dble(fs_mismatch)
++         CLOSE(1)
++      ENDIF
++
++      RETURN
++      END SUBROUTINE fs_diagnostic
++
 +
  !*****************************************************************
        SUBROUTINE vdiagnostic(planbc,planfc,a,b,c,t,dt)
@@ -379,7 +1311,7 @@ index da16622..5f2f763 100644
  !
  ! Parameters
  !     a  : velocity field in the x-direction
-@@ -247,22 +385,45 @@
+@@ -247,22 +1093,50 @@
        REAL(KIND=GP), INTENT(IN)        :: dt
        INTEGER, INTENT(IN)              :: t
  
@@ -427,18 +1359,43 @@ index da16622..5f2f763 100644
 +               WRITE(1,20) (t-1)*dt,tm1,tmp,tmq,tmr,tms
 +            CLOSE(1)
 +         ENDIF
++
++         ! Deformable free surface: full tangential stress and elevation
++         IF ( planbc%bczend .eq. 2 ) THEN
++            CALL fs_diagnostic(planfc,a,b,c,t,dt,tmp,tmr)
++         ENDIF
        ENDIF
  
        RETURN
 diff --git a/src/specter.fpp b/src/specter.fpp
-index b66655a..d5667b0 100644
+index b66655a..6ce0456 100644
 --- a/src/specter.fpp
 +++ b/src/specter.fpp
-@@ -1176,6 +1176,7 @@
+@@ -976,6 +976,10 @@
+ #endif
+       ENDIF IC
+ 
++! Deformable free surface: elevation, coupling coefficients and initial
++! surface pressure (no-op unless vbczend = "freesurface")
++      CALL v_fs_init(vplanbc,planfc,vx,vy,vz,pr,nu,dt,int(stat),idir,ext)
++
+ !
+ ! Time integration scheme starts here.
+ ! Does ord iterations of Runge-Kutta. If 
+@@ -1051,6 +1055,7 @@
+             END DO
+             CALL fftp2d_complex_to_real_xy(planfc,C1,R1,MPI_COMM_WORLD)
+             CALL io_write(1,odir,'pr',ext,planio,R1)
++            CALL v_fs_output(vplanbc,odir,ext)   ! free-surface elevation
+ 
+ #ifdef SCALAR_
+             rmp = 1.0_GP/ &
+@@ -1176,6 +1181,8 @@
  #endif
        INCLUDE 'tests/energy.f90'
        INCLUDE 'tests/poisson.f90'
 +      INCLUDE 'tests/laplace_dirneu.f90'
++      INCLUDE 'tests/laplace_neudir.f90'
  #endif /*End of if TESTS_*/
  
  ! Computes the benchmark

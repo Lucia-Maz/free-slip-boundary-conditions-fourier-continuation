@@ -1,0 +1,36 @@
+Tres chequeos pensados después de congelar la puerta, que por eso no están en ella. Corren en
+\archivo{numerico/fase5/corridas_superficie_deformable.py} (10\,min, 173\,MB), que guarda
+además las series de las figuras en
+\archivo{salidas/tablas/superficie_deformable_corridas.json} (copia en
+\archivo{verificacion/logs/fase5_extras_2026-09-28.json}).
+
+\begin{description}
+\item[E1, desacople toroidal (§\ref{sec:toroidal}).] Un modo
+  $v_y=u_0\sin(\pi z/2L_z)\cos x$, con $w=0$, corrido con \texttt{freesurface} y con
+  \texttt{freeslip}: las dos energías coinciden \textbf{exactamente} (diferencia relativa
+  máxima $0{,}0$), la tasa es $3{,}467401099\cdot10^{-2}$ contra $3{,}467401100\cdot10^{-2}$ de
+  la referencia de diferencias finitas de la Fase~2 más $\nu k^2$ ($4{,}2\cdot10^{-10}$), y
+  $\eta$ queda idénticamente en cero. El desacople no es sólo del modelo: el código lo
+  respeta bit a bit.
+\item[E2, reinicio.] 2000 pasos, escritura de los binarios (incluido
+  \archivo{fs_eta.0002.dat}), reinicio con \texttt{stat=2} y otros 2000 pasos, contra 4000
+  pasos seguidos: $\eta$ coincide en los 39 tiempos comunes con una diferencia máxima de
+  $1{,}9\cdot10^{-11}\,A$. No es bit a bit porque los campos se guardan en el espacio físico
+  y al releerlos se recalcula su continuación FC-Gram; es del orden del redondeo de esa
+  vuelta.
+\item[E3, amplitud.] Desvío máximo de $\eta(t)/A$ respecto de la referencia \emph{lineal},
+  caso A hasta $t=4$: $7{,}6\cdot10^{-7}$ con $A=10^{-6}$ y con $A=10^{-4}$ (el piso numérico,
+  independiente de $A$), $4{,}6\cdot10^{-7}$ con $A=10^{-3}$, y $3{,}0\cdot10^{-5}$ con
+  $A=10^{-2}$. A amplitud chica el término no lineal del volumen no se ve, y a
+  $A=10^{-2}$ domina. Es lo esperable si, como se estima acá\propio, el modo fundamental
+  recibe la primera corrección no lineal a tercer orden (relativa $\propto A^2$): pasar de
+  $10^{-3}$ a $10^{-2}$ la multiplica por $\sim100$ por encima del piso.
+\end{description}
+
+\paragraph{La tensión, con tres pasos de tiempo.} En la misma corrida, el cociente de
+cuadrados medios entre la tensión tangencial completa en la superficie y la de la pared es
+$9{,}88$, $9{,}86$ y $9{,}86\cdot10^{-13}$ para $dt=10^{-3}$, $5\cdot10^{-4}$ y
+$2{,}5\cdot10^{-4}$ con el acople exacto, y $9{,}8\cdot10^{-8}$, $2{,}4\cdot10^{-8}$ y
+$6{,}0\cdot10^{-9}$ con el rezagado (exactamente $\times4$ por cada mitad de $dt$). La
+discordancia entre el $W$ impuesto y el obtenido es $\sim5\cdot10^{-16}$ con el exacto y
+$2{,}5$\,\% por $dt/10^{-3}$ con el rezagado.

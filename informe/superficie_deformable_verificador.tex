@@ -1,0 +1,86 @@
+Una vez convencida la implementación, se la pasó a un revisor independiente con el rol
+\emph{verifier} de \archivo{agent-team/roles/verifier.md}: escepticismo por defecto,
+reproducir cada afirmación con una derivación o un cálculo propio, e intentar romperla. Tenía
+prohibido correr SPECTER (por la memoria de la laptop) y trabajó leyendo el código y los logs,
+con cálculos chicos en Python. Su informe completo, con el bloque de afirmaciones, está en
+\archivo{verificacion/logs/verificador_fase5_2026-09-28.md}.
+
+\paragraph{Lo que verificó por su cuenta.}
+\begin{itemize}
+\item el modelo \eqref{eq:modelo}, releyendo Wang--Tice--Kim en el original y resolviendo el
+  DOI;
+\item que \texttt{pr} guarda $(dt/o)p$;
+\item que el esquema de (a)--(b) es exactamente el Runge--Kutta de SPECTER aplicado al
+  sistema proyectado, porque la parte armónica de la presión es una fuerza explícita en el
+  rango de la proyección;
+\item la condición \eqref{eq:tension} y sus signos arriba y abajo;
+\item la exactitud del acople en dos pasadas: la cadena es lineal y diagonal por modo, y entre
+  pasadas no se lee \texttt{pr};
+\item los coeficientes de la rama nueva de \texttt{laplace\_z}, incluido $k=0$, y
+  \texttt{sol\_project\_fs};
+\item el desacople toroidal, también en el esquema discreto;
+\item la referencia de la puerta, por tres caminos. Con $\nu\to0$ reproduce la frecuencia
+  inviscida a $5\cdot10^{-10}$ (la fórmula analítica, que él sí podía usar). Con viscosidad
+  coincide a $10^{-8}$ con un problema de autovalores en Chebyshev que escribió él. La
+  trayectoria $\eta(t)$ coincide con su expansión modal a $\le2\cdot10^{-7}$;
+\item el balance de energía y sus pesos;
+\item los números de F1--F8 y de E1--E3. Además comparó SPECTER contra su propia referencia:
+  $1{,}2\cdot10^{-6}$ y $5{,}4\cdot10^{-6}$;
+\item el álgebra de estabilidad;
+\item \textbf{el mecanismo del defecto de §\ref{sec:defecto}}, en un modelo de juguete con
+  las tablas FC-Gram reales. Sólo la proyección no cambia nada. La vuelta de $u$ sola (el
+  camino \texttt{noslip}) decae a $4\cdot10^{-13}$. La vuelta de $u$ y $w$ (el camino
+  \texttt{freeslip}) deja un cambio fijo por subpaso, que no decae. En la energía de los
+  puntos físicos es $-1{,}24\cdot10^{-8}$ con $N_z=128$ y $-2{,}2\cdot10^{-7}$ con $N_z=64$:
+  el mismo signo y el mismo orden que midió SPECTER.
+\end{itemize}
+
+\paragraph{Lo que refutó o dejó abierto, y qué se hizo.}
+\begin{itemize}
+\item \emph{Que el efecto de la deformación sobre $\alpha$ se pueda medir con esta
+  implementación.} A $O(\mathrm{Fr}^2)$ entran términos $\eta\,\partial_z(\cdot)$ que el
+  modelo lineal descarta. Aceptado, y agregado en §\ref{sec:toroidal}, §\ref{sec:celda} y
+  \etq{H-21}.
+\item \emph{Que el amortiguamiento $2\nu k^2$ de la estimación de estabilidad sea
+  conservador.} Es falso para $kh\gtrsim3$, por 2--4\,\%, aunque la cota de $dt$ vale igual.
+  Corregido en el texto y en el script.
+\item \emph{Un comentario del código} que llamaba exacta a
+  $\partial_zw=-i(k_xv_x+k_yv_y)$: vale a precisión FC. Corregido.
+\item \emph{Las cifras de F4 del pedido de revisión} eran las de la primera corrida. En este
+  informe figuran las de la segunda.
+\item \emph{Que la energía de \archivo{balance.txt} sea la del dominio extendido}, como
+  decía la primera versión de §\ref{sec:defecto}. Es la de los puntos físicos
+  (\texttt{energy()} suma \texttt{k = 1,nz-Cz}), y se comprobó leyendo la rutina. Por lo
+  tanto el defecto del camino \texttt{freeslip} plano \emph{es} disipación espuria física.
+  Corregido. El comentario de la puerta de la Fase~2 que atribuía a eso un factor de
+  normalización entre $\langle v^2\rangle$ y $\langle\omega^2\rangle$ también estaba
+  equivocado en la causa, que es \etq{H-22}; la puerta no se editó.
+\item \emph{Cuánto sesga las tasas de la Fase~4}: sin decidir, depende del $dt$ y del $v_z$
+  de esas corridas (§\ref{sec:defecto}).
+\end{itemize}
+
+\paragraph{Errores de código que encontró, corregidos.}
+\begin{itemize}
+\item Con $k_{x0}=0$ y $k_{y0}$ en Nyquist, la inicialización de $\eta$ escribía dos veces el
+  mismo coeficiente. Ahora esos modos se rechazan.
+\item El rms de $\eta$ contaba dos veces la columna de Nyquist en $k_x$.
+\item Una variable calculada y no usada.
+\end{itemize}
+Después de corregirlos, las dos puertas se volvieron a correr: \PuertaFinal{} y
+\FaseDosRegresion.
+
+\paragraph{Lo que encontró fuera del alcance.} \textbf{Un error de upstream}
+\etq{H-22}. En \archivo{src/pseudo/pseudospec_hd.f90}, la enstrofía de
+\archivo{balance.txt} llama dos veces a \texttt{curlk(a,c,C1,2)} y nunca a
+\texttt{curlk(a,b,C1,3)}: omite $\omega_z$ y cuenta $\omega_y$ dos veces. Se comprobó leyendo
+el código. Es la causa de la discrepancia que \etq{H-17} había registrado sin encontrarla, y
+por la que el proyecto ya había dejado de usar esa columna. No afecta a las puertas, que
+comparan tasas de modos con $\omega_z=0$.
+
+\paragraph{Un chequeo que pidió.} E1 usaba un modo toroidal con $k_y=0$, un caso débil. Se
+agregó E1b, con el modo oblicuo $\mathbf k=(1,1)$:
+$\mathbf v=u_0\sin(\pi z/2L_z)\cos(x+y)\,(1,-1)/\sqrt2$, que ejercita las dos
+componentes tangenciales. \texttt{freesurface} y \texttt{freeslip} vuelven a dar energías
+idénticas (diferencia $0{,}0$); la tasa es $4{,}467401098\cdot10^{-2}$ contra
+$\nu[(\pi/2)^2+2]=4{,}467401100\cdot10^{-2}$ ($3{,}3\cdot10^{-10}$), y $\eta\equiv0$
+(\archivo{verificacion/logs/fase5_e1b_toroidal_oblicuo_2026-09-28.json}).

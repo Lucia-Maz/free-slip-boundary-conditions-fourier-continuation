@@ -181,3 +181,14 @@ Fontana et al., para poder seguir el hilo en el original.
 > `teoria/superficie_libre_v_estrella_y_p.md`; lo que sí está verificado es que
 > **SPECTER upstream no la tiene**: la documentación del repositorio, consultada el
 > 2026-09-09, sigue listando `noslip` como única condición para la velocidad.
+
+---
+
+## La superficie deformable (Fase 5)
+
+### The Viscous Surface-Internal Wave Problem: Global Well-Posedness and Decay
+
+- **DOI:** [`10.1007/s00205-013-0700-2`](https://doi.org/10.1007/s00205-013-0700-2) — verificado contra Crossref el 2026-09-28: **OK**
+- **Autores:** Wang, Yanjin; Tice, Ian; Kim, Chanwoo
+- **Publicación:** Archive for Rational Mechanics and Analysis **212**, 1–92 (2014; Crossref fecha la versión en línea el 2013-12-18)
+- **Para qué se usa acá:** las condiciones de una superficie libre viscosa con tensión superficial sobre un fondo no-deslizante, de donde sale por linealización el modelo de [D-49]. Preprint [arXiv:1109.1798v2](https://arxiv.org/abs/1109.1798) (26 sep 2011) **leído en el original sólo en la §1.1**, ecuaciones (1.3)–(1.8) y el balance de volumen (1.10)–(1.12). La frase que fija la convención: la superficie superior cumple *"(p̄₊ I − µ₊ D(v₊))n₊ = pₑ n₊ − σ₊ H₊ n₊ on Γ₊(t)"* (1.4), con n "pointing up" (1.5) y H "twice the mean curvature" (1.6); la cinemática es (1.8). Se usa sólo la superficie superior de su problema de dos capas, y **ninguno de sus teoremas**. La linealización es de esta sesión. La sesión de codex lo había localizado; acá se leyó de nuevo, directamente.
