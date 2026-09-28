@@ -61,7 +61,6 @@ def _modulo(nombre, ruta):
 
 BA = _modulo("banda_ancha", os.path.join(VERIF, "decaimiento_banda_ancha.py"))
 F2 = BA.fase2
-H6 = _modulo("puerta6", os.path.join(VERIF, "test_aceptacion_fase6.py"))  # sólo la plantilla
 CELDA = BA.CELDA
 ESCALAS = os.path.join(RAIZ, "salidas", "tablas", "superficie_deformable_escalas.json")
 SAL_J = os.path.join(RAIZ, "salidas", "tablas", "fase6_campos_superficie_n%d_m%g%s.json")
@@ -71,6 +70,19 @@ NZ, CZ = BA.NZ, BA.CZ
 NZ_FIS = NZ - CZ
 DT = BA.DT
 CSTEP = 20
+
+
+def plantilla():
+    """parameter.inp de la puerta de la Fase 5 más las claves de la Fase 6, que es lo que
+    arma test_aceptacion_fase6.PLANTILLA. Se lee como texto: importar las puertas trae
+    scipy, que el python del clúster no tiene."""
+    t = open(os.path.join(VERIF, "test_aceptacion_fase5.py"), encoding="utf-8").read()
+    i = t.index('PLANTILLA = """') + len('PLANTILLA = """')
+    p = t[i:t.index('"""', i)]
+    p = p.replace("fscoup = {fscoup}\n", "fscoup = {fscoup}\nfsorder = {fsorder}\n"
+                  "fsmean = {fsmean}\nfstol = {fstol}\nfsmaxit = {fsmaxit}\nfsgen = {fsgen}\n")
+    assert "fsorder = {fsorder}" in p and "tstep = 1000000" in p
+    return p
 
 
 def escalas(nxy):
@@ -179,10 +191,10 @@ def correr(bindir, etiqueta, esc, *, pasos, tstep, nproc, fsorder=2):
         shutil.rmtree(dirrun)
     os.makedirs(os.path.join(dirrun, "out"))
     os.makedirs(os.path.join(dirrun, "in"))
-    plantilla = H6.PLANTILLA.replace("tstep = 1000000", "tstep = %d" % tstep)
-    assert "tstep = %d" % tstep in plantilla
+    texto = plantilla().replace("tstep = 1000000", "tstep = %d" % tstep)
+    assert "tstep = %d" % tstep in texto
     with open(os.path.join(dirrun, "parameter.inp"), "w") as fh:
-        fh.write(plantilla.format(
+        fh.write(texto.format(
             lz=esc["Lz"], dt=DT, step=pasos, cstep=CSTEP, u0=esc["u0"], nu=esc["nu"],
             vparam0=0.0, vparam1=0.0, bcsta="noslip", bcend="freesurface",
             fsgrav=esc["g_codigo"], fstens=esc["sigma_rho_codigo"], fsamp=0.0, fskx=1,

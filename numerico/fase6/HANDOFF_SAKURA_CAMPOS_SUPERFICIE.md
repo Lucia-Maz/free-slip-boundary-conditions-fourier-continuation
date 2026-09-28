@@ -39,7 +39,8 @@ cambies la física ni el código de SPECTER, y no corras nada más.
    cd numerico
    [ -d SPECTER-upstream ] || git clone https://github.com/mfontanaar/SPECTER.git SPECTER-upstream
    (cd SPECTER-upstream && git checkout 0ad1edb && git status --short | head)   # tiene que estar limpio
-   rm -rf SPECTER-trabajo && cp -r SPECTER-upstream SPECTER-trabajo
+   [ -d SPECTER-trabajo ] && mv SPECTER-trabajo SPECTER-trabajo.previo-$(date +%Y%m%d-%H%M)   # no se borra
+   cp -r SPECTER-upstream SPECTER-trabajo
    cd SPECTER-trabajo && git apply ../specter-parche/superficie-libre.patch
    cp ../specter-parche/laplace_dirneu.f90 ../specter-parche/laplace_neudir.f90 \
       ../specter-parche/fs_orden.f90 src/tests/
