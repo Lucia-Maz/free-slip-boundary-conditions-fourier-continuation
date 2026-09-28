@@ -55,12 +55,9 @@ cambies la física ni el código de SPECTER, y no corras nada más.
    python verificacion/higiene.py --autotest
    mkdir -p verificacion/logs && squeue -u "$USER"
    ```
-5. **Una prueba corta primero,** que compila y corre un minuto:
+5. **Una prueba corta primero,** que compila y corre un minuto con el mismo `sbatch`:
    ```bash
-   sbatch --time=00:30:00 --wrap "cd $PWD && module load gnu15 openmpi5 fftw/3.3.11 python/3.13.13 && \
-     export OMPI_MCA_pml=ob1 OMPI_MCA_btl=sm,self,tcp && eval \"\$(bash verificacion/toolchain_cluster.sh)\" && \
-     python numerico/fase6/campos_superficie.py --nxy 16 --prueba" \
-     --partition=normal --ntasks=1 --output=verificacion/logs/fs6-prueba-%j.out
+   PRUEBA=1 sbatch --time=00:30:00 numerico/fase6/campos_superficie.sbatch
    ```
    Tiene que terminar con una línea `corrida: … avisos: 0`. Si falla, mostrale el log a
    Lucía y pará. No corrijas el código.

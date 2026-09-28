@@ -11,6 +11,7 @@
 # (numerico/fase6/campos_superficie.py). Instrucciones completas en
 # numerico/fase6/HANDOFF_SAKURA_CAMPOS_SUPERFICIE.md. Va a `normal` porque compila adentro y c2–c5 no tienen make ([H-19]). No se ejecuta en el login:
 #
+#   PRUEBA=1 sbatch --time=00:30:00 numerico/fase6/campos_superficie.sbatch   # cadena, 16²
 #   NXY=64 MEMORIAS=4 CAMPOS=12 sbatch numerico/fase6/campos_superficie.sbatch
 #
 # Costo medido en la laptop: 64², 1,5 memorias, 3 procesos, ~1,2 s por paso (3800 pasos).
@@ -53,6 +54,10 @@ limpiar() {
 }
 trap limpiar EXIT
 
+if [ "${PRUEBA:-0}" = 1 ]; then
+    python numerico/fase6/campos_superficie.py --nxy 16 --prueba --np 1
+    exit 0
+fi
 NXY="${NXY:-64}"
 MEMORIAS="${MEMORIAS:-4}"
 CAMPOS="${CAMPOS:-12}"
