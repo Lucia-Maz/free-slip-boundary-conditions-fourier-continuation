@@ -3,9 +3,13 @@
 Proyecto final del curso *Ondas Gravitacionales e Investigación Asistida por IA* (2026).
 Lucía Mazaira, INFINA (CONICET-UBA).
 
-**Hay dos informes:**
-- **`informe/entrega_breve.pdf`**, el informe de la entrega final (≤ 5 páginas, 28-09-2026);
-- `informe/entrega.pdf`, la versión extendida del 17-09, con las derivaciones.
+> [!IMPORTANT]
+> **El PDF de la entrega final es [`informe/FINAL/entrega_final.pdf`](informe/FINAL/entrega_final.pdf)**
+> (≤ 5 páginas, 28-09-2026). En la misma carpeta están su fuente `entrega_final.tex` y las
+> figuras; compila sola con `pdflatex entrega_final.tex`, dos veces.
+>
+> Los demás PDF de `informe/` son de apoyo: la versión extendida del 17-09
+> (`informe/entrega.pdf`) y los informes de cada fase (ver [`informe/README.md`](informe/README.md)).
 
 ## La pregunta
 
@@ -71,11 +75,12 @@ onda no lineal N = 3 tiene orden 3. La puerta da 4/10, con cada fallo explicado 
 
 En la celda (η/Δz ~ 10⁻³) no aplica ningún límite. Hubo una revisión independiente en dos
 rondas ([V-22]), y el registro para reproducir es `numerico/fase6/REGISTRO_fase6.md`. Los
-campos de superficie a escala real están en `numerico/fase6/campos_superficie.py` y en la
-figura 3 del informe breve.
+campos de superficie a escala real salen de `numerico/fase6/campos_superficie.py`, en una
+corrida de 4 memorias en Sakura ([V-23]), y están en la figura 4 de la entrega final.
 
 **Lo que sigue:** medir el efecto O(Fr²) sobre α con `fsorder = 2` contra free-slip, en el
-clúster. Instrucciones para una corrida más larga de los campos de superficie:
+clúster. Antes de 128², las transformadas de superficie del orden N tienen que pasar a FFT
+(P16 del registro). La corrida de Sakura se lanzó siguiendo
 `numerico/fase6/HANDOFF_SAKURA_CAMPOS_SUPERFICIE.md`.
 
 ### Fuera de alcance de este proyecto, a propósito

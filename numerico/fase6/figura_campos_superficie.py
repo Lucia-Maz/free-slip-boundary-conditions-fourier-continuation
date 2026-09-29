@@ -16,8 +16,10 @@ bibliografía, y sólo da orden de magnitud y forma:
 El problema real es 3D (∂_zz p no es cero con kh ~ 1) y la superficie arranca plana, así
 que η lleva además ondas de gravedad-capilaridad.
 
-Uso: $PY numerico/fase6/figura_campos_superficie.py [--nxy 64] [--memorias 1.5] [--prueba]
+Uso: $PY numerico/fase6/figura_campos_superficie.py [--nxy 64] [--memorias 4] [--prueba]
      -> salidas/figuras/f_fs6_superficie.png (y .pdf)
+Por omisión lee la corrida de 4 memorias de Sakura ([V-23]): es la figura 4 de la entrega
+final. La de la laptop es --memorias 1.5.
 """
 
 import argparse
@@ -50,7 +52,7 @@ def cuasi_estatica(u, v, g, s_rho, L):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--nxy", type=int, default=64)
-    ap.add_argument("--memorias", type=float, default=1.5)
+    ap.add_argument("--memorias", type=float, default=4.0)
     ap.add_argument("--prueba", action="store_true")
     args = ap.parse_args()
     suf = "_prueba" if args.prueba else ""
@@ -64,6 +66,7 @@ def main():
     eta, wz = C["eta_m"][j], C["omega_z_1_s"][j]
     qs = [cuasi_estatica(C["u_m_s"][i], C["v_m_s"][i], g, s, L) for i in range(len(C["t_s"]))]
     corr = float(np.corrcoef(eta.ravel(), qs[j].ravel())[0, 1])
+    cs = [float(np.corrcoef(C["eta_m"][i].ravel(), qs[i].ravel())[0, 1]) for i in range(1, j + 1)]
 
     import matplotlib
     matplotlib.use("Agg")
@@ -98,16 +101,17 @@ def main():
     S = J["serie_diagnostico"]
     a.plot(S["t_s"], np.asarray(S["eta_rms_m"]) * 1e6, "-", color="C0", lw=1.0,
            label=r"$\eta_{\rm rms}$, SPECTER ($N=2$)")
-    a.plot(C["t_s"], [np.sqrt(np.mean(q ** 2)) * 1e6 for q in qs], "o--", color="C3", ms=3,
-           lw=0.8, label=r"cuasi-estática 2D, $p/\rho g$ (§)")
+    qr = [np.sqrt(np.mean(q ** 2)) * 1e6 for q in qs]
+    a.plot(C["t_s"], qr, "o--", color="C3", ms=3, lw=0.8, label=r"cuasi-estática 2D, $p/\rho g$ (§)")
+    a.set_ylim(0, 1.3 * max(max(qr), 1e6 * max(S["eta_rms_m"])))          # lugar para la leyenda
     a.set_xlabel("t [s]")
     a.set_ylabel(r"$\eta_{\rm rms}$ [$\mu$m]")
-    a.set_title(r"(c) correlación con la cuasi-estática: %.2f" % corr, fontsize=8)
+    a.set_title(r"(c) corr. con la cuasi-estática: %.2f–%.2f" % (min(cs), max(cs)), fontsize=8)
     a.legend(fontsize=7)
     fig.savefig(os.path.join(RAIZ, "salidas", "figuras", "f_fs6_superficie%s.png" % suf), dpi=200)
     fig.savefig(os.path.join(RAIZ, "salidas", "figuras", "f_fs6_superficie%s.pdf" % suf))
-    print("correlación eta / cuasi-estática en t = %.2f s: %.3f; eta_rms %.3e m; qs_rms %.3e m" % (
-        C["t_s"][j], corr, float(np.sqrt(np.mean(eta ** 2))), float(np.sqrt(np.mean(qs[j] ** 2)))))
+    print("correlación eta / cuasi-estática en t = %.2f s: %.3f (rango %.2f-%.2f); eta_rms %.3e m; qs_rms %.3e m" % (
+        C["t_s"][j], corr, min(cs), max(cs), float(np.sqrt(np.mean(eta ** 2))), float(np.sqrt(np.mean(qs[j] ** 2)))))
     print("-> salidas/figuras/f_fs6_superficie%s.png" % suf)
 
 

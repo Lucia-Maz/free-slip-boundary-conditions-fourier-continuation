@@ -2579,3 +2579,69 @@ cabecera y el contador de `fsmaxit`. Encontró tres cosas, y se hizo con cada un
   de la puerta afirmada antes de terminar): corregidas.
 
 El código final se volvió a pasar por la puerta: ver [V-21].
+
+### [V-23] Campos de superficie con la superficie deformable de orden 2, a la escala de la celda
+
+`numerico/fase6/campos_superficie.py`:
+- la condición inicial de banda ancha de [V-19], con el espectro del PIV en t ≈ 11 s y
+  amplitud experimental;
+- fondo no deslizante; tope `freesurface` con `fsorder = 2`;
+- g y σ/ρ físicos en unidades de código (g = 480, σ/ρ = 1,96), tomados de
+  `salidas/tablas/superficie_deformable_escalas.json`;
+- 64² × 39, dt = 5·10⁻⁴.
+
+La superficie arranca plana. Se corrió dos veces el 2026-09-28, y la de Sakura es la de la
+figura:
+
+| corrida | memorias | procesos | tiempo | archivos |
+|---|---|---|---|---|
+| Sakura, trabajo 9239 | 4 (7,3 s, 10 129 pasos) | 2 | 2 h 24 min, 0,85 s por paso | `…_n64_m4.{json,npz}` |
+| laptop | 1,5 (2,7 s, 3 799 pasos) | 3 | 66 min, 1,05 s por paso | `…_n64_m1.5.{json,npz}` |
+
+Los archivos están en `salidas/tablas/fase6_campos_superficie_…` y `salidas/campos/…`. La
+de la laptop duró 4 h 15 min de reloj porque la máquina se suspendió en el medio: tapa cerrada
+de 18:27 a 21:36, según `journalctl`. Al volver siguió sin problemas, y los 66 min son el
+cronómetro del runner (`time.monotonic`, que no cuenta la suspensión).
+
+**Las dos máquinas dan lo mismo.** En todo el lapso común, t ≤ 2,72 s (190 puntos de la
+serie), η_rms coincide a 1,2·10⁻¹³ relativo. En el único instante guardado en común, t = 1,82 s,
+el campo η coincide a 4,5·10⁻¹³ de su máximo y u a 1,3·10⁻¹⁴. Eso vale con dos cadenas de
+compilación (conda en la laptop, los módulos `gnu15` y `openmpi5` en Sakura) y con 2 procesos
+contra 3.
+
+**Resultado** (Sakura):
+- la superficie se deforma con la forma del campo de presión del flujo. Se hunde en los
+  núcleos de los vórtices: donde |ω_z| está en el 10 % superior, η medio es −0,06 a −0,28 μm;
+  corr(η, −ω_z²) = 0,48–0,61;
+- η_rms sube a 0,23 μm en el arranque (t ≈ 0,1 s) y decae con el flujo hasta 0,05 μm, con
+  máximos de 1,0 μm; max|η|/Δz ≤ 7,5·10⁻³;
+- η sigue a U² = ⟨u² + v²⟩ en la superficie. Desde que termina el ajuste (t ≈ 1,2 s), U² cae
+  un factor 3,3 y g η_rms/U² queda entre 0,31 y 0,42; lo hacen oscilar las ondas del
+  arranque;
+- en los 12 instantes guardados, η correlaciona 0,78–0,88 con una estimación cuasi-estática
+  2D, p/ρg con la presión de la velocidad de superficie. La estimación es de esta sesión, sin
+  validar, y su rms es 1,1–1,5 veces el de SPECTER;
+- encima quedan las ondas de gravedad-capilaridad del arranque plano, débilmente
+  amortiguadas;
+- la iteración converge en ≤ 4 pasadas, con residuo ≤ 9,9·10⁻¹¹ (`fstol` = 10⁻¹⁰), y sin
+  avisos.
+
+Es el régimen de la celda, lejos de todo límite de [H-24]–[H-26]. Figura: `f_fs6_superficie`
+(`numerico/fase6/figura_campos_superficie.py --nxy 64 --memorias 4`), la 4 de la entrega final.
+
+**El criterio del handoff no correspondía.** Pedía η_rms entre 10⁻⁷ y 10⁻⁶ m, un rango fijado
+para 1,5 memorias; en la de 4, η_rms queda por debajo de 10⁻⁷ m desde t ≈ 4,3 s. El agente de
+Sakura lo leyó como decaimiento del flujo y no como falla, sin verificarlo. Acá quedó
+verificado con el cociente g η_rms/U² de arriba.
+
+**Verificado de paso:**
+- el camino general en paralelo: np = 1 y np = 2 dan resultados idénticos;
+- la condición inicial de [V-19] sólo es correcta con un proceso; la del runner nuevo respeta
+  la partición (REGISTRO_fase6.md, P15).
+
+**Costo:** 0,85 s por paso en Sakura y 1,05 s en la laptop. Las transformadas de
+superficie son DFT explícitas O(nxy³) y no escalan con MPI (P16); hay que pasarlas a FFT antes
+de 128². Memoria: en Sakura, 110 MiB de RSS entre los dos procesos de SPECTER, muestreados
+cada 5 min, así que es cota inferior (`ESTADO.md`); en la laptop, 241 MiB de
+`Maximum resident set size` con `/usr/bin/time -v`, que es el mayor proceso del árbol y no la
+suma.
