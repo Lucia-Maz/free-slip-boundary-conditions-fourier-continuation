@@ -367,6 +367,8 @@ da 2,33 y 3,02. Una revisión independiente en dos rondas, con el rol verificado
 confirmó lo central y encontró nueve cosas: ocho corregidas y una abierta ([V-22]). **Para la celda no aplica ningún límite** (η/Δz ~ 10⁻³). Registro completo:
 `numerico/fase6/REGISTRO_fase6.md`; resumen para leer: `informe/superficie_orden_N.pdf`.
 
+**Campos de superficie de orden 2 en Sakura, 64², 4 memorias** (trabajo 9239, a2, 2 procesos): 2 h 24 min de corrida (10 129 pasos, 0,85 s/paso) más 46 s de compilación. Memoria: 110 MiB de RSS entre los dos procesos de SPECTER (165 MiB el trabajo entero), **máximo de muestras cada 5 min** con `srun --overlap … ps`, porque Sakura no tiene contabilidad de SLURM: es cota inferior, no necesariamente el pico. Sin avisos, pasadas ≤ 4, residuo ≤ 9,9·10⁻¹¹, máx. |η|/Δz = 7,5·10⁻³; η_rms sube a 2,3·10⁻⁷ m y decae con el flujo hasta 5,2·10⁻⁸ m al final, así que el criterio del handoff (η_rms entre 10⁻⁷ y 10⁻⁶ m) se cumple sólo hasta t ≈ 3,6 s: desde t ≈ 4,3 s queda por debajo. Que sea el decaimiento del flujo (u_rms en la superficie baja de 2,4 a 1,2 mm/s en el mismo lapso) y no una falla es lectura de la sesión, no verificada; el rango parece fijado para la corrida de 1,5 memorias (hasta t ≈ 2,7 s). En `salidas/tablas/fase6_campos_superficie_n64_m4.json` y `salidas/campos/fase6_campos_superficie_n64_m4.npz`.
+
 **Lo que sigue, en este orden:**
 
 0. ~~Decidir [P-03]~~ — **hecho** ([D-50]): `freeslip_z` corregido; Fase 2 6/6 y Fase 5 8/8
