@@ -49,12 +49,106 @@ def cuasi_estatica(u, v, g, s_rho, L):
     return np.real(np.fft.ifft2(E))
 
 
+def cargar(args):
+    """Lee la corrida y calcula la estimación cuasi-estática en cada instante guardado."""
+    suf = "_prueba" if args.prueba else ""
+    nombre = "fase6_campos_superficie_n%d_m%g%s" % (args.nxy, 0.2 if args.prueba else args.memorias, suf)
+    J = json.load(open(os.path.join(RAIZ, "salidas", "tablas", nombre + ".json")))
+    C = np.load(os.path.join(RAIZ, "salidas", "campos", nombre + ".npz"))
+    cfg = J["config"]
+    L = 2 * np.pi * cfg["L_c_m"]                         # lado de la caja [m]
+    g, s = cfg["g_m_s2"], cfg["sigma_rho_m3_s2"]
+    t = C["t_s"]
+    j = len(t) - 1
+    eta, wz = C["eta_m"][j], C["omega_z_1_s"][j]
+    qs = [cuasi_estatica(C["u_m_s"][i], C["v_m_s"][i], g, s, L) for i in range(len(t))]
+    cs = [float(np.corrcoef(C["eta_m"][i].ravel(), qs[i].ravel())[0, 1]) for i in range(1, j + 1)]
+    return J, t, j, eta, wz, qs, cs, L
+
+
+def figura_presentacion(args):
+    """La misma figura, con el estilo de presentacion/presentacion.tex."""
+    J, t, j, eta, wz, qs, cs, L = cargar(args)
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    AZUL, AZUL_CLARO, TINTA = "#1F4E79", "#7FA7CF", "#1E2A38"
+    coma = lambda x, n=2: ("%.*f" % (n, x)).replace(".", ",")
+    plt.rcParams.update({"font.family": "Inter", "font.size": 8, "mathtext.fontset": "dejavusans",
+                         "axes.edgecolor": TINTA, "axes.labelcolor": TINTA,
+                         "xtick.color": TINTA, "ytick.color": TINTA})
+    plt.rcParams.update({"xtick.labelsize": 7, "ytick.labelsize": 7, "xtick.major.size": 2,
+                         "ytick.major.size": 2, "xtick.major.pad": 1.5, "ytick.major.pad": 1.5,
+                         "axes.labelpad": 1.5, "axes.titlepad": 3})
+    # disposición fija, en pulgadas: (a) y (b) comparten el eje y y van juntas; (c) aparte
+    W, H = 6.0, 2.15
+    fig = plt.figure(figsize=(W, H))
+    bot, lado = 0.34, 1.6                                # base y lado de los mapas
+    caja = lambda x, w, h=lado: fig.add_axes([x / W, bot / H, w / W, h / H])
+    x_a = 0.36
+    x_ca = x_a + lado + 0.05
+    x_b = x_ca + 0.07 + 0.27
+    x_cb = x_b + lado + 0.05
+    x_c = x_cb + 0.07 + 0.6
+    ax = [caja(x_a, lado), caja(x_b, lado), caja(x_c, W - x_c - 0.12)]
+    cax = [caja(x_ca, 0.07), caja(x_cb, 0.07)]
+    ext = [0, L * 100, 0, L * 100]                       # cm
+    vm = float(np.max(np.abs(wz)))
+    im0 = ax[0].imshow(wz.T, origin="lower", extent=ext, cmap="coolwarm", vmin=-vm, vmax=vm)
+    ax[0].set_title(r"(a) $\omega_z$ en la superficie [s$^{-1}$]", fontsize=8, color=TINTA)
+    from matplotlib.ticker import FuncFormatter
+    fc = FuncFormatter(lambda v, _: ("%g" % round(v, 3)).replace(".", ",").replace("-", "−"))
+    fig.colorbar(im0, cax=cax[0], ticks=[-0.3, 0, 0.3], format=fc)
+    # eta divergente y simétrica en cero: azul = hundida, rojo = elevada
+    ve = float(np.max(np.abs(eta))) * 1e6
+    im1 = ax[1].imshow(eta.T * 1e6, origin="lower", extent=ext, cmap="RdBu_r", vmin=-ve, vmax=ve)
+    ax[1].set_title(r"(b) $\eta$ [$\mu$m]", fontsize=8, color=TINTA)
+    fig.colorbar(im1, cax=cax[1], ticks=[-0.2, -0.1, 0, 0.1, 0.2], format=fc)
+    for a in ax[:2]:
+        a.set_xlabel("x [cm]")
+        a.set_xticks([0, 10, 20])
+        a.set_yticks([0, 10, 20])
+    ax[0].set_ylabel("y [cm]")
+    ax[1].tick_params(labelleft=False)
+    aw = np.abs(wz)
+    a = ax[2]
+    S = J["serie_diagnostico"]
+    a.plot(S["t_s"], np.asarray(S["eta_rms_m"]) * 1e6, "-", color=AZUL, lw=1.1, label="SPECTER")
+    qr = [np.sqrt(np.mean(q ** 2)) * 1e6 for q in qs]
+    a.plot(t, qr, "o--", color=AZUL_CLARO, ms=2.8, lw=0.9, label="cuasi-estática (§)")
+    a.set_ylim(0, 1.6 * max(max(qr), 1e6 * max(S["eta_rms_m"])))
+    # t = 0 es el arranque de la simulación: superficie plana y la banda ancha con el espectro
+    # del PIV en t ~ 11,1 s del registro ([V-19], [V-23])
+    a.set_xlabel("t de simulación [s]")
+    a.set_xticks([0, 2, 4, 6])
+    a.yaxis.set_major_formatter(fc)
+    a.set_ylabel(r"$\eta_{\rm rms}$ [$\mu$m]")
+    a.set_title(r"(c) $\eta_{\rm rms}$, corr. %s–%s" % (coma(min(cs)), coma(max(cs))), fontsize=8, color=TINTA)
+    a.legend(fontsize=6.5, frameon=False, loc="upper right", handlelength=1.8)
+    for s_ in ("top", "right"):
+        a.spines[s_].set_visible(False)
+    destino = os.path.join(RAIZ, "presentacion", "figuras")
+    os.makedirs(destino, exist_ok=True)
+    fig.savefig(os.path.join(destino, "f_fs6_superficie_pres.pdf"))
+    top = aw >= np.quantile(aw, 0.9)
+    print("correlación eta / cuasi-estática: %.2f-%.2f; eta_rms final %.3e m"
+          % (min(cs), max(cs), float(np.sqrt(np.mean(eta ** 2)))))
+    print("t = %.2f s: max|omega_z| = %.3f 1/s, eta en [%.3f, %.3f] um; eta medio en el 10%% de |omega_z| "
+          "más alto = %.3f um" % (t[j], aw.max(), eta.min() * 1e6, eta.max() * 1e6, eta[top].mean() * 1e6))
+    print("-> presentacion/figuras/f_fs6_superficie_pres.pdf")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--nxy", type=int, default=64)
     ap.add_argument("--memorias", type=float, default=4.0)
     ap.add_argument("--prueba", action="store_true")
+    ap.add_argument("--presentacion", action="store_true",
+                    help="estilo de las diapositivas (presentacion/): mismos datos y cuentas, "
+                         "otra tipografía, paleta azul y títulos cortos")
     args = ap.parse_args()
+    if args.presentacion:
+        return figura_presentacion(args)
     suf = "_prueba" if args.prueba else ""
     nombre = "fase6_campos_superficie_n%d_m%g%s" % (args.nxy, 0.2 if args.prueba else args.memorias, suf)
     J = json.load(open(os.path.join(RAIZ, "salidas", "tablas", nombre + ".json")))
