@@ -32,3 +32,6 @@ datos-derivados/*.npz
 
 # Palabras prohibidas del chequeo de higiene: no se trackean a propósito
 verificacion/higiene.local
+
+# guion personal de la presentación: vive sólo en la laptop
+presentacion/guion.md
